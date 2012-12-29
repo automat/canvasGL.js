@@ -40,43 +40,8 @@ function CanvasGL(parentDomElementId)
         if(this.gl){if(CanvasGLOptions.doLog)console.log("WebGL context initialized: "+names[i]);break;}
     }
 
-   //this._vertexShader   = this._loadShader("attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
-    //this._vertexShader   = this._loadShader("uniform mat3 uMVMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = vec4(uMVMatrix * clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
-    //this._vertexShader   = this._loadShader("uniform mat4 uMVMatrix; uniform mat4 uPMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = uPMatrix * uMVMatrix * vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
-    //this._vertexShader   = this._loadShader("uniform mat3 transformMatrix;uniform mat4 uMVMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = uMVMatrix * vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
-
-    //this._vertexShader   = this._loadShader("uniform mat3 transformMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = (zeroToTwo - 1.0);gl_Position = vec4((transformMatrix*vec3(clipSpace * vec2(1, -1),1)).xy, 0, 1);}",this.gl.VERTEX_SHADER);
-
-    /*
-    this._vertexShader   = this._loadShader("uniform mat3 transformMatrix;" +
-                                            "attribute vec2 a_position; " +
-                                            "uniform vec2 u_resolution;" +
-                                            "void main()" +
-                                            "{" +
-                                                "vec2 zeroToOne = a_position / u_resolution;" +
-                                                "vec2 zeroToTwo = zeroToOne * 2.0;" +
-                                                "vec2 clipSpace = (zeroToTwo - 1.0);" +
-                                                //"gl_Position = vec4((transformMatrix*vec3(clipSpace * vec2(1, -1),1)).xy, 0, 1);" +
-                                                "gl_Position = vec4((vec3(clipSpace,1) * vec3(vec2(1, -1),1)) ,1);" +
-                                            "}"
-                                            ,this.gl.VERTEX_SHADER);
-                                            */
-
-    this._vertexShader   = this._loadShader(
-        "uniform mat4 transformMatrix;" +
-        "attribute vec2 a_position; " +
-        "uniform vec2 u_resolution;" +
-        "void main()" +
-        "{" +
-        "vec2 transedPos = vec2(transformMatrix * vec4(a_position.xy,0,1)).xy;"+
-        "vec2 zeroToOne = transedPos / u_resolution;" +
-        "vec2 zeroToTwo = zeroToOne * 2.0;" +
-        "vec2 clipSpace = (zeroToTwo - 1.0);" +
-        "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
-        "gl_Position = resultPos;" +
-        "}"
-        ,this.gl.VERTEX_SHADER);
-
+   // this._vertexShader   = this._loadShader("attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
+    this._vertexShader   = this._loadShader("uniform mat4 uMVMatrix; uniform mat4 uPMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = uPMatrix * uMVMatrix * vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
     this._fragmentShader = this._loadShader("precision mediump float;uniform vec4 u_color;void main(){gl_FragColor = u_color;}",this.gl.FRAGMENT_SHADER);
     this._program        = this._loadProgram();
 
@@ -96,15 +61,13 @@ function CanvasGL(parentDomElementId)
     this._vertexTexCoordBuffer= gl.createBuffer();
     this._vertexColorBuffer   = gl.createBuffer();
 
-    //this._pUniform  = gl.getUniformLocation(this._program,"uPMatrix");
-    //this._mvUniform = gl.getUniformLocation(this._program,"uMVMatrix");
-    this._tmUniform = gl.getUniformLocation(this._program,"transformMatrix");
-    //this._mvMatrix = _makeMat44();
-    this._transMatrix  = _makeMat44();
+    this._pUniform  = gl.getUniformLocation(this._program,"uPMatrix");
+    this._mvUniform = gl.getUniformLocation(this._program,"uMVMatrix");
+    this._mvMatrix = _makeMat44();
 
-    //gl.uniformMatrix4fv(this._pUniform,false, new Float32Array(_makeMat44()));
-    //gl.uniformMatrix4fv(this._mvUniform,false,new Float32Array(this._mvMatrix));
-    gl.uniformMatrix4fv(this._tmUniform,false,new Float32Array(this._transMatrix));
+    gl.uniformMatrix4fv(this._pUniform,false, new Float32Array(_makeMat44()));
+    gl.uniformMatrix4fv(this._mvUniform,false,new Float32Array(this._mvMatrix));
+
 
 
     gl.bindBuffer(gl.ARRAY_BUFFER,this._vertexPostionBuffer);
@@ -129,19 +92,29 @@ function CanvasGL(parentDomElementId)
 
 CanvasGL.prototype._setMvMatrixUniform = function()
 {
-
-
-    this.gl.uniformMatrix4fv(this._tmUniform,false,new Float32Array(this._transMatrix));
+    this.gl.uniformMatrix4fv(this._mvUniform,false,new Float32Array(this._mvMatrix));
 };
 
 CanvasGL.prototype._loadIdentity = function()
 {
-    _mat44Identity(this._transMatrix);
+    _mat44Identity(this._mvMatrix);
 };
 
 CanvasGL.prototype._multMatrix = function(m)
 {
-    this._transMatrix = _makeMat44Mult(this._transMatrix,m);
+    this._mvMatrix = _makeMat44Mult(this._mvMatrix,m);
+
+
+};
+
+CanvasGL.prototype.push = function()
+{
+
+};
+
+CanvasGL.prototype.pop = function()
+{
+
 };
 
 CanvasGL.prototype.translate = function(x,y)
@@ -151,20 +124,10 @@ CanvasGL.prototype.translate = function(x,y)
 
 CanvasGL.prototype.scale = function(x,y)
 {
-    this._multMatrix(_makeMat44Scale(x,y));
-};
-
-CanvasGL.prototype.rotate = function(a)
-{
-    //this._multMatrix(_makeMat44SRotate(a));
-};
-
-CanvasGL.prototype.push = function()
-{
 
 };
 
-CanvasGL.prototype.pop = function()
+CanvasGL.prototype.rotate = function()
 {
 
 };
@@ -182,7 +145,6 @@ CanvasGL.prototype.triangleMesh = function(vertices,indices)
     if(this._fill)
     {
         this._applyFill();
-        this._setMvMatrixUniform();
         gl.drawElements(gl.TRIANGLES,ind.length,gl.UNSIGNED_SHORT,0);
     }
 };
@@ -200,7 +162,6 @@ CanvasGL.prototype.line = function(x0,y0,x1,y1)
     arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
     this._applyStroke();
-    this._setMvMatrixUniform();
     gl.drawArrays(gl.LINES,0,2);
 };
 
@@ -211,7 +172,6 @@ CanvasGL.prototype.lines = function(vertices)
     var arr = this._pixelPerfect ? this._flooredArray(vertices) : vertices;
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
     this._applyStroke();
-    this._setMvMatrixUniform();
     gl.drawArrays(gl.LINE_STRIP,0,arr.length*0.5);
 };
 
@@ -223,7 +183,6 @@ CanvasGL.prototype.point = function(x,y)
     arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
     this._applyFill();
-    this._setMvMatrixUniform();
     gl.drawArrays(gl.POINTS,0,1);
 };
 
@@ -234,7 +193,6 @@ CanvasGL.prototype.points = function(vertices)
     var arr = this._pixelPerfect ? this._flooredArray(vertices) : vertices;
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
     this._applyFill();
-    this._setMvMatrixUniform();
     gl.drawArrays(gl.POINTS,0,arr.length*0.5);
 };
 
@@ -261,7 +219,6 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY,resolution)
     if(this._fill)
     {
         this._applyFill();
-        this._setMvMatrixUniform();
         gl.drawArrays(gl.TRIANGLE_FAN,0, arr.length*0.5);
     }
 
@@ -282,7 +239,6 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
     if(this._fill)
     {
         this._applyFill();
-        this._setMvMatrixUniform();
         gl.drawArrays(gl.TRIANGLES,0,6);
     }
 };
@@ -297,7 +253,6 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
     if(this._fill)
     {
         this._applyFill();
-        this._setMvMatrixUniform();
         gl.drawArrays(gl.TRIANGLES,0,3);
     }
 };
@@ -423,8 +378,6 @@ CanvasGL.prototype.background = function()
     var c  = colorf.apply(this,arguments);
     gl.clearColor(c[0],c[1],c[2],c[3]);
     gl.clear(gl.COLOR_BUFFER_BIT);
-
-    this._loadIdentity();
 };
 
 CanvasGL.prototype.setSize = function(width,height)
@@ -552,118 +505,6 @@ CanvasGL.prototype.saveToPNG = function()
     var canvas = window.open(this._glCanvas.toDataURL('image/png'));
 };
 
-function _makeMat33()
-{
-    return [ 1, 0, 0,
-             0, 1, 0,
-             0, 0, 1 ];
-}
-
-function _makeMat33Mult(m0,m1)
-{
-    return _mat33Mult(_makeMat33(),m0,m1);
-}
-
-function _makeMat33Translate(x,y)
-{
-    return _mat33Translate(_makeMat33(),x,y);
-}
-
-function _makeMat33Scale(x,y)
-{
-    return _mat33Scale(_makeMat33(),x,y);
-}
-
-function _makeMat33Rotate(a)
-{
-    return _mat33Rotate(_makeMat33(),a);
-}
-
-function _mat33Identity(m)
-{
-    m[0] = m[4] = m[8] = 1;
-    m[1] = m[2] = m[3] = m[5] = m[6] = m[7] = 0;
-}
-
-function _mat33Mult(m,m0,m1)
-{
-
-    var a00 = m0[0], a01 = m0[1], a02 = m0[2],
-        a10 = m0[3], a11 = m0[4], a12 = m0[5],
-        a20 = m0[6], a21 = m0[7], a22 = m0[8],
-
-        b00 = m1[0], b01 = m1[1], b02 = m1[2],
-        b10 = m1[3], b11 = m1[4], b12 = m1[5],
-        b20 = m1[6], b21 = m1[7], b22 = m1[8];
-
-    m0[0] = b00 * a00 + b01 * a10 + b02 * a20;
-    m0[1] = b00 * a01 + b01 * a11 + b02 * a21;
-    m0[2] = b00 * a02 + b01 * a12 + b02 * a22;
-
-    m0[3] = b10 * a00 + b11 * a10 + b12 * a20;
-    m0[4] = b10 * a01 + b11 * a11 + b12 * a21;
-    m0[5] = b10 * a02 + b11 * a12 + b12 * a22;
-
-    m0[6] = b20 * a00 + b21 * a10 + b22 * a20;
-    m0[7] = b20 * a01 + b21 * a11 + b22 * a21;
-    m0[8] = b20 * a02 + b21 * a12 + b22 * a22;
-
-    return m;
-}
-
-function _mat33Translate(m,x,y)
-{
-    m[3]=x;m[6]=y;
-    return m;
-}
-
-function _mat33Scale(m,x,y)
-{
-    m[0] = x;m[4] = y;
-    return m;
-}
-
-function _mat33Rotate(m,a)
-{
-    var sina = Math.sin(a),
-        cosa = Math.cos(a);
-
-    m[0] = cosa; m[1] = -sina;
-    m[3] = sina; m[4] =  cosa;
-    return m;
-}
-
-function _mat33ToMat44(m)
-{
-    var d = _makeMat44();
-
-    d[15] = 1;
-    d[14] = 0;
-    d[13] = 0;
-    d[12] = 0;
-
-    d[11] = 0;
-    d[10] = m[8];
-    d[9] = m[7];
-    d[8] = m[6];
-
-    d[7] = 0;
-    d[6] = m[5];
-    d[5] = m[4];
-    d[4] = m[3];
-
-    d[3] = 0;
-    d[2] = m[2];
-    d[1] = m[1];
-    d[0] = m[0];
-
-    return d;
-
-}
-
-
-
-
 //  0  1  2  3
 //  4  5  6  7
 //  8  9 10 11
@@ -690,35 +531,6 @@ function _makeMat44Scale(x,y)
 function _makeMat44Mult(m0,m1)
 {
     return _mat44Mult(_makeMat44(),m0,m1);
-}
-
-function _makeMat44Rotate(a)
-{
-    var m = _makeMat44();
-
-    var s = Math.sin(a),
-        c = Math.cos(a),
-        a00 = m[0],
-        a01 = m[1],
-        a02 = m[2],
-        a03 = m[3],
-        a10 = m[4],
-        a11 = m[5],
-        a12 = m[6],
-        a13 = m[7];
-
-
-    m[0] = a00 * c + a10 * s;
-    m[1] = a01 * c + a11 * s;
-    m[2] = a02 * c + a12 * s;
-    m[3] = a03 * c + a13 * s;
-
-    m[4] = a00 * -s + a10 * c;
-    m[5] = a01 * -s + a11 * c;
-    m[6] = a02 * -s + a12 * c;
-    m[7] = a03 * -s + a13 * c;
-
-    return m;
 }
 
 function _mat44Mult(m,m0,m1)

@@ -169,6 +169,7 @@ TestCanvasGL.prototype.draw = function()
 
 
     c.setBezierDetail(140);
+    c.translate(100,0);
     c.bezier(anchor0x,anchor0y,contrl0x,contrl0y,anchor1x,anchor1y,contrl1x,contrl1y);
 
     c.stroke(255,102,0);
