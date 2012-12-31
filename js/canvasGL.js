@@ -15,6 +15,7 @@ _InternalCanvasGLOptions.DEFAULT_WIDTH  = 300;
 _InternalCanvasGLOptions.DEFAULT_HEIGHT = 300;
 _InternalCanvasGLOptions.BEZIER_DETAIL  = 20;
 
+
 _InternalCanvasGLConstants = {};
 
 function CanvasGL(parentDomElementId)
@@ -81,26 +82,64 @@ function CanvasGL(parentDomElementId)
 
     gl.uniformMatrix4fv(this._tmUniform,false,new Float32Array(this._tMatrix));
 
-
     gl.bindBuffer(gl.ARRAY_BUFFER,this._vertexPostionBuffer);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._vertexIndexBuffer);
 
-
     gl.enableVertexAttribArray(this._positionLocation);
     gl.vertexAttribPointer(this._positionLocation,2,gl.FLOAT,false,0,0);
+
+    //gl.enable(gl.BLEND);
+    //gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
 
 
     this._pixelPerfect = false;
 
+
+    this._ellipseMode = CanvasGL.CENTER;
+    this._rectMode    = CanvasGL.CORNER;
     this._fill        = true;
     this._stroke      = true;
     this._fillColor   = colorf(1.0,1.0);
     this._strokeColor = colorf(1.0,1.0);
 
     this.parent.appendChild(this._glCanvas);
-
 }
+
+CanvasGL.CENTER = "CENTER";
+CanvasGL.CORNER = "CORNER";
+
+CanvasGL.prototype.setLineWidth = function(value)
+{
+    this.gl.lineWidth = value;
+};
+
+CanvasGL.prototype.setBezierDetail = function(detail)
+{
+    _InternalCanvasGLOptions.BEZIER_DETAIL = detail;
+};
+
+CanvasGL.prototype.setSize = function(width,height)
+{
+    this._size.width  = width;
+    this._size.height = height;
+
+    this._glCanvas.style.width = this._size.width + 'px';
+    this._glCanvas.style.height = this._size.height + 'px';
+
+    var styleWidth  = parseInt(this._glCanvas.style.width);
+    var styleHeight = parseInt(this._glCanvas.style.height);
+
+    this._glCanvas.width  = styleWidth;
+    this._glCanvas.height = styleHeight;
+
+    this.width = this._size.width;
+    this.height = this._size.height;
+
+    this.gl.uniform2f(this._resolutionLocation,this.width, this.height);
+    this.gl.viewport(0,0,this.width,this.height);
+
+};
 
 CanvasGL.prototype.line = function(x0,y0,x1,y1)
 {
@@ -177,6 +216,37 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY,resolution)
 
 };
 
+CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,stopAngle,resolution)
+{
+    var gl  = this.gl;
+    var res = resolution || CanvasGLOptions.RESOLUTION_CIRCLE;
+    var step = (stopAngle - startAngle)/(res-2);
+    var i = 0;
+
+    var indices = [];
+    var v = new Float32Array(res*2);
+
+    while(i < v.length)
+    {
+        v[i]   = centerX + radiusX * Math.cos(startAngle+step*(i));
+        v[i+1] = centerY+ radiusY * Math.sin(startAngle+step*(i));
+        v[i+2]   = centerX;
+        v[i+3] = centerY;
+        i+=4;
+    }
+
+    var arr = this._pixelPerfect ? this._flooredArray(v) : v;
+
+    gl.bufferData(gl.ARRAY_BUFFER,arr,gl.DYNAMIC_DRAW);
+
+    if(this._fill)
+    {
+        this._applyFill();
+        this._setMvMatrixUniform();
+        gl.drawArrays(gl.TRIANGLE_STRIP,0, arr.length/2);
+    }
+};
+
 CanvasGL.prototype.circle = function(x,y,radius,resolution)
 {
     this.ellipse(x,y,radius,radius,resolution);
@@ -195,6 +265,14 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
         this._setMvMatrixUniform();
         gl.drawArrays(gl.TRIANGLES,0,6);
     }
+
+    if(this._stroke)
+    {
+        this._applyStroke();
+        this._setMvMatrixUniform();
+        gl.drawArrays(gl.LINE_LOOP,0,4);
+    }
+
 };
 
 CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
@@ -212,14 +290,21 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
     }
 };
 
-CanvasGL.prototype.setBezierDetail = function(detail)
-{
-    _InternalCanvasGLOptions.BEZIER_DETAIL = detail;
-};
+
 
 CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
     var d = _InternalCanvasGLOptions.BEZIER_DETAIL;
+
+    this._bezierAnchor0x = x0;
+    this._bezierAnchor0y = y0;
+    this._bezierAnchor1x = x2;
+    this._bezierAnchor1y = y2;
+    this._bezierContrl0x = x1;
+    this._bezierContrl0y = y1;
+    this._bezierContrl1x = x3;
+    this._bezierContrl1y = y3;
+
 
     var i = -1;
     var t,nt,nt3,nt2,t3,t2;
@@ -243,30 +328,70 @@ CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
     this.lines(vertices);
 };
 
-CanvasGL.prototype.bezierPoint = function(a,b,c,d,t)
+CanvasGL.prototype.bezierPoint = function(d)
 {
+
+    var nt  = 1 - d;
+    var nt3 = Math.pow(nt,3);
+    var nt2 = Math.pow(nt,2);
+    var t3  = Math.pow(d,3);
+    var t2  = Math.pow(d,2);
+
+    var x0 = this._bezierAnchor0x;
+    var y0 = this._bezierAnchor0y;
+    var x2 = this._bezierAnchor1x;
+    var y2 = this._bezierAnchor1y;
+    var x1 = this._bezierContrl0x;
+    var y1 = this._bezierContrl0y;
+    var x3 = this._bezierContrl1x;
+    var y3 = this._bezierContrl1y;
+
+    return [nt3*x0+3*nt2*d*x1+3*nt*t2*x2+t3*x3,
+            nt3*y0+3*nt2*d*y1+3*nt*t2*y2+t3*y3];
 
 };
 
 CanvasGL.prototype.loadImage = function(path,callback)
 {
     var image = new Image();
-    image.onload = function(){callback();};
+    //image.onload = function(){callback.bind(this);};
     image.src = path;
 
     return image;
 };
 
-CanvasGL.prototype.texture = function(img)
+CanvasGL.prototype.loadTexture = function(img)
 {
+    console.log(img);
+    /*
     var gl = this.gl;
-    var texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+    var tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+    gl.generateMipmap(gl.TEXTURE_2D);
+
     gl.bindTexture(gl.TEXTURE_2D, null);
+    */
+
+    return null;
+
+
+
+};
+
+CanvasGL.prototype.texture = function(tex)
+{
+
+    var gl = this.gl;
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D,tex);
+
+    console.log(tex);
+
 
 };
 
@@ -330,36 +455,14 @@ CanvasGL.prototype.fillf = function()
 CanvasGL.prototype.background = function()
 {
     var gl = this.gl;
-    var c  = colorf.apply(this,arguments);
+    var c  = colori.apply(this,arguments);
     gl.clearColor(c[0],c[1],c[2],c[3]);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     this._loadIdentity();
 };
 
-CanvasGL.prototype.setSize = function(width,height)
-{
-    this._size.width  = width;
-    this._size.height = height;
 
-    this._glCanvas.style.width = this._size.width + 'px';
-    this._glCanvas.style.height = this._size.height + 'px';
-
-    var styleWidth  = parseInt(this._glCanvas.style.width);
-    var styleHeight = parseInt(this._glCanvas.style.height);
-
-    this._glCanvas.width  = styleWidth;
-    this._glCanvas.height = styleHeight;
-
-
-
-    this.width = this._size.width;
-    this.height = this._size.height;
-
-    this.gl.uniform2f(this._resolutionLocation,this.width, this.height);
-    this.gl.viewport(0,0,this.width,this.height);
-
-};
 
 CanvasGL.prototype._flooredArray = function(array)
 {

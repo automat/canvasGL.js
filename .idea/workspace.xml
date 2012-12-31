@@ -23,7 +23,7 @@
       <file leaf-file-name="canvasGL.js" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="510" column="2" selection-start="13549" selection-end="13549" vertical-scroll-proportion="-1.5936556">
+            <state line="695" column="42" selection-start="17908" selection-end="17908" vertical-scroll-proportion="0.52148145">
               <folding />
             </state>
           </provider>
@@ -32,7 +32,7 @@
       <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="185" column="0" selection-start="3383" selection-end="3383" vertical-scroll-proportion="0.0">
+            <state line="80" column="9" selection-start="1393" selection-end="1393" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -88,7 +88,7 @@
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="width" value="1290" />
+    <option name="width" value="1676" />
     <option name="height" value="1050" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
@@ -201,6 +201,7 @@
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\DEEV\WebstormProjects\canvasGL.js" />
+      <recent name="C:\Users\DEEV\WebstormProjects\canvasGL.js\resources" />
       <recent name="C:\Users\DEEV\WebstormProjects\canvasGL.js\js" />
     </key>
   </component>
@@ -269,14 +270,14 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1290" height="1050" extended-state="0" />
+    <frame x="0" y="0" width="1676" height="1050" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.14228617" sideWeight="0.76419216" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.23580787" sideWeight="0.99920064" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.108735494" sideWeight="0.76419216" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.23580787" sideWeight="0.99816513" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -444,14 +445,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="185" column="0" selection-start="3383" selection-end="3383" vertical-scroll-proportion="0.0">
+        <state line="80" column="9" selection-start="1393" selection-end="1393" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="510" column="2" selection-start="13549" selection-end="13549" vertical-scroll-proportion="-1.5936556">
+        <state line="695" column="42" selection-start="17908" selection-end="17908" vertical-scroll-proportion="0.52148145">
           <folding />
         </state>
       </provider>

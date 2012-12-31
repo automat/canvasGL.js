@@ -13,10 +13,30 @@ function TestCanvasGL(parentDomElementId)
     this.c.setSize(window.innerWidth,window.innerHeight);
     this.t = 0.0;
 
+    this.tex = null;
+    var t = this.tex;
+    var c = this.c;
 
+    this.texImage = new Image();
+    this.texImage.onload = this.onTexturesLoaded();
+    this.texImage.src = "tex00.jpg";
+
+
+
+
+
+
+
+
+}
+
+TestCanvasGL.prototype.onTexturesLoaded = function()
+{
+    var c = this.c;
 
     this.animationLoop();
-}
+
+};
 
 TestCanvasGL.prototype.animationLoop = function()
 {
@@ -28,7 +48,254 @@ TestCanvasGL.prototype.animationLoop = function()
 TestCanvasGL.prototype.draw = function()
 {
 
+    var sin   = Math.sin,
+        cos   = Math.cos,
+        PI    = Math.PI,
+        floor = Math.floor,
+        round = Math.round,
+        abs   = Math.abs,
+        SIZE_OF_VERTEX = 2;
+
+
     this.t+=0.05;
+    var t = this.t,
+        c = this.c;
+
+    c.background(10);
+    c.noStroke();
+    c.noFill();
+
+    var i,j;
+    var rs = 100;
+    var pa,ps,pp0,pp1,pp3,pp4;
+
+    var verticesA,verticesB;
+    var indicesA,indicesB;
+
+    c.pushMatrix();
+    {
+        c.translate(rs,rs);
+        c.scale(1,1);
+
+        c.pushMatrix();
+        {
+            c.translate(0,0);
+            c.fill(255);
+            c.rect(0,0,rs*2,rs);
+        }
+        c.popMatrix();
+        c.pushMatrix();
+        {
+            c.translate(rs*2,0);
+            pa = 1+floor(19*abs(sin(t*0.025)));
+            ps = rs*2/pa;
+            i = -1;
+            while(++i < pa)
+            {
+                c.fill(255-i/pa*255);
+                c.rect(i*ps,0,ps,rs);
+            }
+        }
+        c.popMatrix();
+        c.pushMatrix();
+        {
+            c.translate(rs*4,0);
+            c.fill(150,0,0);
+            c.triangleMesh([0,0,rs,0,rs,rs,0,rs],[0,1,3,1,2,3]);
+        }
+        c.popMatrix();
+        c.pushMatrix();
+        {
+            c.translate(rs*5+rs*0.5,rs*0.5);
+            c.rotate(t*0.5);
+            c.fill(100+floor(155*abs(sin(t))));
+            c.ellipse(0,0,rs*0.25 + rs*0.25*abs(sin(t)),rs*0.5-rs*0.25*abs(sin(t)),3+floor(27*abs(sin(t*0.25))));
+        }
+        c.popMatrix();
+        c.pushMatrix();
+        {
+            c.translate(0,rs);
+            c.stroke(100,0,0);
+
+            pa = 100;
+            ps = (rs*4)/(pa-1);
+
+            verticesA = [];
+            verticesB = [];
+
+            pp1 = 1+2*abs(sin(t*0.05));
+
+
+
+            c.noStroke();
+            i = -1;
+            while(++i < pa)
+            {
+                pp0 = i/(pa)*PI-t;
+
+                if(i < pa*0.5+2)
+                {
+                    verticesA.push(i*ps,rs*0.5 + rs*0.5*sin(pp0*pp1),i*ps,rs);
+                    verticesB.push(i*ps,rs*0.5 + rs*0.5*sin(pp0*pp1));
+
+                }else if((i > pa*0.5) && i % 2 == 0)
+                {
+                    c.fill(255);
+                    c.rect(i*ps,rs,3,-(rs*0.5 - ((rs*0.5)*sin(pp0*pp1))));
+                }
+
+
+
+
+
+            }
+
+            i = 0;
+
+
+            c.fill(100,0,0);
+            c.triangleMesh(verticesA);
+            c.fill(255);
+            c.points(verticesB);
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+            c.translate(rs*4+6,rs+6);
+
+            pp0 = abs(sin(t*0.25));
+            pp3 = abs(sin(t*0.5));
+            pp4 = abs(sin(t*0.05));
+
+            var anchor0 = [(rs*4-6)-(rs*4-6)*pp4,pp3*(rs-12)],
+                anchor1 = [(rs*4-6)*pp4,(rs-12)-pp3*(rs-12)];
+
+            var cntrl0 = [(rs*4-6)-(rs*4-6)*pp0,0],
+                cntrl1 = [(rs*4-6)*pp0,rs-12];
+
+            c.stroke(80);
+            c.line(anchor0[0],anchor0[1],cntrl0[0],cntrl0[1]);
+            c.line(anchor1[0],anchor1[1],cntrl1[0],cntrl1[1]);
+
+            c.noStroke();
+            c.fill(80);
+            c.circle(cntrl1[0],cntrl1[1],3);
+            c.circle(cntrl0[0],cntrl0[1],3);
+
+            c.stroke(255);
+
+            c.bezier(anchor0[0],anchor0[1],cntrl0[0],cntrl0[1],
+                     cntrl1[0],cntrl1[1],anchor1[0],anchor1[1]);
+
+
+
+            c.fill(255);
+            pp0 = c.bezierPoint(0);
+            c.circle(pp0[0],pp0[1],3);
+            pp0 = c.bezierPoint(1);
+            c.circle(pp0[0],pp0[1],3);
+
+            pp1 = floor(30*abs(sin(t*0.025)));
+
+            i = 0;
+            while(++i < pp1)
+            {
+                pp0 = c.bezierPoint(i/pp1);
+                c.fill(255);
+                c.circle(pp0[0],pp0[1],3);
+                c.fill(150,0,0);
+                c.circle(pp0[0],pp0[1],2);
+
+            }
+
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+            c.translate(0,rs*2+6);
+            c.stroke(100,0,0);
+
+            pa = 5+floor(abs(sin(t*0.05))*25);
+            ps = (rs*8)/(pa-1);
+
+            verticesA = [];
+            verticesB = [];
+
+            pp0 = 4 * abs(sin(t*0.05));
+            pp1 = rs*0.5;
+
+            i = -1;
+            while(++i < pa)
+            {
+                verticesA.push(i*ps,rs*0.5 + pp1*sin(pp0*i/(pa)*PI+t));
+                verticesB.push(i*ps,rs*0.5 + pp1*sin((PI+pp0*i/(pa)*PI)+t));
+
+                c.stroke(255);
+                c.line(verticesA[verticesA.length-2],verticesA[verticesA.length-1],
+                       verticesB[verticesB.length-2],verticesB[verticesB.length-1]);
+
+
+            }
+
+            c.stroke(100,0,0);
+            c.lines(verticesA);
+            c.lines(verticesB);
+            c.fill(255);
+
+            i = 0;
+            while(i < pa*2)
+            {
+
+
+
+                c.fill(0);
+                c.circle(verticesA[i],verticesA[i+1],3.2);
+                c.circle(verticesB[i],verticesB[i+1],3.2);
+                c.fill(255);
+                c.circle(verticesA[i],verticesA[i+1],3);
+                c.circle(verticesB[i],verticesB[i+1],3);
+                c.fill(0);
+                c.circle(verticesA[i],verticesA[i+1],2.2);
+                c.circle(verticesB[i],verticesB[i+1],2.2);
+
+                i+=2;
+            }
+
+            //c.points(verticesA);
+            //c.points(verticesB);
+
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+            c.translate(rs,rs*4);
+
+            pp0 = abs(sin(t));
+            pp1 = abs(sin(t*0.5));
+
+            c.fill(255);
+            c.circle(rs,rs,rs-1,rs-1,100);
+
+            c.fill(0);
+            c.arc(rs,rs,rs*0.75+rs*0.25*pp1,rs*0.75+rs*0.25*pp1,0,(PI-PI*0.25)*pp1,100);
+            c.fill(100,0,0);
+            c.arc(rs,rs,rs*0.5+rs*0.5*pp1,rs*0.5+rs*0.5*pp1,0,pp1*-PI*0.25,100);
+
+
+        }
+        c.popMatrix();
+
+    }
+    c.popMatrix();
+
+
+
+
+
+    /*
 
     var t = this.t;
 
@@ -170,11 +437,9 @@ TestCanvasGL.prototype.draw = function()
 
     c.setBezierDetail(140);
 
-    //c.push();
-    //
+
     c.pushMatrix();
     c.translate(510,410);
-    c.rotate(t*0.25);
 
     c.bezier(anchor0x,anchor0y,contrl0x,contrl0y,anchor1x,anchor1y,contrl1x,contrl1y);
 
@@ -182,10 +447,8 @@ TestCanvasGL.prototype.draw = function()
     c.line(anchor0x,anchor0y,contrl0x,contrl0y);
     c.line(anchor1x,anchor1y,contrl1x,contrl1y);
     c.popMatrix();
+    */
 
-
-
-    //c.pop();
 
 
 
