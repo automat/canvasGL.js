@@ -23,7 +23,7 @@
       <file leaf-file-name="canvasGL.js" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="143" column="4" selection-start="6860" selection-end="6880" vertical-scroll-proportion="0.4365559">
+            <state line="510" column="2" selection-start="13549" selection-end="13549" vertical-scroll-proportion="-1.5936556">
               <folding />
             </state>
           </provider>
@@ -32,7 +32,7 @@
       <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="171" column="4" selection-start="3067" selection-end="3067" vertical-scroll-proportion="0.0">
+            <state line="185" column="0" selection-start="3383" selection-end="3383" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -444,14 +444,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="171" column="4" selection-start="3067" selection-end="3067" vertical-scroll-proportion="0.0">
+        <state line="185" column="0" selection-start="3383" selection-end="3383" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="143" column="4" selection-start="6860" selection-end="6880" vertical-scroll-proportion="0.4365559">
+        <state line="510" column="2" selection-start="13549" selection-end="13549" vertical-scroll-proportion="-1.5936556">
           <folding />
         </state>
       </provider>

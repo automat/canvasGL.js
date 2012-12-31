@@ -40,42 +40,20 @@ function CanvasGL(parentDomElementId)
         if(this.gl){if(CanvasGLOptions.doLog)console.log("WebGL context initialized: "+names[i]);break;}
     }
 
-   //this._vertexShader   = this._loadShader("attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
-    //this._vertexShader   = this._loadShader("uniform mat3 uMVMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = vec4(uMVMatrix * clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
-    //this._vertexShader   = this._loadShader("uniform mat4 uMVMatrix; uniform mat4 uPMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = uPMatrix * uMVMatrix * vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
-    //this._vertexShader   = this._loadShader("uniform mat3 transformMatrix;uniform mat4 uMVMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = uMVMatrix * vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
 
-    //this._vertexShader   = this._loadShader("uniform mat3 transformMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = (zeroToTwo - 1.0);gl_Position = vec4((transformMatrix*vec3(clipSpace * vec2(1, -1),1)).xy, 0, 1);}",this.gl.VERTEX_SHADER);
-
-    /*
-    this._vertexShader   = this._loadShader("uniform mat3 transformMatrix;" +
+    this._vertexShader   = this._loadShader(
+                                            "uniform mat4 transformMatrix;" +
                                             "attribute vec2 a_position; " +
                                             "uniform vec2 u_resolution;" +
                                             "void main()" +
                                             "{" +
-                                                "vec2 zeroToOne = a_position / u_resolution;" +
+                                                "vec2 transedPos = vec2(transformMatrix * vec4(a_position.xy,0,1)).xy;"+
+                                                "vec2 zeroToOne = transedPos / u_resolution;" +
                                                 "vec2 zeroToTwo = zeroToOne * 2.0;" +
                                                 "vec2 clipSpace = (zeroToTwo - 1.0);" +
-                                                //"gl_Position = vec4((transformMatrix*vec3(clipSpace * vec2(1, -1),1)).xy, 0, 1);" +
-                                                "gl_Position = vec4((vec3(clipSpace,1) * vec3(vec2(1, -1),1)) ,1);" +
-                                            "}"
-                                            ,this.gl.VERTEX_SHADER);
-                                            */
-
-    this._vertexShader   = this._loadShader(
-        "uniform mat4 transformMatrix;" +
-        "attribute vec2 a_position; " +
-        "uniform vec2 u_resolution;" +
-        "void main()" +
-        "{" +
-        "vec2 transedPos = vec2(transformMatrix * vec4(a_position.xy,0,1)).xy;"+
-        "vec2 zeroToOne = transedPos / u_resolution;" +
-        "vec2 zeroToTwo = zeroToOne * 2.0;" +
-        "vec2 clipSpace = (zeroToTwo - 1.0);" +
-        "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
-        "gl_Position = resultPos;" +
-        "}"
-        ,this.gl.VERTEX_SHADER);
+                                                "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
+                                                "gl_Position = resultPos;" +
+                                            "}",this.gl.VERTEX_SHADER);
 
     this._fragmentShader = this._loadShader("precision mediump float;uniform vec4 u_color;void main(){gl_FragColor = u_color;}",this.gl.FRAGMENT_SHADER);
     this._program        = this._loadProgram();
@@ -96,15 +74,12 @@ function CanvasGL(parentDomElementId)
     this._vertexTexCoordBuffer= gl.createBuffer();
     this._vertexColorBuffer   = gl.createBuffer();
 
-    //this._pUniform  = gl.getUniformLocation(this._program,"uPMatrix");
-    //this._mvUniform = gl.getUniformLocation(this._program,"uMVMatrix");
-    this._tmUniform = gl.getUniformLocation(this._program,"transformMatrix");
-    //this._mvMatrix = _makeMat44();
-    this._transMatrix  = _makeMat44();
 
-    //gl.uniformMatrix4fv(this._pUniform,false, new Float32Array(_makeMat44()));
-    //gl.uniformMatrix4fv(this._mvUniform,false,new Float32Array(this._mvMatrix));
-    gl.uniformMatrix4fv(this._tmUniform,false,new Float32Array(this._transMatrix));
+    this._tmUniform = gl.getUniformLocation(this._program,"transformMatrix");
+    this._tMatrix  = this.__makeMat44();
+    this._tMatrixStack = [];
+
+    gl.uniformMatrix4fv(this._tmUniform,false,new Float32Array(this._tMatrix));
 
 
     gl.bindBuffer(gl.ARRAY_BUFFER,this._vertexPostionBuffer);
@@ -114,7 +89,7 @@ function CanvasGL(parentDomElementId)
     gl.enableVertexAttribArray(this._positionLocation);
     gl.vertexAttribPointer(this._positionLocation,2,gl.FLOAT,false,0,0);
 
-    this._matrixStack = [];
+
 
     this._pixelPerfect = false;
 
@@ -126,71 +101,6 @@ function CanvasGL(parentDomElementId)
     this.parent.appendChild(this._glCanvas);
 
 }
-
-CanvasGL.prototype._setMvMatrixUniform = function()
-{
-
-
-    this.gl.uniformMatrix4fv(this._tmUniform,false,new Float32Array(this._transMatrix));
-};
-
-CanvasGL.prototype._loadIdentity = function()
-{
-    _mat44Identity(this._transMatrix);
-};
-
-CanvasGL.prototype._multMatrix = function(m)
-{
-    this._transMatrix = _makeMat44Mult(this._transMatrix,m);
-};
-
-CanvasGL.prototype.translate = function(x,y)
-{
-    this._multMatrix(_makeMat44Translate(x,y));
-};
-
-CanvasGL.prototype.scale = function(x,y)
-{
-    this._multMatrix(_makeMat44Scale(x,y));
-};
-
-CanvasGL.prototype.rotate = function(a)
-{
-    //this._multMatrix(_makeMat44SRotate(a));
-};
-
-CanvasGL.prototype.push = function()
-{
-
-};
-
-CanvasGL.prototype.pop = function()
-{
-
-};
-
-
-
-CanvasGL.prototype.triangleMesh = function(vertices,indices)
-{
-    var gl = this.gl;
-    var ind = new Uint16Array(indices || this._indicesLinearCW(vertices));
-
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,ind,gl.STATIC_DRAW);
-
-    if(this._fill)
-    {
-        this._applyFill();
-        this._setMvMatrixUniform();
-        gl.drawElements(gl.TRIANGLES,ind.length,gl.UNSIGNED_SHORT,0);
-    }
-};
-
-
-
-
-
 
 CanvasGL.prototype.line = function(x0,y0,x1,y1)
 {
@@ -542,6 +452,181 @@ CanvasGL.prototype._loadProgram = function()
     return program;
 };
 
+CanvasGL.prototype._setMvMatrixUniform = function()
+{
+    this.gl.uniformMatrix4fv(this._tmUniform,false,new Float32Array(this._tMatrix));
+};
+
+CanvasGL.prototype._loadIdentity = function()
+{
+    this.__mat44Identity(this._tMatrix);
+};
+
+CanvasGL.prototype.translate = function(x,y)
+{
+    this._tMatrix = this.__mat44MultPost(this._tMatrix,this.__makeMat44Translate(x,y));
+};
+
+CanvasGL.prototype.scale = function(x,y)
+{
+    this._tMatrix = this.__mat44MultPost(this._tMatrix,this.__makeMat44Scale(x,y));
+};
+
+CanvasGL.prototype.rotate = function(a)
+{
+    this._tMatrix = this.__mat44MultPost(this._tMatrix,this.__makeMat44RotationZ(a));
+};
+
+CanvasGL.prototype.pushMatrix = function()
+{
+    this._tMatrixStack.push(this.__makeMat44Copy(this._tMatrix));
+};
+
+CanvasGL.prototype.popMatrix = function()
+{
+    var stack = this._tMatrixStack;
+
+    if(stack.length == 0)
+    {
+        throw "Invalid pop!";
+    }
+
+    this._tMatrix = stack.pop();
+
+    return this._tMatrix;
+
+};
+
+// SX  0  0  0
+//  0 SY  0  0
+//  0  0 SZ  0
+// TX TY TZ  1
+
+CanvasGL.prototype.__makeMat44 = function()
+{
+    return [ 1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1 ];
+};
+
+CanvasGL.prototype.__mat44Identity = function(m)
+{
+    m[ 0] = 1; m[ 1] = m[ 2] = m[ 3] = 0;
+    m[ 5] = 1; m[ 4] = m[ 6] = m[ 7] = 0;
+    m[10] = 1; m[ 8] = m[ 9] = m[11] = 0;
+    m[15] = 1; m[12] = m[13] = m[14] = 0;
+
+    return m;
+};
+
+CanvasGL.prototype.__makeMat44Scale = function(x,y)
+{
+    var  m = this.__makeMat44();
+
+    m[0] = x;
+    m[5] = y;
+
+    return m;
+
+};
+
+CanvasGL.prototype.__makeMat44Translate = function(x,y)
+{
+    var m = this.__makeMat44();
+
+    m[12] = x;
+    m[13] = y;
+
+    return m;
+};
+
+CanvasGL.prototype.__makeMat44RotationZ = function(a)
+{
+    var m = this.__makeMat44();
+
+    var sin = Math.sin(a),
+        cos = Math.cos(a);
+
+    m[0] = cos;
+    m[1] = sin;
+    m[4] = -sin;
+    m[5] = cos;
+
+    return m;
+};
+
+CanvasGL.prototype.__makeMat44Copy = function(m)
+{
+    var d = this.__makeMat44();
+
+    d[ 0] = m[ 0];d[ 1] = m[ 1];d[ 2] = m[ 2];d[ 3] = m[ 3];
+    d[ 4] = m[ 4];d[ 5] = m[ 5];d[ 6] = m[ 6];d[ 7] = m[ 7];
+    d[ 8] = m[ 8];d[ 9] = m[ 9];d[10] = m[10];d[11] = m[11];
+    d[12] = m[12];d[13] = m[13];d[14] = m[14];d[15] = m[15];
+
+    return d;
+};
+
+CanvasGL.prototype.__mat44MultPre = function(mat0,mat1)
+{
+    var m = this.__makeMat44();
+
+    var m1 = mat0[ 0],m2 = mat0[ 1],m3 = mat0[ 2],m4 = mat0[ 3],
+        m5 = mat0[ 4],m6 = mat0[ 5],m7 = mat0[ 6],m8 = mat0[ 7],
+        m9 = mat0[ 8],m10 = mat0[ 9],m11 = mat0[10],m12 = mat0[11],
+        m13 = mat0[12],m14 = mat0[13],m15 = mat0[14],m16 = mat0[15];
+
+    var mA = mat1[ 0],mB = mat1[ 1],mC = mat1[ 2],mD = mat1[ 3],
+        mE = mat1[ 4],mF = mat1[ 5],mG = mat1[ 6],mH = mat1[ 7],
+        mI = mat1[ 8],mJ = mat1[ 9],mK = mat1[10],mL = mat1[11],
+        mM = mat1[12],mN = mat1[13],mO = mat1[14],mP = mat1[15];
+
+    m[ 0] = m1*mA + m2*mE + m3*mI + m4*mM;
+    m[ 1] = m1*mB + m2*mF + m3*mJ + m4*mN;
+    m[ 2] = m1*mC + m2*mG + m3*mK + m4*mO;
+    m[ 3] = m1*mD + m2*mH + m3*mL + m4*mP;
+
+    m[ 4] = m5*mA + m6*mE + m7*mI + m8*mM;
+    m[ 5] = m5*mB + m6*mF + m7*mJ + m8*mN;
+    m[ 6] = m5*mC + m6*mG + m7*mK + m8*mO;
+    m[ 7] = m5*mD + m6*mH + m7*mL + m8*mP;
+
+    m[ 8] = m9*mA + m10*mE + m11*mI + m12*mM;
+    m[ 9] = m9*mB + m10*mF + m11*mJ + m12*mN;
+    m[10] = m9*mC + m10*mG + m11*mK + m12*mO;
+    m[11] = m9*mD + m10*mH + m11*mL + m12*mP;
+
+    m[12] = m13*mA + m14*mE + m15*mI + m16*mM;
+    m[13] = m13*mB + m14*mF + m15*mJ + m16*mN;
+    m[14] = m13*mC + m14*mG + m15*mK + m16*mO;
+    m[15] = m13*mD + m14*mH + m15*mL + m16*mP;
+
+    return m;
+};
+
+CanvasGL.prototype.__mat44MultPost = function(mat0,mat1)
+{
+    return this.__mat44MultPre(mat1,mat0);
+};
+
+
+CanvasGL.prototype.triangleMesh = function(vertices,indices)
+{
+    var gl = this.gl;
+    var ind = new Uint16Array(indices || this._indicesLinearCW(vertices));
+
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,ind,gl.STATIC_DRAW);
+
+    if(this._fill)
+    {
+        this._applyFill();
+        this._setMvMatrixUniform();
+        gl.drawElements(gl.TRIANGLES,ind.length,gl.UNSIGNED_SHORT,0);
+    }
+};
+
 CanvasGL.prototype.setPixelPerfect = function(bool)
 {
     this._pixelPerfect = bool;
@@ -552,258 +637,9 @@ CanvasGL.prototype.saveToPNG = function()
     var canvas = window.open(this._glCanvas.toDataURL('image/png'));
 };
 
-function _makeMat33()
-{
-    return [ 1, 0, 0,
-             0, 1, 0,
-             0, 0, 1 ];
-}
-
-function _makeMat33Mult(m0,m1)
-{
-    return _mat33Mult(_makeMat33(),m0,m1);
-}
-
-function _makeMat33Translate(x,y)
-{
-    return _mat33Translate(_makeMat33(),x,y);
-}
-
-function _makeMat33Scale(x,y)
-{
-    return _mat33Scale(_makeMat33(),x,y);
-}
-
-function _makeMat33Rotate(a)
-{
-    return _mat33Rotate(_makeMat33(),a);
-}
-
-function _mat33Identity(m)
-{
-    m[0] = m[4] = m[8] = 1;
-    m[1] = m[2] = m[3] = m[5] = m[6] = m[7] = 0;
-}
-
-function _mat33Mult(m,m0,m1)
-{
-
-    var a00 = m0[0], a01 = m0[1], a02 = m0[2],
-        a10 = m0[3], a11 = m0[4], a12 = m0[5],
-        a20 = m0[6], a21 = m0[7], a22 = m0[8],
-
-        b00 = m1[0], b01 = m1[1], b02 = m1[2],
-        b10 = m1[3], b11 = m1[4], b12 = m1[5],
-        b20 = m1[6], b21 = m1[7], b22 = m1[8];
-
-    m0[0] = b00 * a00 + b01 * a10 + b02 * a20;
-    m0[1] = b00 * a01 + b01 * a11 + b02 * a21;
-    m0[2] = b00 * a02 + b01 * a12 + b02 * a22;
-
-    m0[3] = b10 * a00 + b11 * a10 + b12 * a20;
-    m0[4] = b10 * a01 + b11 * a11 + b12 * a21;
-    m0[5] = b10 * a02 + b11 * a12 + b12 * a22;
-
-    m0[6] = b20 * a00 + b21 * a10 + b22 * a20;
-    m0[7] = b20 * a01 + b21 * a11 + b22 * a21;
-    m0[8] = b20 * a02 + b21 * a12 + b22 * a22;
-
-    return m;
-}
-
-function _mat33Translate(m,x,y)
-{
-    m[3]=x;m[6]=y;
-    return m;
-}
-
-function _mat33Scale(m,x,y)
-{
-    m[0] = x;m[4] = y;
-    return m;
-}
-
-function _mat33Rotate(m,a)
-{
-    var sina = Math.sin(a),
-        cosa = Math.cos(a);
-
-    m[0] = cosa; m[1] = -sina;
-    m[3] = sina; m[4] =  cosa;
-    return m;
-}
-
-function _mat33ToMat44(m)
-{
-    var d = _makeMat44();
-
-    d[15] = 1;
-    d[14] = 0;
-    d[13] = 0;
-    d[12] = 0;
-
-    d[11] = 0;
-    d[10] = m[8];
-    d[9] = m[7];
-    d[8] = m[6];
-
-    d[7] = 0;
-    d[6] = m[5];
-    d[5] = m[4];
-    d[4] = m[3];
-
-    d[3] = 0;
-    d[2] = m[2];
-    d[1] = m[1];
-    d[0] = m[0];
-
-    return d;
-
-}
 
 
 
-
-//  0  1  2  3
-//  4  5  6  7
-//  8  9 10 11
-// 12 13 14 15
-
-function _makeMat44()
-{
-    return [ 1, 0, 0, 0,
-             0, 1, 0, 0,
-             0, 0, 1, 0,
-             0, 0, 0, 1 ];
-}
-
-function _makeMat44Translate(x,y)
-{
-    return _mat44Translate(_makeMat44(),x,y);
-}
-
-function _makeMat44Scale(x,y)
-{
-    return _mat44Scale(_makeMat44(),x,y);
-}
-
-function _makeMat44Mult(m0,m1)
-{
-    return _mat44Mult(_makeMat44(),m0,m1);
-}
-
-function _makeMat44Rotate(a)
-{
-    var m = _makeMat44();
-
-    var s = Math.sin(a),
-        c = Math.cos(a),
-        a00 = m[0],
-        a01 = m[1],
-        a02 = m[2],
-        a03 = m[3],
-        a10 = m[4],
-        a11 = m[5],
-        a12 = m[6],
-        a13 = m[7];
-
-
-    m[0] = a00 * c + a10 * s;
-    m[1] = a01 * c + a11 * s;
-    m[2] = a02 * c + a12 * s;
-    m[3] = a03 * c + a13 * s;
-
-    m[4] = a00 * -s + a10 * c;
-    m[5] = a01 * -s + a11 * c;
-    m[6] = a02 * -s + a12 * c;
-    m[7] = a03 * -s + a13 * c;
-
-    return m;
-}
-
-function _mat44Mult(m,m0,m1)
-{
-    var d = m;
-
-    var a00 = m0[ 0], a01 = m0[ 1], a02 = m0[ 2], a03 = m0[3];
-    var a10 = m0[ 4], a11 = m0[ 5], a12 = m0[ 6], a13 = m0[7];
-    var a20 = m0[ 8], a21 = m0[ 9], a22 = m0[10], a23 = m0[11];
-    var a30 = m0[12], a31 = m0[13], a32 = m0[14], a33 = m0[15];
-
-    var b0  = m1[0], b1 = m1[1], b2 = m1[2], b3 = m1[3];
-    d[0] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-    d[1] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-    d[2] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-    d[3] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
-
-    b0 = m1[4];
-    b1 = m1[5];
-    b2 = m1[6];
-    b3 = m1[7];
-    d[4] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-    d[5] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-    d[6] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-    d[7] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
-
-    b0 = m1[8];
-    b1 = m1[9];
-    b2 = m1[10];
-    b3 = m1[11];
-    d[8] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-    d[9] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-    d[10] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-    d[11] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
-
-    b0 = m1[12];
-    b1 = m1[13];
-    b2 = m1[14];
-    b3 = m1[15];
-    d[12] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-    d[13] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-    d[14] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-    d[15] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
-
-    return d;
-}
-
-function _mat44Translate(m,x,y)
-{
-    m[12] = m[ 0] * x + m[ 4] * y + m[12];
-    m[13] = m[ 1] * x + m[ 5] * y + m[13];
-    m[14] = m[ 2] * x + m[ 6] * y + m[14];
-    m[15] = m[ 3] * x + m[ 7] * y + m[15];
-
-    return m;
-}
-
-
-function _mat44Scale(m,x,y)
-{
-    m[0] *= x;
-    m[1] *= x;
-    m[2] *= x;
-    m[3] *= x;
-    m[4] *= y;
-    m[5] *= y;
-    m[6] *= y;
-    m[7] *= y;
-    m[8]  = 0;
-    m[9]  = 0;
-    m[10] = 0;
-    m[11] = 0;
-
-    return m;
-}
-
-function _mat44Identity(m)
-{
-   m[ 0] = 1; m[ 1] = m[ 2] = m[ 3] = 0;
-   m[ 5] = 1; m[ 4] = m[ 6] = m[ 7] = 0;
-   m[10] = 1; m[ 8] = m[ 9] = m[11] = 0;
-   m[15] = 1; m[12] = m[13] = m[14] = 0;
-
-    return m;
-}
 
 
 

@@ -160,7 +160,7 @@ TestCanvasGL.prototype.draw = function()
 
     c.stroke(255);
 
-    var ox = 510,oy = 410, sxy = 2;
+    var ox = 0,oy = 0, sxy = 2;
     var anchor0x = ox+150,anchor0y = oy,
         contrl0x = ox,contrl0y = oy,
         anchor1x = ox+150,anchor1y = oy+200+100*Math.abs(Math.cos(t)),
@@ -169,13 +169,23 @@ TestCanvasGL.prototype.draw = function()
 
 
     c.setBezierDetail(140);
-    c.translate(100,0);
+
+    //c.push();
+    //
+    c.pushMatrix();
+    c.translate(510,410);
+    c.rotate(t*0.25);
+
     c.bezier(anchor0x,anchor0y,contrl0x,contrl0y,anchor1x,anchor1y,contrl1x,contrl1y);
 
     c.stroke(255,102,0);
     c.line(anchor0x,anchor0y,contrl0x,contrl0y);
     c.line(anchor1x,anchor1y,contrl1x,contrl1y);
+    c.popMatrix();
 
+
+
+    //c.pop();
 
 
 
