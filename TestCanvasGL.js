@@ -13,29 +13,24 @@ function TestCanvasGL(parentDomElementId)
     this.c.setSize(window.innerWidth,window.innerHeight);
     this.t = 0.0;
 
-    this.tex = null;
-    var t = this.tex;
+    this.numImages = 1;
+    this.numImagesLoaded = 0;
+
+    this.img = new CanvasGLImage();
     var c = this.c;
 
-    this.texImage = new Image();
-    this.texImage.onload = this.onTexturesLoaded();
-    this.texImage.src = "tex00.jpg";
-
-
-
-
-
-
-
-
+    c.loadImage("nehe.gif",this.img,this,this.onImageLoaded);
 }
 
-TestCanvasGL.prototype.onTexturesLoaded = function()
+TestCanvasGL.prototype.onImageLoaded = function()
 {
-    var c = this.c;
+    this.numImagesLoaded++;
+    if(this.numImagesLoaded == this.numImages)this.onImagesLoadedComplete();
+};
 
+TestCanvasGL.prototype.onImagesLoadedComplete = function()
+{
     this.animationLoop();
-
 };
 
 TestCanvasGL.prototype.animationLoop = function()
@@ -48,15 +43,6 @@ TestCanvasGL.prototype.animationLoop = function()
 TestCanvasGL.prototype.draw = function()
 {
 
-    var sin   = Math.sin,
-        cos   = Math.cos,
-        PI    = Math.PI,
-        floor = Math.floor,
-        round = Math.round,
-        abs   = Math.abs,
-        SIZE_OF_VERTEX = 2;
-
-
     this.t+=0.05;
     var t = this.t,
         c = this.c;
@@ -66,7 +52,7 @@ TestCanvasGL.prototype.draw = function()
     c.noFill();
 
     var i,j;
-    var rs = 100;
+    var rs = 80;
     var pa,ps,pp0,pp1,pp3,pp4;
 
     var verticesA,verticesB;
@@ -214,7 +200,14 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(0,rs*2+6);
+            c.translate(0,rs*2);
+
+            //c.setPixelPerfect(true);
+
+            c.stroke(30);
+            c.noFill();
+            c.rect(0,rs,rs*2,rs*2);
+
             c.stroke(100,0,0);
 
             pa = 5+floor(abs(sin(t*0.05))*25);
@@ -224,7 +217,7 @@ TestCanvasGL.prototype.draw = function()
             verticesB = [];
 
             pp0 = 4 * abs(sin(t*0.05));
-            pp1 = rs*0.5;
+            pp1 = rs*0.5-6;
 
             i = -1;
             while(++i < pa)
@@ -271,20 +264,228 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs,rs*4);
+            c.translate(0,rs*3);
 
             pp0 = abs(sin(t));
             pp1 = abs(sin(t*0.5));
 
             c.fill(255);
-            c.circle(rs,rs,rs-1,rs-1,100);
+            c.circle(rs,rs,rs-11,rs-11,100);
 
             c.fill(0);
-            c.arc(rs,rs,rs*0.75+rs*0.25*pp1,rs*0.75+rs*0.25*pp1,0,(PI-PI*0.25)*pp1,100);
+            c.arc(rs,rs,rs*0.5+rs*0.25*pp1+10,rs*0.5+rs*0.25*pp1+10,0,(PI-PI*0.25)*pp1,100);
             c.fill(100,0,0);
-            c.arc(rs,rs,rs*0.5+rs*0.5*pp1,rs*0.5+rs*0.5*pp1,0,pp1*-PI*0.25,100);
+            c.arc(rs,rs,rs*0.5+rs*0.25*pp1+10,rs*0.5+rs*0.25*pp1+10,0,pp1*-PI*0.25,100);
 
 
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+            c.translate(rs*2,rs*3);
+
+
+            c.stroke(30);
+            c.noFill();
+            c.rect(0,0,rs*2,rs*2);
+            c.rect(rs*2,0,rs*2,rs*2);
+            c.rect(rs*4,0,rs*2,rs*2);
+            //c.setPixelPerfect(false);
+
+
+
+
+            verticesB = [];
+
+            var x,y;
+
+            verticesA = [];
+
+            pa = 3+floor(7*stepSquared(abs(sin(t*0.25))));
+            ps = rs*2/(pa-1);
+
+            i = -1;
+            while(++i < (pa-1))
+            {
+                j = -1;
+                while(++j < pa-1)
+                {
+                    c.rect(ps*i,ps*j,ps,ps);
+                }
+            }
+
+            c.stroke(20);
+
+
+            ps = rs*2/(pa-1);
+
+            i = -1;
+            while(++i < (pa-1)*2)
+            {
+                j = -1;
+                while(++j < pa-1)
+                {
+                    c.rect(rs*2+ps*i,ps*j,ps,ps);
+                }
+            }
+
+            c.noStroke();
+            c.fill(40);
+            i = -1;
+            while(++i < pa)
+            {
+                x = i*ps;
+                y = rs*2-(lerp(rs*2,0,i/(pa-1)));
+
+                verticesA.push(x,y);
+                c.rect(x-2, y-2,4,4);
+
+            }
+            c.stroke(40);
+            c.lines(verticesA);
+
+            i = -1;
+
+
+            verticesA = [];
+
+
+
+            i = -1;
+            c.fill(80);
+            while(++i < pa)
+            {
+                x = i*ps;
+                y = rs*2-(lerp(rs*2,0,stepSmooth(i/(pa-1))));
+                verticesA.push(x,y);
+                c.rect(x-2, y-2,4,4);
+            }
+            c.stroke(80);
+            c.lines(verticesA);
+
+            verticesA = [];
+
+            i = -1;
+            c.fill(120);
+            while(++i < pa)
+            {
+                x = i*ps;
+                y = rs*2-(lerp(rs*2,0,stepSquared(i/(pa-1))));
+                verticesA.push(x,y);
+                c.rect(x-2, y-2,4,4);
+            }
+            c.stroke(120);
+            c.lines(verticesA);
+
+            verticesA = [];
+
+            i = -1;
+            c.fill(160);
+            while(++i < pa)
+            {
+                x = i*ps;
+                y = rs*2-(lerp(rs*2,0,stepInvSquared(i/(pa-1))));
+                verticesA.push(x,y);
+                c.rect(x-2, y-2,4,4);
+            }
+            c.stroke(160);
+            c.lines(verticesA);
+
+            verticesA = [];
+
+            i = -1;
+            c.fill(200);
+            while(++i < pa)
+            {
+                x = i*ps;
+                y = rs*2-(lerp(rs*2,0,stepCubed(i/(pa-1))));
+                verticesA.push(x,y);
+                c.rect(x-2, y-2,4,4);
+            }
+            c.stroke(200);
+            c.lines(verticesA);
+
+            verticesA = [];
+
+            i = -1;
+            c.fill(240);
+            while(++i < pa)
+            {
+                x = i*ps;
+                y = rs*2-(lerp(rs*2,0,stepInvCubed(i/(pa-1))));
+                verticesA.push(x,y);
+                c.rect(x-2, y-2,4,4);
+            }
+            c.stroke(240);
+            c.lines(verticesA);
+
+            c.noStroke();
+
+            pp1 = abs(sin(t));
+            pp0 = 4+6*stepCubed(pp1);
+            var pp2 = abs(sin(t*0.25));
+
+
+
+
+
+            x = (rs*2+pp0)+stepSmooth(pp2)*(rs*4-pp0*2);
+            y = (rs*2-pp0)-stepCubed(pp2)*(rs*2-pp0*2);
+
+            c.fill(stepCubed(pp1)*100,0,0);
+            c.circle(x,y,pp0);
+
+
+
+
+
+            pp2 = abs(sin(t*0.25+PI*0.05));
+
+            x = (rs*2+pp0)+stepSmoothSquared(pp2)*(rs*4-pp0*2);
+            y = (rs*2-pp0)-stepSmoothSquared(pp2)*(rs*2-pp0*2);
+
+            c.fill(stepSquared(pp1)*100,0,0);
+            c.circle(x,y,pp0);
+
+
+
+            pp0 = 4+6*stepSmoothInvSquared(pp1);
+
+            pp2 = abs(sin(t*0.25+PI*0.25));
+
+            x = (rs*2+pp0)+stepSmoothInvSquared(pp2)*(rs*4-pp0*2);
+            y = (rs*2-pp0)-stepSmoothInvSquared(pp2)*(rs*2-pp0*2);
+
+            c.fill(stepSmoothInvSquared(pp1)*100,0,0);
+            c.circle(x,y,pp0);
+
+            pp2 = abs(sin(t*0.25+PI*0.5));
+
+
+
+            pp0 = 4+6*stepSmoothInvSquared(pp1);
+
+            x = (rs*2+pp0)+stepSmoothCubed(pp2)*(rs*4-pp0*2);
+            y = (rs*2-pp0)-stepSmoothCubed(pp2)*(rs*2-pp0*2);
+
+            c.fill(stepSmoothInvSquared(pp1)*100,0,0);
+            c.circle(x,y,pp0);
+
+
+
+
+
+
+
+        }
+        c.popMatrix();
+        c.pushMatrix();
+        {
+            c.translate(0,rs*5);
+            c.fill(0);
+            //c.rect(0,0,rs*2,rs*2);
+            c.image(this.img,0,0,this.img.width,this.img.height);
         }
         c.popMatrix();
 

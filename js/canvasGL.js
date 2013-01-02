@@ -43,50 +43,69 @@ function CanvasGL(parentDomElementId)
 
 
     this._vertexShader   = this._loadShader(
-                                            "uniform mat4 transformMatrix;" +
+                                            "uniform mat4 a_matrix;" +
                                             "attribute vec2 a_position; " +
                                             "uniform vec2 u_resolution;" +
+                                            "attribute vec2 a_texture_coord;" +
+                                            "varying  vec2 v_texture_coord;"+
                                             "void main()" +
                                             "{" +
-                                                "vec2 transedPos = vec2(transformMatrix * vec4(a_position.xy,0,1)).xy;"+
+                                                "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;"+
                                                 "vec2 zeroToOne = transedPos / u_resolution;" +
                                                 "vec2 zeroToTwo = zeroToOne * 2.0;" +
                                                 "vec2 clipSpace = (zeroToTwo - 1.0);" +
                                                 "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
                                                 "gl_Position = resultPos;" +
+                                                "v_texture_coord = a_texture_coord;" +
                                             "}",this.gl.VERTEX_SHADER);
 
-    this._fragmentShader = this._loadShader("precision mediump float;uniform vec4 u_color;void main(){gl_FragColor = u_color;}",this.gl.FRAGMENT_SHADER);
+    this._fragmentColorShader   = this._loadShader(
+                                              "precision mediump float;" +
+                                              "uniform vec4 u_color;" +
+                                              "void main()" +
+                                              "{" +
+                                                  "gl_FragColor = u_color;" +
+                                              "}",this.gl.FRAGMENT_SHADER);
+    
+    this._fragmentTextureShader = this._loadShader("precision mediump float;varying vec2 v_texture_coord;uniform sampler2D u_sampler;void main(){gl_FragColor = texture2D(u_sampler,vec2(v_texture_coord.s,v_texture_coord.t));}",this.gl.FRAGMENT_SHADER);
+
     this._program        = this._loadProgram();
 
     var gl = this.gl;
 
     gl.useProgram(this._program);
 
-    this._positionLocation   = gl.getAttribLocation(this._program, "a_position");
-    this._resolutionLocation = gl.getUniformLocation(this._program,"u_resolution");
-    this._colorLocation      = gl.getUniformLocation(this._program,"u_color");
+    this._locationAttribPosition     = gl.getAttribLocation( this._program, "a_position");
+    this._locationUniformResolution  = gl.getUniformLocation(this._program, "u_resolution");
+    this._locationTransMatrix        = gl.getUniformLocation(this._program, "a_matrix");
+    this._locationUniformColor       = gl.getUniformLocation(this._program, "u_color");
+    this._locationAttribTextureCoord = gl.getAttribLocation( this._program, "a_texture_coord");
+    this._locationUniformSampler     = gl.getUniformLocation(this._program, "u_sampler");
+
 
     this.setSize(_InternalCanvasGLOptions.DEFAULT_WIDTH,
                  _InternalCanvasGLOptions.DEFAULT_HEIGHT);
 
-    this._vertexPostionBuffer = gl.createBuffer();
-    this._vertexIndexBuffer   = gl.createBuffer();
-    this._vertexTexCoordBuffer= gl.createBuffer();
-    this._vertexColorBuffer   = gl.createBuffer();
+    this._bufferVertexPosition = gl.createBuffer();
+    this._bufferVertexIndex    = gl.createBuffer();
+    this._bufferVertexTexCoord = gl.createBuffer();
+    this._bufferVertexColor    = gl.createBuffer();
 
 
-    this._tmUniform = gl.getUniformLocation(this._program,"transformMatrix");
+
     this._tMatrix  = this.__makeMat44();
     this._tMatrixStack = [];
 
-    gl.uniformMatrix4fv(this._tmUniform,false,new Float32Array(this._tMatrix));
+    gl.uniformMatrix4fv(this._locationTransMatrix,false,new Float32Array(this._tMatrix));
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._vertexPostionBuffer);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._vertexIndexBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER,        this._bufferVertexPosition);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexIndex);
 
-    gl.enableVertexAttribArray(this._positionLocation);
-    gl.vertexAttribPointer(this._positionLocation,2,gl.FLOAT,false,0,0);
+    gl.enableVertexAttribArray(this._locationAttribPosition);
+    gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
+
+    gl.enableVertexAttribArray(this._locationAttribTextureCoord);
+    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
 
     //gl.enable(gl.BLEND);
     //gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -108,6 +127,8 @@ function CanvasGL(parentDomElementId)
 
 CanvasGL.CENTER = "CENTER";
 CanvasGL.CORNER = "CORNER";
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.setLineWidth = function(value)
 {
@@ -136,10 +157,12 @@ CanvasGL.prototype.setSize = function(width,height)
     this.width = this._size.width;
     this.height = this._size.height;
 
-    this.gl.uniform2f(this._resolutionLocation,this.width, this.height);
+    this.gl.uniform2f(this._locationUniformResolution,this.width, this.height);
     this.gl.viewport(0,0,this.width,this.height);
 
 };
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.line = function(x0,y0,x1,y1)
 {
@@ -164,6 +187,8 @@ CanvasGL.prototype.lines = function(vertices)
     gl.drawArrays(gl.LINE_STRIP,0,arr.length*0.5);
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+
 CanvasGL.prototype.point = function(x,y)
 {
     if(!this._fill)return;
@@ -186,6 +211,26 @@ CanvasGL.prototype.points = function(vertices)
     this._setMvMatrixUniform();
     gl.drawArrays(gl.POINTS,0,arr.length*0.5);
 };
+
+/*---------------------------------------------------------------------------------------------------------*/
+
+CanvasGL.prototype.triangleMesh = function(vertices,indices)
+{
+    var gl = this.gl;
+    var ind = new Uint16Array(indices || this._indicesLinearCW(vertices));
+
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,ind,gl.STATIC_DRAW);
+
+    if(this._fill)
+    {
+        this._applyFill();
+        this._setMvMatrixUniform();
+        gl.drawElements(gl.TRIANGLES,ind.length,gl.UNSIGNED_SHORT,0);
+    }
+};
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY,resolution)
 {
@@ -213,7 +258,11 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY,resolution)
         this._setMvMatrixUniform();
         gl.drawArrays(gl.TRIANGLE_FAN,0, arr.length*0.5);
     }
+};
 
+CanvasGL.prototype.circle = function(x,y,radius,resolution)
+{
+    this.ellipse(x,y,radius,radius,resolution);
 };
 
 CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,stopAngle,resolution)
@@ -247,20 +296,17 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
     }
 };
 
-CanvasGL.prototype.circle = function(x,y,radius,resolution)
-{
-    this.ellipse(x,y,radius,radius,resolution);
-};
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
     var gl = this.gl;
-    var arr = [x0,y0,x1,y1,x3,y3,x1,y1,x2,y2,x3,y3];
-    arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
-
+    var arr;
     if(this._fill)
     {
+        arr = [x0,y0,x1,y1,x3,y3,x1,y1,x2,y2,x3,y3];
+        arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
         this._applyFill();
         this._setMvMatrixUniform();
         gl.drawArrays(gl.TRIANGLES,0,6);
@@ -268,12 +314,23 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
     if(this._stroke)
     {
+        arr = [x0,y0,x1,y1,x2,y2,x3,y3];
+        arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
         this._applyStroke();
         this._setMvMatrixUniform();
         gl.drawArrays(gl.LINE_LOOP,0,4);
     }
 
 };
+
+CanvasGL.prototype.rect = function(x,y,width,height)
+{
+    var xw = x+width,yh = y+height;
+    this.quad(x,y,xw,y,xw,yh,x,yh);
+};
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 {
@@ -290,7 +347,7 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
     }
 };
 
-
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
@@ -351,35 +408,24 @@ CanvasGL.prototype.bezierPoint = function(d)
 
 };
 
-CanvasGL.prototype.loadImage = function(path,callback)
-{
-    var image = new Image();
-    //image.onload = function(){callback.bind(this);};
-    image.src = path;
+/*---------------------------------------------------------------------------------------------------------*/
 
-    return image;
+
+
+
+CanvasGLImage = function()
+{
+    this._t     = null;
+    this._glID  = null;
+    this.width  = null;
+    this.height = null;
 };
 
-CanvasGL.prototype.loadTexture = function(img)
+CanvasGLImage.prototype._set = function(t)
 {
-    console.log(img);
-    /*
-    var gl = this.gl;
-    var tex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-    gl.generateMipmap(gl.TEXTURE_2D);
-
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    */
-
-    return null;
-
-
-
+    this._t = t;
+    this.width  = t.image.width;
+    this.height = t.image.height;
 };
 
 CanvasGL.prototype.texture = function(tex)
@@ -387,24 +433,100 @@ CanvasGL.prototype.texture = function(tex)
 
     var gl = this.gl;
 
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D,tex);
 
-    console.log(tex);
+
+
+
 
 
 };
+
+CanvasGL.prototype.loadImage = function(path,target,obj,callback)
+{
+    var gl = this.gl;
+    var tex = gl.createTexture();
+    tex.image = new Image();
+
+    tex.image.onload = function()
+    {
+        var img = tex.image;
+
+        if(!img){console.log("Texture image is null.");return;}
+
+        var imgwidth  = img.width,
+            imgheight = img.height;
+
+        if((imgwidth&(imgwidth-1))!=0){console.log("Texture image width is not power of 2.");return;}
+        else if((imgheight&(imgheight-1))!=0){console.log("Texture image width is not power of 2.");return;}
+
+        gl.bindTexture(gl.TEXTURE_2D,tex);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        target._set(tex);
+        callback.apply(obj);
+    };
+    tex.image.src = path;
+};
+
+CanvasGL.prototype._applyTexture = function()
+{
+
+};
+
+CanvasGL.prototype._applyTextureCoord = function()
+{
+
+};
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.image = function(img,x,y,width,height)
 {
-
-};
-
-CanvasGL.prototype.rect = function(x,y,width,height)
-{
     var xw = x+width,yh = y+height;
-    this.quad(x,y,xw,y,xw,yh,x,yh);
+
+    var gl = this.gl;
+
+    var vertices = [x,y,xw,y,xw,yh,x,yh];
+    var texCoords = [0,0,1,0,1,1,0,0];
+    var indices   = [0,1,2,0,3,2];
+
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
+
+    /*
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexTexCoord);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(texCoords),gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
+     */
+
+
+    //gl.activeTexture(gl.TEXTURE0);
+    //gl.bindTexture(gl.TEXTURE_2D,img._t);
+    //gl.uniform1i(this._locationUniformSampler,0);
+
+
+    //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexPosition);
+    this._setMvMatrixUniform();
+    gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0);
+
+    gl.bindTexture(gl.TEXTURE_2D,null);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexIndex);
+
+    this._applyFill();
+    this._applyStroke();
+
 };
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.noFill = function()
 {
@@ -419,13 +541,13 @@ CanvasGL.prototype.noStroke = function()
 CanvasGL.prototype._applyStroke =function()
 {
     var c = this._strokeColor;
-    this.gl.uniform4f(this._colorLocation,c[0],c[1],c[2],c[3]);
+    this.gl.uniform4f(this._locationUniformColor,c[0],c[1],c[2],c[3]);
 };
 
 CanvasGL.prototype._applyFill = function()
 {
     var c = this._fillColor;
-    this.gl.uniform4f(this._colorLocation,c[0],c[1],c[2],c[3]);
+    this.gl.uniform4f(this._locationUniformColor,c[0],c[1],c[2],c[3]);
 };
 
 CanvasGL.prototype.stroke = function()
@@ -452,6 +574,8 @@ CanvasGL.prototype.fillf = function()
     this._fill = true;
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+
 CanvasGL.prototype.background = function()
 {
     var gl = this.gl;
@@ -462,11 +586,12 @@ CanvasGL.prototype.background = function()
     this._loadIdentity();
 };
 
-
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype._flooredArray = function(array)
 {
     var a = new Array(array);
+
     var i = -1;
     while(++i < a.length)
     {
@@ -509,6 +634,8 @@ CanvasGL.prototype._indicesLinearCCW = function(vertices)
     return a;
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+
 CanvasGL.prototype._loadShaderFromScript = function(shaderScriptId)
 {
     var gl = this.gl;
@@ -543,7 +670,8 @@ CanvasGL.prototype._loadProgram = function()
     var gl = this.gl;
     var program = gl.createProgram();
     gl.attachShader(program,this._vertexShader);
-    gl.attachShader(program,this._fragmentShader);
+    gl.attachShader(program,this._fragmentColorShader);
+    //gl.attachShader(program,this._fragmentTextureShader);
     gl.linkProgram(program);
     if(!gl.getProgramParameter(program,gl.LINK_STATUS))
     {
@@ -555,15 +683,19 @@ CanvasGL.prototype._loadProgram = function()
     return program;
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+
 CanvasGL.prototype._setMvMatrixUniform = function()
 {
-    this.gl.uniformMatrix4fv(this._tmUniform,false,new Float32Array(this._tMatrix));
+    this.gl.uniformMatrix4fv(this._locationTransMatrix,false,new Float32Array(this._tMatrix));
 };
 
 CanvasGL.prototype._loadIdentity = function()
 {
     this.__mat44Identity(this._tMatrix);
 };
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.translate = function(x,y)
 {
@@ -579,6 +711,8 @@ CanvasGL.prototype.rotate = function(a)
 {
     this._tMatrix = this.__mat44MultPost(this._tMatrix,this.__makeMat44RotationZ(a));
 };
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.pushMatrix = function()
 {
@@ -599,6 +733,8 @@ CanvasGL.prototype.popMatrix = function()
     return this._tMatrix;
 
 };
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 // SX  0  0  0
 //  0 SY  0  0
@@ -671,39 +807,39 @@ CanvasGL.prototype.__makeMat44Copy = function(m)
     return d;
 };
 
-CanvasGL.prototype.__mat44MultPre = function(mat0,mat1)
+CanvasGL.prototype.__mat44MultPre = function(m0,m1)
 {
     var m = this.__makeMat44();
 
-    var m1 = mat0[ 0],m2 = mat0[ 1],m3 = mat0[ 2],m4 = mat0[ 3],
-        m5 = mat0[ 4],m6 = mat0[ 5],m7 = mat0[ 6],m8 = mat0[ 7],
-        m9 = mat0[ 8],m10 = mat0[ 9],m11 = mat0[10],m12 = mat0[11],
-        m13 = mat0[12],m14 = mat0[13],m15 = mat0[14],m16 = mat0[15];
+    var m000 = m0[ 0],m001 = m0[ 1],m002 = m0[ 2],m003 = m0[ 3],
+        m004 = m0[ 4],m005 = m0[ 5],m006 = m0[ 6],m007 = m0[ 7],
+        m008 = m0[ 8],m009 = m0[ 9],m010 = m0[10],m011 = m0[11],
+        m012 = m0[12],m013 = m0[13],m014 = m0[14],m015 = m0[15];
 
-    var mA = mat1[ 0],mB = mat1[ 1],mC = mat1[ 2],mD = mat1[ 3],
-        mE = mat1[ 4],mF = mat1[ 5],mG = mat1[ 6],mH = mat1[ 7],
-        mI = mat1[ 8],mJ = mat1[ 9],mK = mat1[10],mL = mat1[11],
-        mM = mat1[12],mN = mat1[13],mO = mat1[14],mP = mat1[15];
+    var m100 = m1[ 0],m101 = m1[ 1],m102 = m1[ 2],m103 = m1[ 3],
+        m104 = m1[ 4],m105 = m1[ 5],m106 = m1[ 6],m107 = m1[ 7],
+        m108 = m1[ 8],m109 = m1[ 9],m110 = m1[10],m111 = m1[11],
+        m112 = m1[12],m113 = m1[13],m114 = m1[14],m115 = m1[15];
 
-    m[ 0] = m1*mA + m2*mE + m3*mI + m4*mM;
-    m[ 1] = m1*mB + m2*mF + m3*mJ + m4*mN;
-    m[ 2] = m1*mC + m2*mG + m3*mK + m4*mO;
-    m[ 3] = m1*mD + m2*mH + m3*mL + m4*mP;
+    m[ 0] = m000*m100 + m001*m104 + m002*m108 + m003*m112;
+    m[ 1] = m000*m101 + m001*m105 + m002*m109 + m003*m113;
+    m[ 2] = m000*m102 + m001*m106 + m002*m110 + m003*m114;
+    m[ 3] = m000*m103 + m001*m107 + m002*m111 + m003*m115;
 
-    m[ 4] = m5*mA + m6*mE + m7*mI + m8*mM;
-    m[ 5] = m5*mB + m6*mF + m7*mJ + m8*mN;
-    m[ 6] = m5*mC + m6*mG + m7*mK + m8*mO;
-    m[ 7] = m5*mD + m6*mH + m7*mL + m8*mP;
+    m[ 4] = m004*m100 + m005*m104 + m006*m108 + m007*m112;
+    m[ 5] = m004*m101 + m005*m105 + m006*m109 + m007*m113;
+    m[ 6] = m004*m102 + m005*m106 + m006*m110 + m007*m114;
+    m[ 7] = m004*m103 + m005*m107 + m006*m111 + m007*m115;
 
-    m[ 8] = m9*mA + m10*mE + m11*mI + m12*mM;
-    m[ 9] = m9*mB + m10*mF + m11*mJ + m12*mN;
-    m[10] = m9*mC + m10*mG + m11*mK + m12*mO;
-    m[11] = m9*mD + m10*mH + m11*mL + m12*mP;
+    m[ 8] = m008*m100 + m009*m104 + m010*m108 + m011*m112;
+    m[ 9] = m008*m101 + m009*m105 + m010*m109 + m011*m113;
+    m[10] = m008*m102 + m009*m106 + m010*m110 + m011*m114;
+    m[11] = m008*m103 + m009*m107 + m010*m111 + m011*m115;
 
-    m[12] = m13*mA + m14*mE + m15*mI + m16*mM;
-    m[13] = m13*mB + m14*mF + m15*mJ + m16*mN;
-    m[14] = m13*mC + m14*mG + m15*mK + m16*mO;
-    m[15] = m13*mD + m14*mH + m15*mL + m16*mP;
+    m[12] = m012*m100 + m013*m104 + m014*m108 + m015*m112;
+    m[13] = m012*m101 + m013*m105 + m014*m109 + m015*m113;
+    m[14] = m012*m102 + m013*m106 + m014*m110 + m015*m114;
+    m[15] = m012*m103 + m013*m107 + m014*m111 + m015*m115;
 
     return m;
 };
@@ -713,22 +849,8 @@ CanvasGL.prototype.__mat44MultPost = function(mat0,mat1)
     return this.__mat44MultPre(mat1,mat0);
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype.triangleMesh = function(vertices,indices)
-{
-    var gl = this.gl;
-    var ind = new Uint16Array(indices || this._indicesLinearCW(vertices));
-
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,ind,gl.STATIC_DRAW);
-
-    if(this._fill)
-    {
-        this._applyFill();
-        this._setMvMatrixUniform();
-        gl.drawElements(gl.TRIANGLES,ind.length,gl.UNSIGNED_SHORT,0);
-    }
-};
 
 CanvasGL.prototype.setPixelPerfect = function(bool)
 {
@@ -740,15 +862,11 @@ CanvasGL.prototype.saveToPNG = function()
     var canvas = window.open(this._glCanvas.toDataURL('image/png'));
 };
 
-
-
-
-
-
+/*---------------------------------------------------------------------------------------------------------*/
 
 function colori()
 {
-    var c = new Float32Array(4);
+    var c = colorf(arguments);
 
     c[3] = 1.0;
 
@@ -779,8 +897,6 @@ function colori()
 
     return c;
 }
-
-
 
 function colorf()
 {
@@ -815,5 +931,7 @@ function colorf()
 
     return c;
 }
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 

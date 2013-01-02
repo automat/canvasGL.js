@@ -42,24 +42,24 @@ function CanvasGL(parentDomElementId)
 
    // this._vertexShader   = this._loadShader("attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
     this._vertexShader   = this._loadShader("uniform mat4 uMVMatrix; uniform mat4 uPMatrix;attribute vec2 a_position; uniform vec2 u_resolution;void main() {vec2 zeroToOne = a_position / u_resolution;vec2 zeroToTwo = zeroToOne * 2.0;vec2 clipSpace = zeroToTwo - 1.0;gl_Position = uPMatrix * uMVMatrix * vec4(clipSpace * vec2(1, -1), 0, 1);}",this.gl.VERTEX_SHADER);
-    this._fragmentShader = this._loadShader("precision mediump float;uniform vec4 u_color;void main(){gl_FragColor = u_color;}",this.gl.FRAGMENT_SHADER);
+    this._fragmentColorShader = this._loadShader("precision mediump float;uniform vec4 u_color;void main(){gl_FragColor = u_color;}",this.gl.FRAGMENT_SHADER);
     this._program        = this._loadProgram();
 
     var gl = this.gl;
 
     gl.useProgram(this._program);
 
-    this._positionLocation   = gl.getAttribLocation(this._program, "a_position");
-    this._resolutionLocation = gl.getUniformLocation(this._program,"u_resolution");
-    this._colorLocation      = gl.getUniformLocation(this._program,"u_color");
+    this._locationAttribPosition   = gl.getAttribLocation(this._program, "a_position");
+    this._locationUniformResolution = gl.getUniformLocation(this._program,"u_resolution");
+    this._locationUniformColor      = gl.getUniformLocation(this._program,"u_color");
 
     this.setSize(_InternalCanvasGLOptions.DEFAULT_WIDTH,
                  _InternalCanvasGLOptions.DEFAULT_HEIGHT);
 
-    this._vertexPostionBuffer = gl.createBuffer();
-    this._vertexIndexBuffer   = gl.createBuffer();
-    this._vertexTexCoordBuffer= gl.createBuffer();
-    this._vertexColorBuffer   = gl.createBuffer();
+    this._bufferVertexPosition = gl.createBuffer();
+    this._bufferVertexIndex   = gl.createBuffer();
+    this._bufferVertexTexCoord= gl.createBuffer();
+    this._bufferVertexColor   = gl.createBuffer();
 
     this._pUniform  = gl.getUniformLocation(this._program,"uPMatrix");
     this._mvUniform = gl.getUniformLocation(this._program,"uMVMatrix");
@@ -70,12 +70,12 @@ function CanvasGL(parentDomElementId)
 
 
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._vertexPostionBuffer);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._vertexIndexBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexIndex);
 
 
-    gl.enableVertexAttribArray(this._positionLocation);
-    gl.vertexAttribPointer(this._positionLocation,2,gl.FLOAT,false,0,0);
+    gl.enableVertexAttribArray(this._locationAttribPosition);
+    gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
 
     this._matrixStack = [];
 
@@ -339,13 +339,13 @@ CanvasGL.prototype.noStroke = function()
 CanvasGL.prototype._applyStroke =function()
 {
     var c = this._strokeColor;
-    this.gl.uniform4f(this._colorLocation,c[0],c[1],c[2],c[3]);
+    this.gl.uniform4f(this._locationUniformColor,c[0],c[1],c[2],c[3]);
 };
 
 CanvasGL.prototype._applyFill = function()
 {
     var c = this._fillColor;
-    this.gl.uniform4f(this._colorLocation,c[0],c[1],c[2],c[3]);
+    this.gl.uniform4f(this._locationUniformColor,c[0],c[1],c[2],c[3]);
 };
 
 CanvasGL.prototype.stroke = function()
@@ -399,7 +399,7 @@ CanvasGL.prototype.setSize = function(width,height)
     this.width = this._size.width;
     this.height = this._size.height;
 
-    this.gl.uniform2f(this._resolutionLocation,this.width, this.height);
+    this.gl.uniform2f(this._locationUniformResolution,this.width, this.height);
     this.gl.viewport(0,0,this.width,this.height);
 
 };
@@ -483,7 +483,7 @@ CanvasGL.prototype._loadProgram = function()
     var gl = this.gl;
     var program = gl.createProgram();
     gl.attachShader(program,this._vertexShader);
-    gl.attachShader(program,this._fragmentShader);
+    gl.attachShader(program,this._fragmentColorShader);
     gl.linkProgram(program);
     if(!gl.getProgramParameter(program,gl.LINK_STATUS))
     {
