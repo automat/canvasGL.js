@@ -66,8 +66,15 @@ function CanvasGL(parentDomElementId)
                                               "{" +
                                                   "gl_FragColor = u_color;" +
                                               "}",this.gl.FRAGMENT_SHADER);
-    
-    this._fragmentTextureShader = this._loadShader("precision mediump float;varying vec2 v_texture_coord;uniform sampler2D u_sampler;void main(){gl_FragColor = texture2D(u_sampler,vec2(v_texture_coord.s,v_texture_coord.t));}",this.gl.FRAGMENT_SHADER);
+
+    this._fragmentTextureShader = this._loadShader(
+                                               "precision mediump float;" +
+                                               "varying vec2 v_texture_coord;" +
+                                               "uniform sampler2D u_sampler;" +
+                                               "void main()" +
+                                               "{" +
+                                                   "gl_FragColor = texture2D(u_sampler,vec2(v_texture_coord.s,v_texture_coord.t));" +
+                                               "}",this.gl.FRAGMENT_SHADER);
 
     this._program        = this._loadProgram();
 
@@ -671,7 +678,7 @@ CanvasGL.prototype._loadProgram = function()
     var program = gl.createProgram();
     gl.attachShader(program,this._vertexShader);
     gl.attachShader(program,this._fragmentColorShader);
-    //gl.attachShader(program,this._fragmentTextureShader);
+    gl.attachShader(program,this._fragmentTextureShader);
     gl.linkProgram(program);
     if(!gl.getProgramParameter(program,gl.LINK_STATUS))
     {
