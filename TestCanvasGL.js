@@ -485,7 +485,7 @@ TestCanvasGL.prototype.draw = function()
             c.translate(0,rs*5);
             c.fill(0);
             //c.rect(0,0,rs*2,rs*2);
-            c.image(this.img,0,0,this.img.width,this.img.height);
+            //c.image(this.img,0,0,this.img.width,this.img.height);
         }
         c.popMatrix();
 

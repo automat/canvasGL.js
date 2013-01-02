@@ -22,12 +22,13 @@ function CanvasGL(parentDomElementId)
 {
     this.parent = document.getElementById(parentDomElementId);
     this._size = {width: _InternalCanvasGLOptions.DEFAULT_WIDTH ,
-        height:_InternalCanvasGLOptions.DEFAULT_HEIGHT};
+                  height:_InternalCanvasGLOptions.DEFAULT_HEIGHT};
 
     this._glCanvas = document.createElement('canvas');
     this._glCanvas.style.position = 'absolute';
     this._glCanvas.style.left = '0px';
     this._glCanvas.style.top = '0px';
+
 
     var names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
     this.gl = null;
@@ -40,37 +41,68 @@ function CanvasGL(parentDomElementId)
         if(this.gl){if(CanvasGLOptions.doLog)console.log("WebGL context initialized: "+names[i]);break;}
     }
 
+
     this._vertexShader   = this._loadShader(
-                            "uniform mat4 a_matrix;" +
-                            "attribute vec2 a_position; " +
-                            "uniform vec2 u_resolution;" +
-                            "attribute vec2 a_texture_coord;" +
-                            "varying  vec2 v_texture_coord;"+
-                            "void main()" +
-                            "{" +
-                            "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;"+
-                            "vec2 zeroToOne = transedPos / u_resolution;" +
-                            "vec2 zeroToTwo = zeroToOne * 2.0;" +
-                            "vec2 clipSpace = (zeroToTwo - 1.0);" +
-                            "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
-                            "gl_Position = resultPos;" +
-                            "v_texture_coord = a_texture_coord;" +
-                            "}",this.gl.VERTEX_SHADER);
 
-     this._fragmentColorShader   = this._loadShader(
-     "precision mediump float;" +
-     "uniform vec4 u_color;" +
-     "uniform float u_use_texture;" +
-     "uniform sampler2D u_sampler;" +
-     "void main()" +
-     "{" +
-         //"vec4 texColor  = texture2D(u_sampler,v_texture_coord) * u_use_texture;" +
-         "vec4 vertColor = u_color * (1.0 - u_use_texture);" +
-         "gl_FragColor = vertColor;" +
-     "}",this.gl.FRAGMENT_SHADER);
+        "uniform mat4 a_matrix;" +
+        "attribute vec2 a_position; " +
+        "uniform vec2 u_resolution;" +
+        "attribute vec2 a_texture_coord;" +
+        "varying  vec2 v_texture_coord;"+
+        "void main()" +
+        "{" +
+            "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;"+
+            "vec2 zeroToOne = transedPos / u_resolution;" +
+            "vec2 zeroToTwo = zeroToOne * 2.0;" +
+            "vec2 clipSpace = (zeroToTwo - 1.0);" +
+            "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
+            "gl_Position = resultPos;" +
+            "v_texture_coord = a_texture_coord;" +
+         "}",this.gl.VERTEX_SHADER);
 
+    /*
+    this._vertexShader   = this._loadShader(
+                                            "uniform mat4 a_matrix;" +
+                                            "attribute vec2 a_position; " +
+                                            "uniform vec2 u_resolution;" +
+                                            "attribute vec2 a_texture_coord;" +
+                                            "varying  vec2 v_texture_coord;"+
+                                            "void main()" +
+                                            "{" +
+                                                "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;"+
+                                                "vec2 zeroToOne = transedPos / u_resolution;" +
+                                                "vec2 zeroToTwo = zeroToOne * 2.0;" +
+                                                "vec2 clipSpace = (zeroToTwo - 1.0);" +
+                                                "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
+                                                "gl_Position = resultPos;" +
+                                                "v_texture_coord = a_texture_coord;" +
+                                            "}",this.gl.VERTEX_SHADER);
 
+    this._fragmentColorShader   = this._loadShader(
+                                              "precision mediump float;" +
+                                              "uniform vec4 u_color;" +
+                                              "void main()" +
+                                              "{" +
+                                                  "gl_FragColor = u_color;" +
+                                              "}",this.gl.FRAGMENT_SHADER);
 
+    this._fragmentTextureShader = this._loadShader(
+                                               "precision mediump float;" +
+                                               "varying vec2 v_texture_coord;" +
+                                               "uniform sampler2D u_sampler;" +
+                                               "void main()" +
+                                               "{" +
+                                                   "gl_FragColor = texture2D(u_sampler,vec2(v_texture_coord.s,v_texture_coord.t));" +
+                                               "}",this.gl.FRAGMENT_SHADER);
+
+    this._fragmentCombinedShader = this._loadShader(
+                                            "precision mediump float;" +
+                                            "uniform vec4 u_color;" +
+                                            "void main()" +
+                                            "{" +
+                                                "gl_FragColor = u_color;" +
+                                            "}",this.gl.FRAGMENT_SHADER);
+                                            */
 
     this._program        = this._loadProgram();
 
@@ -79,26 +111,22 @@ function CanvasGL(parentDomElementId)
     gl.useProgram(this._program);
 
     this._locationAttribPosition     = gl.getAttribLocation( this._program, "a_position");
-    this._locationTransMatrix        = gl.getUniformLocation(this._program, "a_matrix");
     this._locationUniformResolution  = gl.getUniformLocation(this._program, "u_resolution");
+    this._locationTransMatrix        = gl.getUniformLocation(this._program, "a_matrix");
     this._locationUniformColor       = gl.getUniformLocation(this._program, "u_color");
-    this._locationUniformUseTexture  = gl.getUniformLocation(this._program, "u_use_texture");
     this._locationAttribTextureCoord = gl.getAttribLocation( this._program, "a_texture_coord");
     this._locationUniformSampler     = gl.getUniformLocation(this._program, "u_sampler");
 
 
     this.setSize(_InternalCanvasGLOptions.DEFAULT_WIDTH,
-        _InternalCanvasGLOptions.DEFAULT_HEIGHT);
+                 _InternalCanvasGLOptions.DEFAULT_HEIGHT);
 
     this._bufferVertexPosition = gl.createBuffer();
     this._bufferVertexIndex    = gl.createBuffer();
     this._bufferVertexTexCoord = gl.createBuffer();
     this._bufferVertexColor    = gl.createBuffer();
 
-    this._gl2dCanvas = document.createElement('canvas');
-    this._gl2d = this._gl2dCanvas.getContext('2d');
 
-    this._nullTexture = this._c2dGetNullTexture();
 
     this._tMatrix  = this.__makeMat44();
     this._tMatrixStack = [];
@@ -113,8 +141,6 @@ function CanvasGL(parentDomElementId)
 
     gl.enableVertexAttribArray(this._locationAttribTextureCoord);
     gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
-
-    this._setUniformLerpColorTexture(0.0);
 
     //gl.enable(gl.BLEND);
     //gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -131,83 +157,8 @@ function CanvasGL(parentDomElementId)
     this._fillColor   = colorf(1.0,1.0);
     this._strokeColor = colorf(1.0,1.0);
 
-
-    this.parent.appendChild(this._gl2dCanvas);
     this.parent.appendChild(this._glCanvas);
 }
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype._c2dGetNullTexture = function()
-{
-    this._c2dSetSize(16,16);
-    this._c2dBackground(255);
-    var tex = this.gl.createTexture();
-    tex.image = this._gl2dCanvas;
-    return tex;
-};
-
-CanvasGL.prototype._c2dSetSize = function(width,height)
-{
-    var gl2dC = this._gl2dCanvas;
-
-    gl2dC.style.width  = width + 'px';
-    gl2dC.style.height = height + 'px';
-
-    gl2dC.width  = parseInt(gl2dC.style.width);
-    gl2dC.height = parseInt(gl2dC.style.height);
-
-};
-
-CanvasGL.prototype._c2dBackground = function()
-{
-    var gl2d = this._gl2d;
-    this._c2dNoStroke();
-    this._c2dFill(arguments);
-    this._c2dRect(0,0,this._gl2dCanvas.width,this._gl2dCanvas.height);
-    this._c2dApplyFill();
-};
-
-CanvasGL.prototype._c2dRect = function(x,y,width,height)
-{
-    var gl2d = this._gl2d;
-    gl2d.fillRect(Math.round(x) - 0.5, Math.round(y) - 0.5, width, height);
-    gl2d.strokeRect(Math.round(x), Math.round(y), width, height);
-};
-
-CanvasGL.prototype._c2dNoFill = function()
-{
-    this._gl2d.fillStyle ='rgba(0,0,0,0)';
-};
-
-CanvasGL.prototype._c2dNoStroke = function()
-{
-    this._gl2d.strokeStyle='rgba(0,0,0,0)';
-};
-
-CanvasGL.prototype._c2dFill = function()
-{
-    this._gl2d.fillStyle = colori(arguments);
-};
-
-CanvasGL.prototype._c2dApplyFill = function()
-{
-    this._gl2d.fill();
-};
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype._setUniformLerpColorTexture = function(a)
-{
-    this.gl.uniform1f(this._locationUniformUseTexture,a);
-};
-
-CanvasGL.prototype._setUniformVertexColor = function(c)
-{
-    this.gl.uniform4f(this._locationUniformColor,c[0],c[1],c[2],c[3]);
-};
-
-/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.CENTER = "CENTER";
 CanvasGL.CORNER = "CORNER";
@@ -462,7 +413,7 @@ CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
         t2  = Math.pow(t,2);
 
         vertices.push(nt3*x0+3*nt2*t*x1+3*nt*t2*x2+t3*x3,
-            nt3*y0+3*nt2*t*y1+3*nt*t2*y2+t3*y3);
+                      nt3*y0+3*nt2*t*y1+3*nt*t2*y2+t3*y3);
 
     }
 
@@ -488,7 +439,7 @@ CanvasGL.prototype.bezierPoint = function(d)
     var y3 = this._bezierContrl1y;
 
     return [nt3*x0+3*nt2*d*x1+3*nt*t2*x2+t3*x3,
-        nt3*y0+3*nt2*d*y1+3*nt*t2*y2+t3*y3];
+            nt3*y0+3*nt2*d*y1+3*nt*t2*y2+t3*y3];
 
 };
 
@@ -585,9 +536,9 @@ CanvasGL.prototype.image = function(img,x,y,width,height)
 
     /*
 
-     gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexTexCoord);
-     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(texCoords),gl.DYNAMIC_DRAW);
-     gl.vertexAttribPointer(this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexTexCoord);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(texCoords),gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
      */
 
 
@@ -624,12 +575,14 @@ CanvasGL.prototype.noStroke = function()
 
 CanvasGL.prototype._applyStroke =function()
 {
-    this._setUniformVertexColor(this._strokeColor);
+    var c = this._strokeColor;
+    this.gl.uniform4f(this._locationUniformColor,c[0],c[1],c[2],c[3]);
 };
 
 CanvasGL.prototype._applyFill = function()
 {
-    this._setUniformVertexColor(this._fillColor);
+    var c = this._fillColor;
+    this.gl.uniform4f(this._locationUniformColor,c[0],c[1],c[2],c[3]);
 };
 
 CanvasGL.prototype.stroke = function()
