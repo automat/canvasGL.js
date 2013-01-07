@@ -40,34 +40,36 @@ function CanvasGL(parentDomElementId)
         if(this.gl){if(CanvasGLOptions.doLog)console.log("WebGL context initialized: "+names[i]);break;}
     }
 
-    this._vertexShader   = this._loadShader(
-                            "uniform mat4 a_matrix;" +
-                            "attribute vec2 a_position; " +
-                            "uniform vec2 u_resolution;" +
-                            "attribute vec2 a_texture_coord;" +
-                            "varying  vec2 v_texture_coord;"+
-                            "void main()" +
-                            "{" +
-                            "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;"+
-                            "vec2 zeroToOne = transedPos / u_resolution;" +
-                            "vec2 zeroToTwo = zeroToOne * 2.0;" +
-                            "vec2 clipSpace = (zeroToTwo - 1.0);" +
-                            "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
-                            "gl_Position = resultPos;" +
-                            "v_texture_coord = a_texture_coord;" +
-                            "}",this.gl.VERTEX_SHADER);
 
-     this._fragmentColorShader   = this._loadShader(
-     "precision mediump float;" +
-     "uniform vec4 u_color;" +
-     "uniform float u_use_texture;" +
-     "uniform sampler2D u_sampler;" +
-     "void main()" +
-     "{" +
-         //"vec4 texColor  = texture2D(u_sampler,v_texture_coord) * u_use_texture;" +
-         "vec4 vertColor = u_color * (1.0 - u_use_texture);" +
-         "gl_FragColor = vertColor;" +
-     "}",this.gl.FRAGMENT_SHADER);
+    this._vertexShader = this._loadShader(
+            "uniform mat4 a_matrix;" +
+            "attribute vec2 a_position; " +
+            "uniform vec2 u_resolution;" +
+            "attribute vec2 a_texture_coord;" +
+            "varying  vec2 v_texture_coord;" +
+            "void main()" +
+            "{" +
+            "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;" +
+            "vec2 zeroToOne = transedPos / u_resolution;" +
+            "vec2 zeroToTwo = zeroToOne * 2.0;" +
+            "vec2 clipSpace = (zeroToTwo - 1.0);" +
+            "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
+            "gl_Position = resultPos;" +
+            "v_texture_coord = a_texture_coord;" +
+            "}", this.gl.VERTEX_SHADER);
+
+    this._fragmentColorShader = this._loadShader(
+
+            "precision mediump float;" +
+            "uniform vec4 u_color;" +
+            "uniform float u_use_texture;" +
+            "uniform sampler2D u_sampler;" +
+            "void main()" +
+            "{" +
+            //"vec4 texColor  = texture2D(u_sampler,v_texture_coord) * u_use_texture;" +
+            "vec4 vertColor = u_color * (1.0 - u_use_texture);" +
+            "gl_FragColor = vertColor;" +
+            "}", this.gl.FRAGMENT_SHADER);
 
 
 

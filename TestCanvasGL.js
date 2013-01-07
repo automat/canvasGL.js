@@ -9,15 +9,15 @@
 function TestCanvasGL(parentDomElementId)
 {
     CanvasGLOptions.doLog = false;
-    this.c = new CanvasGL(parentDomElementId);
-    this.c.setSize(window.innerWidth,window.innerHeight);
+    this.cgl = new CanvasGL(parentDomElementId);
+    this.cgl.setSize(window.innerWidth,window.innerHeight);
     this.t = 0.0;
 
     this.numImages = 1;
     this.numImagesLoaded = 0;
 
     this.img = new CanvasGLImage();
-    var c = this.c;
+    var c = this.cgl;
 
     c.loadImage("nehe.gif",this.img,this,this.onImageLoaded);
 }
@@ -45,7 +45,7 @@ TestCanvasGL.prototype.draw = function()
 
     this.t+=0.05;
     var t = this.t,
-        c = this.c;
+        c = this.cgl;
 
     c.background(10);
     c.noStroke();
