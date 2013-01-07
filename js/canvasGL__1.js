@@ -115,7 +115,7 @@ function CanvasGL(parentDomElementId)
     this._locationTransMatrix        = gl.getUniformLocation(this._program, "a_matrix");
     this._locationUniformColor       = gl.getUniformLocation(this._program, "u_color");
     this._locationAttribTextureCoord = gl.getAttribLocation( this._program, "a_texture_coord");
-    this._locationUniformSampler     = gl.getUniformLocation(this._program, "u_sampler");
+    this._locationUniformImage     = gl.getUniformLocation(this._program, "u_sampler");
 
 
     this.setSize(_InternalCanvasGLOptions.DEFAULT_WIDTH,

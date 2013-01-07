@@ -23,16 +23,94 @@
       <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="207" column="23" selection-start="4803" selection-end="4803" vertical-scroll-proportion="0.0">
+            <state line="94" column="0" selection-start="1857" selection-end="1857" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="canvasGL.js" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="canvasGL_stripped.js" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/js/canvasGL_stripped.js">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="605" column="0" selection-start="17386" selection-end="17386" vertical-scroll-proportion="0.9243323">
+              <folding>
+                <element signature="e#6773#6806#0" expanded="false" />
+                <element signature="e#6857#6887#0" expanded="false" />
+                <element signature="e#7053#7647#0" expanded="false" />
+                <element signature="e#8131#8209#0" expanded="false" />
+                <element signature="e#8251#8278#0" expanded="false" />
+                <element signature="e#8337#8625#0" expanded="false" />
+                <element signature="e#8667#8749#0" expanded="false" />
+                <element signature="e#8793#8822#0" expanded="false" />
+                <element signature="e#8882#9160#0" expanded="false" />
+                <element signature="e#10023#10246#0" expanded="false" />
+                <element signature="e#10319#11145#0" expanded="false" />
+                <element signature="e#11208#11259#0" expanded="false" />
+                <element signature="e#11387#12621#0" expanded="false" />
+                <element signature="e#12672#12922#0" expanded="false" />
+                <element signature="e#12987#13703#0" expanded="false" />
+                <element signature="e#13751#14270#0" expanded="false" />
+                <element signature="e#14436#14535#0" expanded="false" />
+                <element signature="e#14581#14668#0" expanded="false" />
+                <element signature="e#17088#17384#0" expanded="false" />
+                <element signature="e#17442#17795#0" expanded="false" />
+                <element signature="e#17843#18261#0" expanded="false" />
+                <element signature="e#18427#18525#0" expanded="false" />
+                <element signature="e#18574#18618#0" expanded="false" />
+                <element signature="e#18667#18758#0" expanded="false" />
+                <element signature="e#18802#18889#0" expanded="false" />
+                <element signature="e#18932#19021#0" expanded="false" />
+                <element signature="e#19178#19247#0" expanded="false" />
+                <element signature="e#19292#19462#0" expanded="false" />
+                <element signature="e#19735#19825#0" expanded="false" />
+                <element signature="e#19877#20063#0" expanded="false" />
+                <element signature="e#20118#20197#0" expanded="false" />
+                <element signature="e#20256#20335#0" expanded="false" />
+                <element signature="e#20392#20563#0" expanded="false" />
+                <element signature="e#20615#20910#0" expanded="false" />
+                <element signature="e#20965#22485#0" expanded="false" />
+                <element signature="e#22545#22591#0" expanded="false" />
+                <element signature="e#22787#22821#0" expanded="false" />
+                <element signature="e#22866#22938#0" expanded="false" />
+                <element signature="e#23109#23261#0" expanded="false" />
+                <element signature="e#23320#23536#0" expanded="false" />
+                <element signature="e#23586#23766#0" expanded="false" />
+                <element signature="e#23826#23998#0" expanded="false" />
+                <element signature="e#24044#24090#0" expanded="false" />
+                <element signature="e#24138#24185#0" expanded="false" />
+                <element signature="e#24229#24278#0" expanded="false" />
+                <element signature="e#24327#24353#0" expanded="false" />
+                <element signature="n#!!block;n#colori#0" expanded="false" />
+                <element signature="n#!!block;n#colorf#0" expanded="false" />
+                <element signature="n#!!block;n#alpha#0" expanded="false" />
+                <element signature="n#!!block;n#lerpColor#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="59" column="0" selection-start="2076" selection-end="2076" vertical-scroll-proportion="0.45400593">
+            <state line="583" column="30" selection-start="17295" selection-end="17295" vertical-scroll-proportion="-20.4">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="imports.js" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/imports.js">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="11" column="59" selection-start="477" selection-end="477" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="index.html" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/index.html">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="27" column="20" selection-start="425" selection-end="425" vertical-scroll-proportion="-17.653847">
               <folding />
             </state>
           </provider>
@@ -41,7 +119,7 @@
       <file leaf-file-name="math.js" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/js/math.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="34" column="1" selection-start="481" selection-end="481" vertical-scroll-proportion="0.0">
+            <state line="18" column="27" selection-start="248" selection-end="264" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -59,15 +137,17 @@
       <list>
         <option value="$PROJECT_DIR$/canvasGL.js" />
         <option value="$PROJECT_DIR$/js/TestCanvasGL.js" />
-        <option value="$PROJECT_DIR$/index.html" />
         <option value="$PROJECT_DIR$/resources/webgl-utils.js" />
         <option value="$PROJECT_DIR$/resources/webfl-tutorial.css" />
         <option value="$PROJECT_DIR$/test.html" />
-        <option value="$PROJECT_DIR$/imports.js" />
         <option value="$PROJECT_DIR$/js/matrix.js" />
         <option value="$PROJECT_DIR$/js/math.js" />
-        <option value="$PROJECT_DIR$/TestCanvasGL.js" />
+        <option value="$PROJECT_DIR$/index.html" />
+        <option value="$PROJECT_DIR$/canvasTextureExample.html" />
         <option value="$PROJECT_DIR$/js/canvasGL.js" />
+        <option value="$PROJECT_DIR$/imports.js" />
+        <option value="$PROJECT_DIR$/TestCanvasGL.js" />
+        <option value="$PROJECT_DIR$/js/canvasGL_stripped.js" />
       </list>
     </option>
   </component>
@@ -186,6 +266,7 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\olaf\Documents\GitHub\canvasGL.js\js" />
       <recent name="C:\Users\DEEV\WebstormProjects\canvasGL.js\js" />
       <recent name="C:\Users\DEEV\WebstormProjects\canvasGL.js" />
     </key>
@@ -205,6 +286,15 @@
       <ConfigurationWrapper RunnerId="JavascriptDebugRunner" />
       <method />
     </configuration>
+    <configuration default="false" name="canvasTextureExample.html" type="JavascriptDebugSession" factoryName="Local" temporary="true">
+      <JSDebuggerConfigurationSettings>
+        <option name="engineId" value="chrome" />
+        <option name="fileUrl" value="file://$PROJECT_DIR$/canvasTextureExample.html" />
+      </JSDebuggerConfigurationSettings>
+      <RunnerSettings RunnerId="JavascriptDebugRunner" />
+      <ConfigurationWrapper RunnerId="JavascriptDebugRunner" />
+      <method />
+    </configuration>
     <configuration default="true" type="JavascriptDebugSession" factoryName="Local">
       <JSDebuggerConfigurationSettings>
         <option name="engineId" value="chrome" />
@@ -212,12 +302,14 @@
       </JSDebuggerConfigurationSettings>
       <method />
     </configuration>
-    <list size="1">
+    <list size="2">
       <item index="0" class="java.lang.String" itemvalue="JavaScript Debug.index.html" />
+      <item index="1" class="java.lang.String" itemvalue="JavaScript Debug.canvasTextureExample.html" />
     </list>
     <recent_temporary>
-      <list size="1">
+      <list size="2">
         <item index="0" class="java.lang.String" itemvalue="JavaScript Debug.index.html" />
+        <item index="1" class="java.lang.String" itemvalue="JavaScript Debug.canvasTextureExample.html" />
       </list>
     </recent_temporary>
   </component>
@@ -274,8 +366,9 @@
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32939914" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3286334" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.10964681" sideWeight="0.7581345" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.107538216" sideWeight="0.7581345" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24186552" sideWeight="0.99849963" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
@@ -284,7 +377,6 @@
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32939914" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -341,22 +433,10 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="1" />
+      <option name="time" value="4" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/resources/webgl-utils.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="384" column="0" selection-start="12792" selection-end="12792" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$APPLICATION_HOME_DIR$/plugins/JavaScriptLanguage/lib/JavascriptLanguage.jar!/com/intellij/lang/javascript/index/predefined/DHTML.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="955" column="0" selection-start="14383" selection-end="14383" vertical-scroll-proportion="0.33285093" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/test.html">
       <provider selected="true" editor-type-id="text-editor">
         <state line="42" column="16" selection-start="1635" selection-end="1635" vertical-scroll-proportion="0.61353385">
@@ -376,13 +456,6 @@
         <state line="20" column="1" selection-start="652" selection-end="652" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/imports.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="10" column="73" selection-start="405" selection-end="405" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/js/matrix.js">
       <provider selected="true" editor-type-id="text-editor">
         <state line="21" column="0" selection-start="410" selection-end="410" vertical-scroll-proportion="0.0" />
@@ -396,13 +469,6 @@
     <entry file="file://$PROJECT_DIR$/nehe.gif">
       <provider selected="true" editor-type-id="images">
         <state />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/index.html">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="24" column="7" selection-start="351" selection-end="351" vertical-scroll-proportion="-15.692307">
-          <folding />
-        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/texture.png">
@@ -424,24 +490,106 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/js/math.js">
+    <entry file="file://$PROJECT_DIR$/canvasTextureExample.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="34" column="1" selection-start="481" selection-end="481" vertical-scroll-proportion="0.0">
+        <state line="14" column="22" selection-start="281" selection-end="281" vertical-scroll-proportion="-0.6558642">
+          <folding>
+            <element signature="n#style#0;n#canvas#0;n#div#0;n#body#0;n#html#0;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#canvas#0;n#div#1;n#body#0;n#html#0;n#!!top" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/imports.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="11" column="59" selection-start="477" selection-end="477" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
+    <entry file="file://$PROJECT_DIR$/index.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="207" column="23" selection-start="4803" selection-end="4803" vertical-scroll-proportion="0.0">
+        <state line="27" column="20" selection-start="425" selection-end="425" vertical-scroll-proportion="-17.653847">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/js/math.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="18" column="27" selection-start="248" selection-end="264" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="59" column="0" selection-start="2076" selection-end="2076" vertical-scroll-proportion="0.45400593">
+        <state line="583" column="30" selection-start="17295" selection-end="17295" vertical-scroll-proportion="-20.4">
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="94" column="0" selection-start="1857" selection-end="1857" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/js/canvasGL_stripped.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="605" column="0" selection-start="17386" selection-end="17386" vertical-scroll-proportion="0.9243323">
+          <folding>
+            <element signature="e#6773#6806#0" expanded="false" />
+            <element signature="e#6857#6887#0" expanded="false" />
+            <element signature="e#7053#7647#0" expanded="false" />
+            <element signature="e#8131#8209#0" expanded="false" />
+            <element signature="e#8251#8278#0" expanded="false" />
+            <element signature="e#8337#8625#0" expanded="false" />
+            <element signature="e#8667#8749#0" expanded="false" />
+            <element signature="e#8793#8822#0" expanded="false" />
+            <element signature="e#8882#9160#0" expanded="false" />
+            <element signature="e#10023#10246#0" expanded="false" />
+            <element signature="e#10319#11145#0" expanded="false" />
+            <element signature="e#11208#11259#0" expanded="false" />
+            <element signature="e#11387#12621#0" expanded="false" />
+            <element signature="e#12672#12922#0" expanded="false" />
+            <element signature="e#12987#13703#0" expanded="false" />
+            <element signature="e#13751#14270#0" expanded="false" />
+            <element signature="e#14436#14535#0" expanded="false" />
+            <element signature="e#14581#14668#0" expanded="false" />
+            <element signature="e#17088#17384#0" expanded="false" />
+            <element signature="e#17442#17795#0" expanded="false" />
+            <element signature="e#17843#18261#0" expanded="false" />
+            <element signature="e#18427#18525#0" expanded="false" />
+            <element signature="e#18574#18618#0" expanded="false" />
+            <element signature="e#18667#18758#0" expanded="false" />
+            <element signature="e#18802#18889#0" expanded="false" />
+            <element signature="e#18932#19021#0" expanded="false" />
+            <element signature="e#19178#19247#0" expanded="false" />
+            <element signature="e#19292#19462#0" expanded="false" />
+            <element signature="e#19735#19825#0" expanded="false" />
+            <element signature="e#19877#20063#0" expanded="false" />
+            <element signature="e#20118#20197#0" expanded="false" />
+            <element signature="e#20256#20335#0" expanded="false" />
+            <element signature="e#20392#20563#0" expanded="false" />
+            <element signature="e#20615#20910#0" expanded="false" />
+            <element signature="e#20965#22485#0" expanded="false" />
+            <element signature="e#22545#22591#0" expanded="false" />
+            <element signature="e#22787#22821#0" expanded="false" />
+            <element signature="e#22866#22938#0" expanded="false" />
+            <element signature="e#23109#23261#0" expanded="false" />
+            <element signature="e#23320#23536#0" expanded="false" />
+            <element signature="e#23586#23766#0" expanded="false" />
+            <element signature="e#23826#23998#0" expanded="false" />
+            <element signature="e#24044#24090#0" expanded="false" />
+            <element signature="e#24138#24185#0" expanded="false" />
+            <element signature="e#24229#24278#0" expanded="false" />
+            <element signature="e#24327#24353#0" expanded="false" />
+            <element signature="n#!!block;n#colori#0" expanded="false" />
+            <element signature="n#!!block;n#colorf#0" expanded="false" />
+            <element signature="n#!!block;n#alpha#0" expanded="false" />
+            <element signature="n#!!block;n#lerpColor#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>

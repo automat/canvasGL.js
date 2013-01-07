@@ -63,12 +63,13 @@ function CanvasGL(parentDomElementId)
             "precision mediump float;" +
             "uniform vec4 u_color;" +
             "uniform float u_use_texture;" +
-            "uniform sampler2D u_sampler;" +
+            "uniform sampler2D u_image;" +
+            "varying  vec2 v_texture_coord;" +
             "void main()" +
             "{" +
-            //"vec4 texColor  = texture2D(u_sampler,v_texture_coord) * u_use_texture;" +
+            "vec4 texColor  = texture2D(u_image,v_texture_coord) * u_use_texture;" +
             "vec4 vertColor = u_color * (1.0 - u_use_texture);" +
-            "gl_FragColor = vertColor;" +
+            "gl_FragColor = texColor + vertColor;" +
             "}", this.gl.FRAGMENT_SHADER);
 
 
@@ -80,13 +81,15 @@ function CanvasGL(parentDomElementId)
 
     gl.useProgram(this._program);
 
+    gl.enable(gl.TEXTURE_2D);
+
     this._locationAttribPosition     = gl.getAttribLocation( this._program, "a_position");
     this._locationTransMatrix        = gl.getUniformLocation(this._program, "a_matrix");
     this._locationUniformResolution  = gl.getUniformLocation(this._program, "u_resolution");
     this._locationUniformColor       = gl.getUniformLocation(this._program, "u_color");
     this._locationUniformUseTexture  = gl.getUniformLocation(this._program, "u_use_texture");
     this._locationAttribTextureCoord = gl.getAttribLocation( this._program, "a_texture_coord");
-    this._locationUniformSampler     = gl.getUniformLocation(this._program, "u_sampler");
+    this._locationUniformImage       = gl.getUniformLocation(this._program, "u_image");
 
 
     this.setSize(_InternalCanvasGLOptions.DEFAULT_WIDTH,
@@ -100,23 +103,44 @@ function CanvasGL(parentDomElementId)
     this._gl2dCanvas = document.createElement('canvas');
     this._gl2d = this._gl2dCanvas.getContext('2d');
 
-    this._nullTexture = this._c2dGetNullTexture();
-
     this._tMatrix  = this.__makeMat44();
     this._tMatrixStack = [];
 
     gl.uniformMatrix4fv(this._locationTransMatrix,false,new Float32Array(this._tMatrix));
+
+
+    gl.enableVertexAttribArray(this._locationAttribTextureCoord);
+    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
+
+    this._setUniformLerpColorTexture(0.0);
+
+    //Setup initial blank texture and bind
+    this._textureCoords = [0.0,0.0,
+                           1.0,0.0,
+                           1.0,1.0,
+                           0.0,1.0];
+
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexTexCoord);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(this._textureCoords),gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(this._locationAttribTextureCoord);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord, 2, gl.FLOAT, false, 0, 0);
+
+    this._blankTexture = this._c2dGetBlankWhiteTexture();
+
+    gl.bindTexture(gl.TEXTURE_2D,this._blankTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._blankTexture.image);
+
 
     gl.bindBuffer(gl.ARRAY_BUFFER,        this._bufferVertexPosition);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexIndex);
 
     gl.enableVertexAttribArray(this._locationAttribPosition);
     gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
-
-    gl.enableVertexAttribArray(this._locationAttribTextureCoord);
-    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
-
-    this._setUniformLerpColorTexture(0.0);
 
     //gl.enable(gl.BLEND);
     //gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -140,13 +164,16 @@ function CanvasGL(parentDomElementId)
 
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype._c2dGetNullTexture = function()
+CanvasGL.prototype._c2dGetBlankWhiteTexture = function()
 {
+
+
     this._c2dSetSize(16,16);
     this._c2dBackground(255);
     var tex = this.gl.createTexture();
     tex.image = this._gl2dCanvas;
     return tex;
+
 };
 
 CanvasGL.prototype._c2dSetSize = function(width,height)
@@ -392,6 +419,7 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
     {
         arr = [x0,y0,x1,y1,x3,y3,x1,y1,x2,y2,x3,y3];
         arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
+        gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
         gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
         this._applyFill();
         this._setMvMatrixUniform();
@@ -527,7 +555,7 @@ CanvasGL.prototype.texture = function(tex)
 
 };
 
-CanvasGL.prototype.loadImage = function(path,target,obj,callback)
+CanvasGL.prototype.loadImage = function(path,target,obj,callbackString)
 {
     var gl = this.gl;
     var tex = gl.createTexture();
@@ -553,7 +581,7 @@ CanvasGL.prototype.loadImage = function(path,target,obj,callback)
         gl.bindTexture(gl.TEXTURE_2D, null);
 
         target._set(tex);
-        callback.apply(obj);
+        obj[callbackString]();
     };
     tex.image.src = path;
 };
@@ -563,9 +591,32 @@ CanvasGL.prototype._applyTexture = function()
 
 };
 
+CanvasGL.prototype._bindTexture = function(texture,activeTextureID)
+{
+    var gl = this.gl;
+    gl.activeTexture(activeTextureID||gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.uniform1i(this._locationUniformImage,0);
+};
+
+CanvasGL.prototype._unbindTexture = function()
+{
+    var gl = this.gl;
+    gl.bindTexture(gl.TEXTURE_2D,null);
+
+};
+
+CanvasGL.prototype._setTextureCoords = function(coords)
+{
+    this._textureCoords = coords;
+};
+
 CanvasGL.prototype._applyTextureCoord = function()
 {
-
+    var gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexTexCoord);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(this._textureCoords),gl.DYNAMIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
 };
 
 /*---------------------------------------------------------------------------------------------------------*/

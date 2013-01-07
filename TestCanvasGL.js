@@ -8,7 +8,7 @@
 
 function TestCanvasGL(parentDomElementId)
 {
-    CanvasGLOptions.doLog = false;
+    //CanvasGLOptions.doLog = false;
     this.cgl = new CanvasGL(parentDomElementId);
     this.cgl.setSize(window.innerWidth,window.innerHeight);
     this.t = 0.0;
@@ -19,7 +19,9 @@ function TestCanvasGL(parentDomElementId)
     this.img = new CanvasGLImage();
     var c = this.cgl;
 
-    c.loadImage("nehe.gif",this.img,this,this.onImageLoaded);
+    c.loadImage("nehe.gif",this.img,this,"onImageLoaded");
+
+
 }
 
 TestCanvasGL.prototype.onImageLoaded = function()
@@ -48,8 +50,8 @@ TestCanvasGL.prototype.draw = function()
         c = this.cgl;
 
     c.background(10);
-    c.noStroke();
-    c.noFill();
+    //c.noStroke();
+    //c.noFill();
 
     var i,j;
     var rs = 80;
@@ -58,6 +60,42 @@ TestCanvasGL.prototype.draw = function()
     var verticesA,verticesB;
     var indicesA,indicesB;
 
+
+    c.fill(255,0,255);
+    c.stroke(255);
+    c.rect(0,0,100,100);
+
+    c.noStroke();
+    c.fill(120);
+    c.rect(100,0,100,100);
+    c.stroke(255);
+    c.line(200,0,300,100);
+    c.stroke(150,0,0);
+    c.line(300,0,400,100);
+
+    c.noStroke();
+    c.fill(0,255,0,0.4);
+    c.rect(50,50,100,100);
+    c.fill(0,255,0,1.0);
+    c.rect(400,0,100,100);
+
+    c.stroke(0);
+    c.fill(255,0,0,0.5);
+    c.circle(75,300,50,50);
+    c.fill(255,0,0,0.5);
+    c.circle(125,300,50,10);
+
+    c.stroke(255);
+    c.arc(225,300,50,50,0,PI*0.75,10,10,5);
+
+    c.pushMatrix();
+    c.translate(600,0);
+    c.image(this.img);
+    c.popMatrix();
+
+
+
+    /*
     c.pushMatrix();
     {
         c.translate(rs,rs);
@@ -491,6 +529,7 @@ TestCanvasGL.prototype.draw = function()
 
     }
     c.popMatrix();
+    */
 
 
 
