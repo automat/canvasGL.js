@@ -1,9 +1,7 @@
 /**
- * Created with JetBrains WebStorm.
- * User: DEEV
+ * User: Henryk Wollik
  * Date: 27.12.12
  * Time: 09:37
- * To change this template use File | Settings | File Templates.
  */
 
 CanvasGLOptions = {};
@@ -19,9 +17,6 @@ _InternalCanvasGLOptions.BEZIER_DETAIL  = 20;
 _InternalCanvasGLConstants = {};
 
 /** ------------------------------------------------------------------------------------------------------------------
- *
- * @param parentDomElementId
- * @constructor
  *
  * CanvasGL class
  *
@@ -121,15 +116,18 @@ function CanvasGL(parentDomElementId)
 
     // Create Buffers
 
-
     this._vbo = gl.createBuffer();
     this._ibo = gl.createBuffer();
+
+    // Create temp arrays
+
+    this._tempQuadTexCoords =  new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0]);
 
 
     // Create default blank texture and texture coords / use color and set alpha to 1.0
 
     this._blankTexture = gl.createTexture();
-    this._textureCoords = [0.0,0.0,1.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0,1.0];
+    this._textureCoords = [0.0,0.0,1.0,0.0,1.0,1.0,0.0,1.0];
 
     gl.bindTexture(gl.TEXTURE_2D,this._blankTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([1,1,1,1]));
@@ -195,20 +193,7 @@ function CanvasGL(parentDomElementId)
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.CENTER = 0;
-CanvasGL.CORNER = 1;
-
-CanvasGL.prototype.setEllipseMode = function(mode)
-{
-    this._ellipseMode = mode;
-};
-
-CanvasGL.prototype.setRectMode = function(mode)
-{
-    this._rectMode = mode;
-};
-
+// Overall settings
 /*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.setSize = function(width,height)
@@ -234,7 +219,25 @@ CanvasGL.prototype.setSize = function(width,height)
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
+// Drawing settings
+/*---------------------------------------------------------------------------------------------------------*/
 
+CanvasGL.CENTER = 0;
+CanvasGL.CORNER = 1;
+
+CanvasGL.prototype.setEllipseMode = function(mode)
+{
+    this._ellipseMode = mode;
+};
+
+CanvasGL.prototype.setRectMode = function(mode)
+{
+    this._rectMode = mode;
+};
+
+/*---------------------------------------------------------------------------------------------------------*/
+// Shape fill/stroke/texture
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype._applyFill = function()
 {
@@ -281,18 +284,34 @@ CanvasGL.prototype.noStroke = function()
     this._stroke = false;
 };
 
+
+// Texture
+
 CanvasGL.prototype._applyTexture = function()
 {
+    var gl = this.gl;
+    gl.uniform1f(this._locationUniformUseTexture,1.0);
+    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+    gl.uniform1f(this._locationUniformImage,0);
+};
+
+CanvasGL.prototype._disableTexture = function()
+{
+    var gl = this.gl;
+    gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
+    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
 };
 
 CanvasGL.prototype.texture = function(img)
 {
+    this._textureCurr = img._t;
+    this._texture = true;
 
 };
 
 CanvasGL.prototype.noTexture = function()
 {
-
+    this._texture = false;
 };
 
 // Blending
@@ -309,31 +328,54 @@ CanvasGL.prototype.background = function()
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
+// Drawing primitives
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
-    if(!this._fill && !this._stroke)return;
+    if(!this._fill && !this._stroke && !this._texture)return;
 
     var gl = this.gl;
-    var arr;
+    var vbo = this._vbo;
+    var vertices;
 
     this._setMvMatrixUniform();
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
+    gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
 
-    if(this._fill)
+    vertices = new Float32Array([x0,y0,x1,y1,x3,y3,x1,y1,x2,y2,x3,y3]);
+
+    if(this._fill && !this._fill)
     {
-        arr = [x0,y0,x1,y1,x3,y3,x1,y1,x2,y2,x3,y3];
-        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
+
+        gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.DYNAMIC_DRAW);
         this._applyFill();
         gl.drawArrays(gl.TRIANGLES,0,6);
     }
 
     if(this._stroke)
     {
-        arr = [x0,y0,x1,y1,x2,y2,x3,y3];
-        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
+        vertices = new Float32Array([x0,y0,x1,y1,x2,y2,x3,y3]);
+        gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.DYNAMIC_DRAW);
         this._applyStroke();
         gl.drawArrays(gl.LINE_LOOP,0,4);
+    }
+
+    if(this._texture)
+    {
+
+        gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+        gl.bufferData(gl.ARRAY_BUFFER,vertices.byteLength + this._tempQuadTexCoords.byteLength,gl.DYNAMIC_DRAW);
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,vertices);
+        gl.bufferSubData(gl.ARRAY_BUFFER,vertices.byteLength,this._tempQuadTexCoords);
+
+        gl.enableVertexAttribArray(this._locationAttribPosition);
+        gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
+        gl.enableVertexAttribArray(this._locationAttribTextureCoord);
+        gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,vertices.byteLength);
+
+        this._applyTexture();
+        gl.drawArrays(gl.TRIANGLES,0,6);
+        this._disableTexture();
     }
 };
 
@@ -375,7 +417,7 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY,resolution)
     gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
     this._setMvMatrixUniform();
 
-    if(this._fill)
+    if(this._fill && !this._texture)
     {
         this._applyFill();
         gl.drawArrays(gl.TRIANGLE_FAN,0, v.length*0.5);
@@ -386,6 +428,8 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY,resolution)
         this._applyStroke();
         gl.drawArrays(gl.LINE_LOOP,0,v.length*0.5);
     }
+
+
 };
 
 CanvasGL.prototype.circle = function(x,y,radius,resolution)
@@ -586,6 +630,8 @@ CanvasGL.prototype.points = function(vertices)
 
 
 /*---------------------------------------------------------------------------------------------------------*/
+// Image & Texture
+/*---------------------------------------------------------------------------------------------------------*/
 
 // Texture helper class
 
@@ -655,30 +701,13 @@ CanvasGL.prototype.image = function(image, x, y, width, height)
         1.0,1.0,
         0.0,1.0]);
 
-    this._setMvMatrixUniform();
-    gl.uniform1f(this._locationUniformUseTexture,1.0);
+    this.texture(image);
+    this.rect(xx,yy,w,h);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
-    gl.bufferData(gl.ARRAY_BUFFER,vertices.byteLength + texCoords.byteLength,gl.DYNAMIC_DRAW);
-    gl.bufferSubData(gl.ARRAY_BUFFER,0,vertices);
-    gl.bufferSubData(gl.ARRAY_BUFFER,vertices.byteLength,texCoords);
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
-
-
-    gl.enableVertexAttribArray(this._locationAttribPosition);
-    gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
-
-    gl.enableVertexAttribArray(this._locationAttribTextureCoord);
-    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,vertices.byteLength);
-
-
-    gl.bindTexture(gl.TEXTURE_2D,image._t);
-    gl.uniform1f(this._locationUniformImage,0);
-    gl.drawArrays(gl.TRIANGLES,0,6);
-    gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
-    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+// Shader loading
 /*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.loadCustomShader = function(shaderScript)
@@ -733,6 +762,8 @@ CanvasGL.prototype._loadProgram = function()
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
+// Internal Matrix apply
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype._setMvMatrixUniform = function()
 {
@@ -744,6 +775,9 @@ CanvasGL.prototype._loadIdentity = function()
     this.__mat44Identity(this._tMatrix);
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+// Public Matrix transformations
+/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.translate = function(x,y)
 {
@@ -760,6 +794,8 @@ CanvasGL.prototype.rotate = function(a)
     this._tMatrix = this.__mat44MultPost(this._tMatrix,this.__makeMat44RotationZ(a));
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+// Drawing matrix stack manipulation
 /*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.pushMatrix = function()
@@ -782,6 +818,8 @@ CanvasGL.prototype.popMatrix = function()
 
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+// Private matrix
 /*---------------------------------------------------------------------------------------------------------*/
 
 // Internal Matrix 4x4 class for all transformations
@@ -895,6 +933,8 @@ CanvasGL.prototype.__mat44MultPost = function(mat0,mat1)
     return this.__mat44MultPre(mat1,mat0);
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+// Helper
 /*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype._indicesLinearCW = function(vertices)
