@@ -19,7 +19,7 @@ function TestCanvasGL(parentDomElementId)
     this.img = new CanvasGLImage();
     var c = this.cgl;
 
-    c.loadImage("nehe.gif",this.img,this,"onImageLoaded");
+    c.loadImage("tex512.jpg",this.img,this,"onImageLoaded");
 
 
 }
@@ -50,8 +50,9 @@ TestCanvasGL.prototype.draw = function()
         c = this.cgl;
 
     c.background(10);
-    //c.noStroke();
+    c.noStroke();
     //c.noFill();
+
 
     var i,j;
     var rs = 80;
@@ -60,6 +61,8 @@ TestCanvasGL.prototype.draw = function()
     var verticesA,verticesB;
     var indicesA,indicesB;
 
+    /*
+    c.setRectMode(CanvasGL.CORNER);
 
     c.fill(255,0,255);
     c.stroke(255);
@@ -88,14 +91,14 @@ TestCanvasGL.prototype.draw = function()
     c.stroke(255);
     c.arc(225,300,50,50,0,PI*0.75,10,10,5);
 
+
     c.pushMatrix();
-    c.translate(600,0);
-    c.image(this.img);
+    c.image(this.img,500,200);
     c.popMatrix();
+    */
 
 
 
-    /*
     c.pushMatrix();
     {
         c.translate(rs,rs);
@@ -248,7 +251,7 @@ TestCanvasGL.prototype.draw = function()
 
             c.stroke(100,0,0);
 
-            pa = 5+floor(abs(sin(t*0.05))*25);
+            pa = 20;
             ps = (rs*8)/(pa-1);
 
             verticesA = [];
@@ -274,6 +277,8 @@ TestCanvasGL.prototype.draw = function()
             c.lines(verticesA);
             c.lines(verticesB);
             c.fill(255);
+
+            c.noStroke();
 
             i = 0;
             while(i < pa*2)
@@ -311,9 +316,9 @@ TestCanvasGL.prototype.draw = function()
             c.circle(rs,rs,rs-11,rs-11,100);
 
             c.fill(0);
-            c.arc(rs,rs,rs*0.5+rs*0.25*pp1+10,rs*0.5+rs*0.25*pp1+10,0,(PI-PI*0.25)*pp1,100);
+            c.arc(rs,rs,rs*0.5+rs*0.25*pp1+10,rs*0.5+rs*0.25*pp1+10,0,(PI-PI*0.25)*pp1);
             c.fill(100,0,0);
-            c.arc(rs,rs,rs*0.5+rs*0.25*pp1+10,rs*0.5+rs*0.25*pp1+10,0,pp1*-PI*0.25,100);
+            c.arc(rs,rs,rs*0.5+rs*0.25*pp1+10,rs*0.5+rs*0.25*pp1+10,0,pp1*-PI*0.25);
 
 
         }
@@ -521,15 +526,15 @@ TestCanvasGL.prototype.draw = function()
         c.pushMatrix();
         {
             c.translate(0,rs*5);
-            c.fill(0);
-            //c.rect(0,0,rs*2,rs*2);
-            //c.image(this.img,0,0,this.img.width,this.img.height);
+
+
+            c.image(this.img,0,0,rs*2,rs*2);
         }
         c.popMatrix();
 
     }
     c.popMatrix();
-    */
+
 
 
 

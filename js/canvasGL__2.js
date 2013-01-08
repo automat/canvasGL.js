@@ -154,8 +154,8 @@ function CanvasGL(parentDomElementId)
     this.setSize(_InternalCanvasGLOptions.DEFAULT_WIDTH,
                  _InternalCanvasGLOptions.DEFAULT_HEIGHT);
 
-    this._bufferVertexPosition = gl.createBuffer();
-    this._bufferVertexIndex    = gl.createBuffer();
+    this._vbo = gl.createBuffer();
+    this._ibo    = gl.createBuffer();
     this._bufferVertexTexCoord = gl.createBuffer();
     this._bufferVertexColor    = gl.createBuffer();
 
@@ -168,8 +168,8 @@ function CanvasGL(parentDomElementId)
 
     gl.uniformMatrix4fv(this._locationTransMatrix,false,new Float32Array(this._tMatrix));
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,        this._bufferVertexPosition);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexIndex);
+    gl.bindBuffer(gl.ARRAY_BUFFER,        this._vbo);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._ibo);
 
     gl.enableVertexAttribArray(this._locationAttribPosition);
     gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
@@ -565,7 +565,7 @@ CanvasGL.prototype.image = function(img,x,y,width,height)
     var indices   = [0,1,2,0,3,2];
 
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
 
@@ -588,8 +588,8 @@ CanvasGL.prototype.image = function(img,x,y,width,height)
 
     gl.bindTexture(gl.TEXTURE_2D,null);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexIndex);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._ibo);
 
     this._applyFill();
     this._applyStroke();

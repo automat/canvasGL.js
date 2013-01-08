@@ -56,8 +56,8 @@ function CanvasGL(parentDomElementId)
     this.setSize(_InternalCanvasGLOptions.DEFAULT_WIDTH,
                  _InternalCanvasGLOptions.DEFAULT_HEIGHT);
 
-    this._bufferVertexPosition = gl.createBuffer();
-    this._bufferVertexIndex   = gl.createBuffer();
+    this._vbo = gl.createBuffer();
+    this._ibo   = gl.createBuffer();
     this._bufferVertexTexCoord= gl.createBuffer();
     this._bufferVertexColor   = gl.createBuffer();
 
@@ -70,8 +70,8 @@ function CanvasGL(parentDomElementId)
 
 
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexIndex);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._ibo);
 
 
     gl.enableVertexAttribArray(this._locationAttribPosition);

@@ -18,6 +18,15 @@ _InternalCanvasGLOptions.BEZIER_DETAIL  = 20;
 
 _InternalCanvasGLConstants = {};
 
+/** ------------------------------------------------------------------------------------------------------------------
+ *
+ * @param parentDomElementId
+ * @constructor
+ *
+ * CanvasGL class
+ *
+ * ---------------------------------------------------------------------------------------------------------------- */
+
 function CanvasGL(parentDomElementId)
 {
     this.parent = document.getElementById(parentDomElementId);
@@ -29,6 +38,9 @@ function CanvasGL(parentDomElementId)
     this._glCanvas.style.left = '0px';
     this._glCanvas.style.top = '0px';
 
+    //Init webgl
+
+    this._implementation = null;
     var names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
     this.gl = null;
     for(var i = 0; i < names.length;++i)
@@ -37,71 +49,107 @@ function CanvasGL(parentDomElementId)
         {
             this.gl = this._glCanvas.getContext(names[i],{ antialias: true});
         } catch (e){if(CanvasGLOptions.doLog)console.log("WebGL context could not be initialized");}
-        if(this.gl){if(CanvasGLOptions.doLog)console.log("WebGL context initialized: "+names[i]);break;}
+        if(this.gl){this._implementation = names[i];break;}
     }
 
 
+    // Setup and load vertex shader
+
     this._vertexShader = this._loadShader(
-            "uniform mat4 a_matrix;" +
+
+        "uniform   mat4 a_matrix;" +
             "attribute vec2 a_position; " +
-            "uniform vec2 u_resolution;" +
+            "uniform   vec2 u_resolution;" +
             "attribute vec2 a_texture_coord;" +
-            "varying  vec2 v_texture_coord;" +
+            "varying   vec2 v_texture_coord;" +
+
             "void main()" +
             "{" +
             "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;" +
             "vec2 zeroToOne = transedPos / u_resolution;" +
             "vec2 zeroToTwo = zeroToOne * 2.0;" +
             "vec2 clipSpace = (zeroToTwo - 1.0);" +
-            "vec4 resultPos = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
-            "gl_Position = resultPos;" +
+            "gl_Position = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
             "v_texture_coord = a_texture_coord;" +
-            "}", this.gl.VERTEX_SHADER);
+            "}",
+
+        this.gl.VERTEX_SHADER);
+
+
+    // Setup and load fragment shader
 
     this._fragmentColorShader = this._loadShader(
 
-            "precision mediump float;" +
-            "uniform vec4 u_color;" +
-            "uniform float u_use_texture;" +
+        "precision mediump float;" +
+
+            "uniform vec4      u_color;" +
+            "uniform float     u_use_texture;" +
             "uniform sampler2D u_image;" +
-            "varying  vec2 v_texture_coord;" +
+            "varying vec2      v_texture_coord;" +
+            "uniform float     u_alpha;" +
+
             "void main()" +
             "{" +
             "vec4 texColor  = texture2D(u_image,v_texture_coord) * u_use_texture;" +
             "vec4 vertColor = u_color * (1.0 - u_use_texture);" +
-            "gl_FragColor = texColor + vertColor;" +
-            "}", this.gl.FRAGMENT_SHADER);
+            "gl_FragColor = vec4((vertColor+texColor).xyz,u_alpha);;" +
+            "}",
+
+        this.gl.FRAGMENT_SHADER);
 
 
-
+    // Load and init program & set size to default
 
     this._program        = this._loadProgram();
-
-    var gl = this.gl;
-
-    gl.useProgram(this._program);
-
-    gl.enable(gl.TEXTURE_2D);
-
-    this._locationAttribPosition     = gl.getAttribLocation( this._program, "a_position");
-    this._locationTransMatrix        = gl.getUniformLocation(this._program, "a_matrix");
-    this._locationUniformResolution  = gl.getUniformLocation(this._program, "u_resolution");
-    this._locationUniformColor       = gl.getUniformLocation(this._program, "u_color");
-    this._locationUniformUseTexture  = gl.getUniformLocation(this._program, "u_use_texture");
-    this._locationAttribTextureCoord = gl.getAttribLocation( this._program, "a_texture_coord");
-    this._locationUniformImage       = gl.getUniformLocation(this._program, "u_image");
-
+    var gl = this.gl;gl.useProgram(this._program);
 
     this.setSize(_InternalCanvasGLOptions.DEFAULT_WIDTH,
         _InternalCanvasGLOptions.DEFAULT_HEIGHT);
 
-    this._bufferVertexPosition = gl.createBuffer();
-    this._bufferVertexIndex    = gl.createBuffer();
-    this._bufferVertexTexCoord = gl.createBuffer();
-    this._bufferVertexColor    = gl.createBuffer();
 
-    this._gl2dCanvas = document.createElement('canvas');
-    this._gl2d = this._gl2dCanvas.getContext('2d');
+    // Save attribute and uniform locations from shader
+
+    this._locationAttribPosition     = gl.getAttribLocation( this._program, "a_position");
+    this._locationTransMatrix        = gl.getUniformLocation(this._program, "a_matrix");
+    this._locationAttribTextureCoord = gl.getAttribLocation( this._program, "a_texture_coord");
+    this._locationUniformResolution  = gl.getUniformLocation(this._program, "u_resolution");
+    this._locationUniformColor       = gl.getUniformLocation(this._program, "u_color");
+    this._locationUniformUseTexture  = gl.getUniformLocation(this._program, "u_use_texture");
+    this._locationUniformImage       = gl.getUniformLocation(this._program, "u_image");
+    this._locationUniformAlpha       = gl.getUniformLocation(this._program, "u_alpha");
+
+
+    // Create Buffers
+
+
+    this._vbo = gl.createBuffer();
+    this._ibo = gl.createBuffer();
+
+
+    // Create default blank texture and texture coords / use color and set alpha to 1.0
+
+    this._blankTexture = gl.createTexture();
+    this._textureCoords = [0.0,0.0,1.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0,1.0];
+
+    gl.bindTexture(gl.TEXTURE_2D,this._blankTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([1,1,1,1]));
+
+    gl.uniform1f(this._locationUniformUseTexture,0.0);
+    gl.uniform1f(this._locationUniformAlpha,1.0);
+
+    // bind defaults
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,        this._vbo);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._ibo);
+
+    gl.enableVertexAttribArray(this._locationAttribPosition);
+    gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
+
+    gl.enableVertexAttribArray(this._locationAttribTextureCoord);
+    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
+
+
+    // Create matrix stack and apply to shader
 
     this._tMatrix  = this.__makeMat44();
     this._tMatrixStack = [];
@@ -109,46 +157,18 @@ function CanvasGL(parentDomElementId)
     gl.uniformMatrix4fv(this._locationTransMatrix,false,new Float32Array(this._tMatrix));
 
 
-    gl.enableVertexAttribArray(this._locationAttribTextureCoord);
-    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
+    // Enable gl flags
 
-    this._setUniformLerpColorTexture(0.0);
-
-    //Setup initial blank texture and bind
-    this._textureCoords = [0.0,0.0,
-                           1.0,0.0,
-                           1.0,1.0,
-                           0.0,1.0];
+    gl.enable(gl.BLEND);
 
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexTexCoord);
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(this._textureCoords),gl.DYNAMIC_DRAW);
-    gl.enableVertexAttribArray(this._locationAttribTextureCoord);
-    gl.vertexAttribPointer(this._locationAttribTextureCoord, 2, gl.FLOAT, false, 0, 0);
+    // Create canvas for canvas textures
 
-    this._blankTexture = this._c2dGetBlankWhiteTexture();
-
-    gl.bindTexture(gl.TEXTURE_2D,this._blankTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._blankTexture.image);
+    this._gl2dCanvas = document.createElement('canvas');
+    this._gl2d = this._gl2dCanvas.getContext('2d');
 
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,        this._bufferVertexPosition);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexIndex);
-
-    gl.enableVertexAttribArray(this._locationAttribPosition);
-    gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
-
-    //gl.enable(gl.BLEND);
-    //gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-
-
-
-    this._pixelPerfect = false;
-
+    // Set draw modes
 
     this._ellipseMode = CanvasGL.CENTER;
     this._rectMode    = CanvasGL.CORNER;
@@ -156,7 +176,19 @@ function CanvasGL(parentDomElementId)
     this._stroke      = true;
     this._fillColor   = colorf(1.0,1.0);
     this._strokeColor = colorf(1.0,1.0);
+    this._texture     = false;
+    this._textureCurr = null;
 
+
+    // Init temp values
+
+    this._bezierAnchor0x = this._bezierAnchor0y = null;
+    this._bezierAnchor1x = this._bezierAnchor1y = null;
+    this._bezierContrl0x = this._bezierContrl0y = null;
+    this._bezierContrl1x = this._bezierContrl1y = null;
+
+
+    // Attach canvases to parent DOM element
 
     this.parent.appendChild(this._gl2dCanvas);
     this.parent.appendChild(this._glCanvas);
@@ -164,94 +196,20 @@ function CanvasGL(parentDomElementId)
 
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype._c2dGetBlankWhiteTexture = function()
+CanvasGL.CENTER = 0;
+CanvasGL.CORNER = 1;
+
+CanvasGL.prototype.setEllipseMode = function(mode)
 {
-
-
-    this._c2dSetSize(16,16);
-    this._c2dBackground(255);
-    var tex = this.gl.createTexture();
-    tex.image = this._gl2dCanvas;
-    return tex;
-
+    this._ellipseMode = mode;
 };
 
-CanvasGL.prototype._c2dSetSize = function(width,height)
+CanvasGL.prototype.setRectMode = function(mode)
 {
-    var gl2dC = this._gl2dCanvas;
-
-    gl2dC.style.width  = width + 'px';
-    gl2dC.style.height = height + 'px';
-
-    gl2dC.width  = parseInt(gl2dC.style.width);
-    gl2dC.height = parseInt(gl2dC.style.height);
-
-};
-
-CanvasGL.prototype._c2dBackground = function()
-{
-    var gl2d = this._gl2d;
-    this._c2dNoStroke();
-    this._c2dFill(arguments);
-    this._c2dRect(0,0,this._gl2dCanvas.width,this._gl2dCanvas.height);
-    this._c2dApplyFill();
-};
-
-CanvasGL.prototype._c2dRect = function(x,y,width,height)
-{
-    var gl2d = this._gl2d;
-    gl2d.fillRect(Math.round(x) - 0.5, Math.round(y) - 0.5, width, height);
-    gl2d.strokeRect(Math.round(x), Math.round(y), width, height);
-};
-
-CanvasGL.prototype._c2dNoFill = function()
-{
-    this._gl2d.fillStyle ='rgba(0,0,0,0)';
-};
-
-CanvasGL.prototype._c2dNoStroke = function()
-{
-    this._gl2d.strokeStyle='rgba(0,0,0,0)';
-};
-
-CanvasGL.prototype._c2dFill = function()
-{
-    this._gl2d.fillStyle = colori(arguments);
-};
-
-CanvasGL.prototype._c2dApplyFill = function()
-{
-    this._gl2d.fill();
+    this._rectMode = mode;
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype._setUniformLerpColorTexture = function(a)
-{
-    this.gl.uniform1f(this._locationUniformUseTexture,a);
-};
-
-CanvasGL.prototype._setUniformVertexColor = function(c)
-{
-    this.gl.uniform4f(this._locationUniformColor,c[0],c[1],c[2],c[3]);
-};
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.CENTER = "CENTER";
-CanvasGL.CORNER = "CORNER";
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype.setLineWidth = function(value)
-{
-    this.gl.lineWidth = value;
-};
-
-CanvasGL.prototype.setBezierDetail = function(detail)
-{
-    _InternalCanvasGLOptions.BEZIER_DETAIL = detail;
-};
 
 CanvasGL.prototype.setSize = function(width,height)
 {
@@ -277,99 +235,156 @@ CanvasGL.prototype.setSize = function(width,height)
 
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype.line = function(x0,y0,x1,y1)
+
+CanvasGL.prototype._applyFill = function()
 {
-    if(!this._stroke)return;
-    var gl  = this.gl;
-    var arr =  [x0,y0,x1,y1];
-    arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
-    this._applyStroke();
-    this._setMvMatrixUniform();
-    gl.drawArrays(gl.LINES,0,2);
+    var gl = this.gl;
+    var cf = this._fillColor;
+    gl.uniform1f(this._locationUniformUseTexture,0.0);
+    gl.uniform4f(this._locationUniformColor,cf[0],cf[1],cf[2],cf[3]);
+    gl.uniform1f(this._locationUniformAlpha,cf[3]);
+    gl.bindTexture(gl.TEXTURE_2D,this._blankTexture);
 };
 
-CanvasGL.prototype.lines = function(vertices)
+CanvasGL.prototype.fill = function()
 {
-    if(!this._stroke)return;
-    var gl  = this.gl;
-    var arr = this._pixelPerfect ? this._flooredArray(vertices) : vertices;
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
-    this._applyStroke();
-    this._setMvMatrixUniform();
-    gl.drawArrays(gl.LINE_STRIP,0,arr.length*0.5);
+    this._fillColor = colori.apply(this,arguments);
+    this._fill = true;
+};
+
+CanvasGL.prototype.noFill = function()
+{
+    this._fill = false;
+};
+
+
+// Stroke
+
+CanvasGL.prototype._applyStroke =function()
+{
+    var gl = this.gl;
+    var cf = this._strokeColor;
+    gl.uniform1f(this._locationUniformUseTexture,0.0);
+    gl.uniform4f(this._locationUniformColor,cf[0],cf[1],cf[2],cf[3]);
+    gl.uniform1f(this._locationUniformAlpha,cf[3]);
+    gl.bindTexture(gl.TEXTURE_2D,this._blankTexture);
+};
+
+CanvasGL.prototype.stroke = function()
+{
+    this._strokeColor = colori.apply(this,arguments);
+    this._stroke = true;
+};
+
+CanvasGL.prototype.noStroke = function()
+{
+    this._stroke = false;
+};
+
+CanvasGL.prototype._applyTexture = function()
+{
+};
+
+CanvasGL.prototype.texture = function(img)
+{
+
+};
+
+CanvasGL.prototype.noTexture = function()
+{
+
+};
+
+// Blending
+
+CanvasGL.prototype.background = function()
+{
+    var gl = this.gl;
+    var c  = colori.apply(this,arguments);
+    gl.clearColor(c[0],c[1],c[2],c[3]);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    //Reset transformation matrix to identity matrix
+    this._loadIdentity();
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype.point = function(x,y)
+CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
-    if(!this._fill)return;
+    if(!this._fill && !this._stroke)return;
+
     var gl = this.gl;
-    var arr =  [x,y];
-    arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
-    this._applyFill();
+    var arr;
+
     this._setMvMatrixUniform();
-    gl.drawArrays(gl.POINTS,0,1);
-};
-
-CanvasGL.prototype.points = function(vertices)
-{
-    if(!this._fill)return;
-    var gl  = this.gl;
-    var arr = this._pixelPerfect ? this._flooredArray(vertices) : vertices;
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
-    this._applyFill();
-    this._setMvMatrixUniform();
-    gl.drawArrays(gl.POINTS,0,arr.length*0.5);
-};
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype.triangleMesh = function(vertices,indices)
-{
-    var gl = this.gl;
-    var ind = new Uint16Array(indices || this._indicesLinearCW(vertices));
-
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,ind,gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
 
     if(this._fill)
     {
+        arr = [x0,y0,x1,y1,x3,y3,x1,y1,x2,y2,x3,y3];
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
         this._applyFill();
-        this._setMvMatrixUniform();
-        gl.drawElements(gl.TRIANGLES,ind.length,gl.UNSIGNED_SHORT,0);
+        gl.drawArrays(gl.TRIANGLES,0,6);
+    }
+
+    if(this._stroke)
+    {
+        arr = [x0,y0,x1,y1,x2,y2,x3,y3];
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
+        this._applyStroke();
+        gl.drawArrays(gl.LINE_LOOP,0,4);
     }
 };
 
-/*---------------------------------------------------------------------------------------------------------*/
+CanvasGL.prototype.rect = function(x,y,width,height)
+{
+    var rm = this._rectMode;
+    var xw = x+width,yh = y+height;
+    if(rm == 1)
+        this.quad(x,y,xw,y,xw,yh,x,yh);
+    else if(rm == 0)
+        var cx = x - xw*0.5, cy = y - yh*0.5;
+    this.quad(cx,cy,xw,cy,xw,yh,cx,yh);
+};
 
 CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY,resolution)
 {
+    if(!this._fill && !this._stroke)return;
+
+    var cm = this._ellipseMode;
+
+    var cx = cm == 0 ? x : x + radiusX;
+    var cy = cm == 0 ? y : y + radiusY;
+
     var gl  = this.gl;
     var res = resolution || CanvasGLOptions.RESOLUTION_CIRCLE;
-    var step = Math.PI / (res*2);
+    var step = Math.PI / res;
     var i = 0;
-
+    var s;
     var v = new Float32Array(res*2);
 
     while(i < v.length)
     {
-        v[i]   = x + radiusX * Math.cos(step*(i*2));
-        v[i+1] = y + radiusY * Math.sin(step*(i*2));
+        s      = step * i;
+        v[i]   = cx + radiusX * Math.cos(s);
+        v[i+1] = cy + radiusY * Math.sin(s);
         i+=2;
     }
 
-    var arr = this._pixelPerfect ? this._flooredArray(v) : v;
-
-    gl.bufferData(gl.ARRAY_BUFFER,arr,gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
+    this._setMvMatrixUniform();
 
     if(this._fill)
     {
         this._applyFill();
-        this._setMvMatrixUniform();
-        gl.drawArrays(gl.TRIANGLE_FAN,0, arr.length*0.5);
+        gl.drawArrays(gl.TRIANGLE_FAN,0, v.length*0.5);
+    }
+
+    if(this._stroke)
+    {
+        this._applyStroke();
+        gl.drawArrays(gl.LINE_LOOP,0,v.length*0.5);
     }
 };
 
@@ -378,90 +393,70 @@ CanvasGL.prototype.circle = function(x,y,radius,resolution)
     this.ellipse(x,y,radius,radius,resolution);
 };
 
-CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,stopAngle,resolution)
+CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,stopAngle,innerRadiusX,innerRadiusY,resolution)
 {
     var gl  = this.gl;
-    var res = resolution || CanvasGLOptions.RESOLUTION_CIRCLE;
-    var step = (stopAngle - startAngle)/(res-2);
+    resolution = resolution || CanvasGLOptions.RESOLUTION_CIRCLE;
+    var step = (stopAngle - startAngle)/(resolution*2-2);
     var i = 0;
 
     var indices = [];
-    var v = new Float32Array(res*2);
+    var v = new Float32Array(resolution*4);
+
+    innerRadiusX = innerRadiusX || 0;
+    innerRadiusY = innerRadiusY || 0;
+
+    var s,coss,sins;
 
     while(i < v.length)
     {
-        v[i]   = centerX + radiusX * Math.cos(startAngle+step*(i));
-        v[i+1] = centerY+ radiusY * Math.sin(startAngle+step*(i));
-        v[i+2]   = centerX;
-        v[i+3] = centerY;
+        s    = startAngle + step * i;
+        coss = Math.cos(s);
+        sins = Math.sin(s);
+
+        v[i]   = centerX + radiusX * coss;
+        v[i+1] = centerY + radiusY * sins;
+        v[i+2] = centerX + innerRadiusX * coss;
+        v[i+3] = centerY + innerRadiusY * sins;
         i+=4;
     }
 
-    var arr = this._pixelPerfect ? this._flooredArray(v) : v;
-
-    gl.bufferData(gl.ARRAY_BUFFER,arr,gl.DYNAMIC_DRAW);
+    this._setMvMatrixUniform();
 
     if(this._fill)
     {
+        gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
         this._applyFill();
-        this._setMvMatrixUniform();
-        gl.drawArrays(gl.TRIANGLE_STRIP,0, arr.length/2);
-    }
-};
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
-{
-    var gl = this.gl;
-    var arr;
-    if(this._fill)
-    {
-        arr = [x0,y0,x1,y1,x3,y3,x1,y1,x2,y2,x3,y3];
-        arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
-        gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
-        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
-        this._applyFill();
-        this._setMvMatrixUniform();
-        gl.drawArrays(gl.TRIANGLES,0,6);
+        gl.drawArrays(gl.TRIANGLE_STRIP,0, v.length*0.5);
     }
 
     if(this._stroke)
     {
-        arr = [x0,y0,x1,y1,x2,y2,x3,y3];
-        arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
-        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
+        var vo = new Float32Array(resolution*2);
+        i = 0;
+        while(i < vo.length)
+        {
+            vo[i] = v[i*2];
+            vo[i+1] = v[i*2+1];
+            i+=2;
+        }
+        gl.bufferData(gl.ARRAY_BUFFER,vo,gl.DYNAMIC_DRAW);
         this._applyStroke();
-        this._setMvMatrixUniform();
-        gl.drawArrays(gl.LINE_LOOP,0,4);
+        gl.drawArrays(gl.LINE_STRIP,0,vo.length*0.5);
     }
-
 };
 
-CanvasGL.prototype.rect = function(x,y,width,height)
+CanvasGL.prototype.line = function(x0,y0,x1,y1)
 {
-    var xw = x+width,yh = y+height;
-    this.quad(x,y,xw,y,xw,yh,x,yh);
-};
+    if(!this._stroke)return;
 
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
-{
-    var gl = this.gl;
-    var arr = [x0,y0,x1,y1,x2,y2];
-    arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
+    var gl  = this.gl;
+    var arr =  [x0,y0,x1,y1];
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
-
-    if(this._fill)
-    {
-        this._applyFill();
-        this._setMvMatrixUniform();
-        gl.drawArrays(gl.TRIANGLES,0,3);
-    }
+    this._applyStroke();
+    this._setMvMatrixUniform();
+    gl.drawArrays(gl.LINES,0,2);
 };
-
-/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
@@ -522,10 +517,77 @@ CanvasGL.prototype.bezierPoint = function(d)
 
 };
 
+CanvasGL.prototype.triangleMesh = function(vertices,indices)
+{
+    if(!this._fill)return;
+
+    var gl = this.gl;
+    var ind = new Uint16Array(indices || this._indicesLinearCW(vertices));
+
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,ind,gl.DYNAMIC_DRAW);
+
+    if(this._fill)
+    {
+        this._applyFill();
+        this._setMvMatrixUniform();
+        gl.drawElements(gl.TRIANGLES,ind.length,gl.UNSIGNED_SHORT,0);
+    }
+};
+
+CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
+{
+    var gl = this.gl;
+    var arr = [x0,y0,x1,y1,x2,y2];
+    arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
+
+    if(this._fill)
+    {
+        this._applyFill();
+        this._setMvMatrixUniform();
+        gl.drawArrays(gl.TRIANGLES,0,3);
+    }
+};
+
+CanvasGL.prototype.point = function(x,y)
+{
+    if(!this._fill)return;
+    var gl = this.gl;
+    var arr =  [x,y];
+    arr = this._pixelPerfect ? this._flooredArray(arr) : arr;
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
+    this._applyFill();
+    this._setMvMatrixUniform();
+    gl.drawArrays(gl.POINTS,0,1);
+};
+
+CanvasGL.prototype.lines = function(vertices)
+{
+    if(!this._stroke)return;
+    var gl  = this.gl;
+    var arr = this._pixelPerfect ? this._flooredArray(vertices) : vertices;
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
+    this._applyStroke();
+    this._setMvMatrixUniform();
+    gl.drawArrays(gl.LINE_STRIP,0,arr.length*0.5);
+};
+
+CanvasGL.prototype.points = function(vertices)
+{
+    if(!this._fill)return;
+    var gl  = this.gl;
+    var arr = this._pixelPerfect ? this._flooredArray(vertices) : vertices;
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);
+    this._applyFill();
+    this._setMvMatrixUniform();
+    gl.drawArrays(gl.POINTS,0,arr.length*0.5);
+};
+
+
 /*---------------------------------------------------------------------------------------------------------*/
 
-
-
+// Texture helper class
 
 CanvasGLImage = function()
 {
@@ -542,18 +604,7 @@ CanvasGLImage.prototype._set = function(t)
     this.height = t.image.height;
 };
 
-CanvasGL.prototype.texture = function(tex)
-{
-
-    var gl = this.gl;
-
-
-
-
-
-
-
-};
+//Load image return CanvasGLImage
 
 CanvasGL.prototype.loadImage = function(path,target,obj,callbackString)
 {
@@ -574,11 +625,12 @@ CanvasGL.prototype.loadImage = function(path,target,obj,callbackString)
         else if((imgheight&(imgheight-1))!=0){console.log("Texture image width is not power of 2.");return;}
 
         gl.bindTexture(gl.TEXTURE_2D,tex);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+
 
         target._set(tex);
         obj[callbackString]();
@@ -586,192 +638,55 @@ CanvasGL.prototype.loadImage = function(path,target,obj,callbackString)
     tex.image.src = path;
 };
 
-CanvasGL.prototype._applyTexture = function()
-{
-
-};
-
-CanvasGL.prototype._bindTexture = function(texture,activeTextureID)
+CanvasGL.prototype.image = function(image, x, y, width, height)
 {
     var gl = this.gl;
-    gl.activeTexture(activeTextureID||gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D,texture);
-    gl.uniform1i(this._locationUniformImage,0);
-};
 
-CanvasGL.prototype._unbindTexture = function()
-{
-    var gl = this.gl;
-    gl.bindTexture(gl.TEXTURE_2D,null);
+    var rm = this._rectMode;
+    var w = width || image.width, h = height || image.height;
+    var xx = x || 0 + (rm == 1 ? 0.0 : - w*0.5), yy = y || 0 + (rm == 1 ? 0.0 : - h*0.5);
+    var xw = xx+w,yh = yy+h;
 
-};
+    var vertices  = new Float32Array([xx,y,xw,y,xx,yh,xw,yy,xw,yh,xx,yh]);
+    var texCoords = new Float32Array([0.0,0.0,
+        1.0,0.0,
+        0.0,1.0,
+        1.0,0.0,
+        1.0,1.0,
+        0.0,1.0]);
 
-CanvasGL.prototype._setTextureCoords = function(coords)
-{
-    this._textureCoords = coords;
-};
-
-CanvasGL.prototype._applyTextureCoord = function()
-{
-    var gl = this.gl;
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexTexCoord);
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(this._textureCoords),gl.DYNAMIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
-};
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype.image = function(img,x,y,width,height)
-{
-    var xw = x+width,yh = y+height;
-
-    var gl = this.gl;
-
-    var vertices = [x,y,xw,y,xw,yh,x,yh];
-    var texCoords = [0,0,1,0,1,1,0,0];
-    var indices   = [0,1,2,0,3,2];
-
-
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
-
-    /*
-
-     gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexTexCoord);
-     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(texCoords),gl.DYNAMIC_DRAW);
-     gl.vertexAttribPointer(this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
-     */
-
-
-    //gl.activeTexture(gl.TEXTURE0);
-    //gl.bindTexture(gl.TEXTURE_2D,img._t);
-    //gl.uniform1i(this._locationUniformSampler,0);
-
-
-    //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexPosition);
     this._setMvMatrixUniform();
-    gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0);
+    gl.uniform1f(this._locationUniformUseTexture,1.0);
 
-    gl.bindTexture(gl.TEXTURE_2D,null);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
+    gl.bufferData(gl.ARRAY_BUFFER,vertices.byteLength + texCoords.byteLength,gl.DYNAMIC_DRAW);
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,vertices);
+    gl.bufferSubData(gl.ARRAY_BUFFER,vertices.byteLength,texCoords);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,this._bufferVertexPosition);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this._bufferVertexIndex);
 
-    this._applyFill();
-    this._applyStroke();
+    gl.enableVertexAttribArray(this._locationAttribPosition);
+    gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
 
+    gl.enableVertexAttribArray(this._locationAttribTextureCoord);
+    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,vertices.byteLength);
+
+
+    gl.bindTexture(gl.TEXTURE_2D,image._t);
+    gl.uniform1f(this._locationUniformImage,0);
+    gl.drawArrays(gl.TRIANGLES,0,6);
+    gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
+    gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype.noFill = function()
+CanvasGL.prototype.loadCustomShader = function(shaderScript)
 {
-    this._fill = false;
-};
-
-CanvasGL.prototype.noStroke = function()
-{
-    this._stroke = false;
-};
-
-CanvasGL.prototype._applyStroke =function()
-{
-    this._setUniformVertexColor(this._strokeColor);
-};
-
-CanvasGL.prototype._applyFill = function()
-{
-    this._setUniformVertexColor(this._fillColor);
-};
-
-CanvasGL.prototype.stroke = function()
-{
-    this._strokeColor = colori.apply(this,arguments);
-    this._stroke = true;
-};
-
-CanvasGL.prototype.fill = function()
-{
-    this._fillColor = colori.apply(this,arguments);
-    this._fill = true;
-};
-
-CanvasGL.prototype.strokef = function()
-{
-    this._strokeColor = colorf.apply(this,arguments);
-    this._stroke = true;
-};
-
-CanvasGL.prototype.fillf = function()
-{
-    this._fillColor = colorf.apply(this,arguments);
-    this._fill = true;
-};
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype.background = function()
-{
-    var gl = this.gl;
-    var c  = colori.apply(this,arguments);
-    gl.clearColor(c[0],c[1],c[2],c[3]);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    this._loadIdentity();
-};
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype._flooredArray = function(array)
-{
-    var a = new Array(array);
-
-    var i = -1;
-    while(++i < a.length)
-    {
-        a[i] = Math.floor(a[i]);
-    }
-    return a;
-};
-
-CanvasGL.prototype._indexSortedVertices = function(vertices,indices)
-{
-
 
 };
 
-CanvasGL.prototype._indicesLinearCW = function(vertices)
-{
-    var a = new Array((vertices.length/2-2)*3);
-    var i = 0;
-    while(i < a.length)
-    {
-        if(i%2==0){a[i]=i/3;a[i+1]=i/3+2;a[i+2]=i/3+1;}
-        else{a[i]=a[i-2];a[i+1]=a[i-2]+1;a[i+2]=a[i-1];}
-        i+=3;
-    }
-
-    return a;
-};
-
-CanvasGL.prototype._indicesLinearCCW = function(vertices)
-{
-    var a = new Array((vertices.length/2-2)*3);
-    var i = 0;
-    while(i < a.length)
-    {
-        if(i%2==0){a[i]=i/3;a[i+1]=i/3+1;a[i+2]=i/3+2;}
-        else{a[i]=a[i-1];a[i+1]=a[i-2];a[i+2]=a[i-1]+1;}
-        i+=3;
-    }
-
-    return a;
-};
-
-/*---------------------------------------------------------------------------------------------------------*/
-
-CanvasGL.prototype._loadShaderFromScript = function(shaderScriptId)
+CanvasGL.prototype.loadShaderFromScript = function(shaderScriptId)
 {
     var gl = this.gl;
 
@@ -829,7 +744,6 @@ CanvasGL.prototype._loadIdentity = function()
     this.__mat44Identity(this._tMatrix);
 };
 
-/*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.translate = function(x,y)
 {
@@ -870,6 +784,8 @@ CanvasGL.prototype.popMatrix = function()
 
 /*---------------------------------------------------------------------------------------------------------*/
 
+// Internal Matrix 4x4 class for all transformations
+
 // SX  0  0  0
 //  0 SY  0  0
 //  0  0 SZ  0
@@ -896,10 +812,8 @@ CanvasGL.prototype.__mat44Identity = function(m)
 CanvasGL.prototype.__makeMat44Scale = function(x,y)
 {
     var  m = this.__makeMat44();
-
     m[0] = x;
     m[5] = y;
-
     return m;
 
 };
@@ -907,10 +821,8 @@ CanvasGL.prototype.__makeMat44Scale = function(x,y)
 CanvasGL.prototype.__makeMat44Translate = function(x,y)
 {
     var m = this.__makeMat44();
-
     m[12] = x;
     m[13] = y;
-
     return m;
 };
 
@@ -985,6 +897,37 @@ CanvasGL.prototype.__mat44MultPost = function(mat0,mat1)
 
 /*---------------------------------------------------------------------------------------------------------*/
 
+CanvasGL.prototype._indicesLinearCW = function(vertices)
+{
+    var a = new Array((vertices.length/2-2)*3);
+    var i = 0;
+    while(i < a.length)
+    {
+        if(i%2==0){a[i]=i/3;a[i+1]=i/3+2;a[i+2]=i/3+1;}
+        else{a[i]=a[i-2];a[i+1]=a[i-2]+1;a[i+2]=a[i-1];}
+        i+=3;
+    }
+
+    return a;
+};
+
+CanvasGL.prototype._indicesLinearCCW = function(vertices)
+{
+    var a = new Array((vertices.length/2-2)*3);
+    var i = 0;
+    while(i < a.length)
+    {
+        if(i%2==0){a[i]=i/3;a[i+1]=i/3+1;a[i+2]=i/3+2;}
+        else{a[i]=a[i-1];a[i+1]=a[i-2];a[i+2]=a[i-1]+1;}
+        i+=3;
+    }
+
+    return a;
+};
+
+/*---------------------------------------------------------------------------------------------------------*/
+
+// Floors every input vertex
 
 CanvasGL.prototype.setPixelPerfect = function(bool)
 {
@@ -995,6 +938,70 @@ CanvasGL.prototype.saveToPNG = function()
 {
     var canvas = window.open(this._glCanvas.toDataURL('image/png'));
 };
+
+/*---------------------------------------------------------------------------------------------------------*/
+
+CanvasGL.prototype._c2dGetBlankWhiteTexture = function()
+{
+
+
+    this._c2dSetSize(16,16);
+    this._c2dBackground(0);
+    var tex = this.gl.createTexture();
+    tex.image = this._gl2dCanvas;
+    return tex;
+
+};
+
+CanvasGL.prototype._c2dSetSize = function(width,height)
+{
+    var gl2dC = this._gl2dCanvas;
+
+    gl2dC.style.width  = width + 'px';
+    gl2dC.style.height = height + 'px';
+
+    gl2dC.width  = parseInt(gl2dC.style.width);
+    gl2dC.height = parseInt(gl2dC.style.height);
+
+};
+
+CanvasGL.prototype._c2dBackground = function()
+{
+    var gl2d = this._gl2d;
+    this._c2dNoStroke();
+    this._c2dFill(255,0,0);
+    this._c2dRect(0,0,this._gl2dCanvas.width,this._gl2dCanvas.height);
+    this._c2dApplyFill();
+};
+
+CanvasGL.prototype._c2dRect = function(x,y,width,height)
+{
+    var gl2d = this._gl2d;
+    gl2d.fillRect(Math.round(x) - 0.5, Math.round(y) - 0.5, width, height);
+    gl2d.strokeRect(Math.round(x), Math.round(y), width, height);
+};
+
+CanvasGL.prototype._c2dNoFill = function()
+{
+    this._gl2d.fillStyle ='rgba(0,0,0,0)';
+};
+
+CanvasGL.prototype._c2dNoStroke = function()
+{
+    this._gl2d.strokeStyle='rgba(0,0,0,0)';
+};
+
+CanvasGL.prototype._c2dFill = function()
+{
+    this._gl2d.fillStyle = colori(arguments);
+};
+
+CanvasGL.prototype._c2dApplyFill = function()
+{
+    this._gl2d.fill();
+};
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 /*---------------------------------------------------------------------------------------------------------*/
 
@@ -1025,7 +1032,7 @@ function colori()
             c[0] = arguments[0]/255;
             c[1] = arguments[1]/255;
             c[2] = arguments[2]/255;
-            c[3] = arguments[3]/255;
+            c[3] = arguments[3];
             break;
     }
 
@@ -1064,6 +1071,19 @@ function colorf()
     }
 
     return c;
+}
+
+function alpha(color)
+{
+    return color[3];
+}
+
+function lerpColor(col0,col1,a)
+{
+    return [(col0[0]*a)+(col1[0]*(1-a)),
+        (col0[1]*a)+(col1[1]*(1-a)),
+        (col0[2]*a)+(col1[2]*(1-a)),
+        (col0[3]*a)+(col1[3]*(1-a))];
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
