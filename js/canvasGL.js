@@ -35,6 +35,7 @@ function CanvasGL(parentDomElementId)
 
     //Init webgl
 
+    this._usedBrowser = null;
     this._implementation = null;
     var names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
     this.gl = null;
@@ -64,7 +65,7 @@ function CanvasGL(parentDomElementId)
             "vec2 zeroToOne = transedPos / u_resolution;" +
             "vec2 zeroToTwo = zeroToOne * 2.0;" +
             "vec2 clipSpace = (zeroToTwo - 1.0);" +
-            "gl_Position = vec4(clipSpace,0,1) * vec4(1,-1,1,1);" +
+            "gl_Position = vec4(clipSpace.x,-clipSpace.y,0,1);" +
             "v_texture_coord = a_texture_coord;" +
             "}",
 
@@ -176,6 +177,16 @@ function CanvasGL(parentDomElementId)
     this._strokeColor = colorf(1.0,1.0);
     this._texture     = false;
     this._textureCurr = null;
+    this._c2dTexture  = this._c2dGetBlankWhiteTexture();
+
+    this._fontProperties = {style:'',
+                            weight:'normal',
+                            size:20,
+                            family:'Arial',
+                            baseLine: 'bottom',
+                            align: 'left',
+                            lineHeight:'1',
+                            spacing:'1'};
 
 
     // Init temp values
@@ -188,7 +199,7 @@ function CanvasGL(parentDomElementId)
 
     // Attach canvases to parent DOM element
 
-    this.parent.appendChild(this._gl2dCanvas);
+    //this.parent.appendChild(this._gl2dCanvas);
     this.parent.appendChild(this._glCanvas);
 }
 
@@ -304,9 +315,13 @@ CanvasGL.prototype._disableTexture = function()
 
 CanvasGL.prototype.texture = function(img)
 {
-    this._textureCurr = img._t;
-    this._texture = true;
+    this._setCurrTexture(img._t);
+};
 
+CanvasGL.prototype._setCurrTexture = function(tex)
+{
+    this._textureCurr = tex;
+    this._texture = true;
 };
 
 CanvasGL.prototype.noTexture = function()
@@ -325,6 +340,7 @@ CanvasGL.prototype.background = function()
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     //Reset transformation matrix to identity matrix
     this._loadIdentity();
+    this.setRectMode(CanvasGL.CORNER);
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -344,7 +360,7 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
     vertices = new Float32Array([x0,y0,x1,y1,x3,y3,x1,y1,x2,y2,x3,y3]);
 
-    if(this._fill && !this._fill)
+    if(this._fill && !this._texture)
     {
 
         gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.DYNAMIC_DRAW);
@@ -965,6 +981,33 @@ CanvasGL.prototype._indicesLinearCCW = function(vertices)
     return a;
 };
 
+CanvasGL.prototype._np2 = function(n)
+{
+    n--;
+    n |= n>>1;
+    n |= n>>2;
+    n |= n>>4;
+    n |= n>>8;
+    n |= n>>16;
+    n++;
+    return n;
+};
+
+CanvasGL.prototype._pp2 = function(n)
+{
+    var n2 = n>>1;
+    return n2>0 ? this._np2(n2) : this._np2(n);
+};
+
+CanvasGL.prototype._nnp2 = function(n)
+{
+    if((n&(n-1))==0)return n;
+    var nn = this._np2(n);
+    var pn = this._pp2(n);
+    return (nn-n)>Math.abs(n-pn) ? pn : nn;
+
+};
+
 /*---------------------------------------------------------------------------------------------------------*/
 
 // Floors every input vertex
@@ -980,15 +1023,158 @@ CanvasGL.prototype.saveToPNG = function()
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
+// Text
+/*---------------------------------------------------------------------------------------------------------*/
+
+CanvasGL.FontRenderer = {DOM:"DOM",Canvas:"Canvas"};
+
+CanvasGL.prototype.setFontRenderer = function(renderer)
+{
+
+};
+
+CanvasGL.prototype.setFontWeight = function(weight)
+{
+    this._fontProperties.weight = weight;
+    this._c2dApplyFontStyle();
+
+};
+
+CanvasGL.prototype.setFontSize = function(size)
+{
+    this._fontProperties.size = size;
+    this._c2dApplyFontStyle();
+};
+
+CanvasGL.prototype.setFontFamily = function(family)
+{
+    this._fontProperties.family = family;
+    this._c2dApplyFontStyle();
+};
+
+CanvasGL.prototype.setTextBaseLine = function (textBaseLine)
+{
+    this._gl2d.textBaseline = textBaseLine;
+};
+
+CanvasGL.prototype.setTextAlign = function (textAlign)
+{
+    this._gl2d.textAlign = textAlign;
+};
+
+CanvasGL.prototype.setTextLineHeight = function(lineHeight)
+{
+    this._gl2d.lineHeight = lineHeight;
+};
+
+CanvasGL.prototype.textWidth = function(string)
+{
+    return this._gl2d.measureText(string).width;
+};
+
+CanvasGL.prototype.textHeight = function()
+{
+    return this._fontProperties.size;
+};
+
+
+CanvasGL.prototype.text = function(string,x,y)
+{
+
+
+    var gl  = this.gl;
+    var c2d = this._gl2d;
+    var fc  = this._fillColor;
+
+    var mt = c2d.measureText(string);
+    var tw = Math.floor(mt.width+mt.width*0.5),
+        th = Math.floor(this._fontProperties.size)-1;
+
+    var cw = this._np2(tw),
+        ch = this._np2(th);
+
+    this._c2dSetSize(cw,ch);
+
+
+    c2d.save();
+    c2d.setTransform(1,0,0,1,0,0);
+    c2d.scale(2, 2);
+    c2d.clearRect(0,0,this._gl2dCanvas.width,this._gl2dCanvas.height);
+    c2d.fillStyle = "rgba("+Math.floor(fc[0]*255)+","+Math.floor(fc[1]*255)+","+Math.floor(fc[2]*255)+","+fc[3]+")";
+    this._c2dApplyFontStyle();
+    c2d.textBaseline = 'top';
+    c2d.fillText(string,0,-th*0.18);
+    //c2d.fillRect(0,0,this._gl2dCanvas.width,this._gl2dCanvas.height);
+    c2d.restore();
+
+
+
+
+    this._setCurrTexture(this._c2dGetTexture());
+    this.rect(x,y,cw,ch);
+
+
+
+};
+
+/*---------------------------------------------------------------------------------------------------------*/
+// Canvas2d for textures
+/*---------------------------------------------------------------------------------------------------------*/
+
+CanvasGL.prototype._c2dSetFontProperties = function (fontProperties)
+{
+    for (var p in fontProperties)
+    {
+        this._fontProperties[p] = fontProperties[p];
+    }
+
+    this._c2dApplyFontStyle();
+};
+
+CanvasGL.prototype._c2dApplyFontStyle = function()
+{
+    this._gl2d.font = this._fontProperties.weight + " " +
+                      this._fontProperties.size + "px " +
+                      this._fontProperties.family;
+};
+
+CanvasGL.prototype._c2dGetTexture = function()
+{
+    var gl  = this.gl;
+
+    gl.bindTexture(gl.TEXTURE_2D,this._c2dTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._gl2dCanvas);
+
+    return this._c2dTexture;
+
+};
 
 CanvasGL.prototype._c2dGetBlankWhiteTexture = function()
 {
 
 
-    this._c2dSetSize(16,16);
-    this._c2dBackground(0);
+    var gl = this.gl;
+    var c2d = this._gl2d;
+
+
+
+    c2d.restore();
+
+
+    this._c2dSetSize(512,512);
+
     var tex = this.gl.createTexture();
     tex.image = this._gl2dCanvas;
+    gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, tex.image);
     return tex;
 
 };
@@ -1000,8 +1186,18 @@ CanvasGL.prototype._c2dSetSize = function(width,height)
     gl2dC.style.width  = width + 'px';
     gl2dC.style.height = height + 'px';
 
+
+
     gl2dC.width  = parseInt(gl2dC.style.width);
     gl2dC.height = parseInt(gl2dC.style.height);
+
+
+    gl2dC.width  *= 2;
+    gl2dC.height *= 2;
+
+
+
+
 
 };
 
@@ -1009,7 +1205,7 @@ CanvasGL.prototype._c2dBackground = function()
 {
     var gl2d = this._gl2d;
     this._c2dNoStroke();
-    this._c2dFill(255,0,0);
+    this._gl2d.fillStyle = "rgba(255,255,255,1)";
     this._c2dRect(0,0,this._gl2dCanvas.width,this._gl2dCanvas.height);
     this._c2dApplyFill();
 };

@@ -52,6 +52,7 @@ TestCanvasGL.prototype.draw = function()
     c.background(10);
     c.noStroke();
     c.noFill();
+    c.fill(255);
 
 
     var i,j;
@@ -69,11 +70,52 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
+            pp0 = 10;
+            pp1 = 10;
+            pp3 = 30;
+
+
+
+
+            c.setFontWeight('normal');
+            c.setFontSize(20);
+
+            i = -1;
+
+
+            while(++i < pp0)
+            {
+                j = -1;
+                while(++j < pp1)
+                {
+                    c.pushMatrix();
+                    c.translate(i*(pp3+pp3*0.25),j*(pp3+pp3*0.25));
+
+                    c.rotate(t);
+                    c.image(this.img,0,0,pp3,pp3);
+
+                    c.setFontSize(abs(sin(t)*20));
+                    var s = i+","+j;
+                    c.fill(255,0,0);
+                    c.text(s,0 , 0);
+                    c.popMatrix();
+                }
+            }
+
+            /*
             c.translate(0,0);
             c.image(this.img,0,0,rs2,rs2);
 
+            c.setFontWeight("bold");
             c.translate(rs2,0);
-            c.texture(this.img);
+            */
+
+            /*
+            c.fill(randomInteger(255),randomInteger(255),randomInteger(255));
+            c.setFontSize(4+455*abs(sin(t*0.15)));
+            c.text(randomInteger(1000000),0,0);
+            */
+
 
 
         }
