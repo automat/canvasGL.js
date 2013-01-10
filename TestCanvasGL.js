@@ -62,6 +62,8 @@ TestCanvasGL.prototype.draw = function()
     var verticesA,verticesB;
     var indicesA,indicesB;
 
+    var transformedPoint = [];
+
 
     c.pushMatrix();
     {
@@ -76,13 +78,21 @@ TestCanvasGL.prototype.draw = function()
             c.fill(pp0,0,0,0.75);
             c.setEllipseDetail(40);
             c.circle(rs,rs,rs);
+
         }
         c.popMatrix();
         c.pushMatrix();
         {
-            c.translate(rs2,0);
-            c.fill(150,0,0);
-            c.triangleMesh([0,0,rs,0,rs,rs,0,rs],[0,1,3,1,2,3]);
+            pp0 = rs*0.5;
+
+            c.translate(rs2+pp0,pp0);
+            c.fill(stepCubed(abs(sin(t*0.25)))*150,0,0);
+            c.rotate(HALF_PI*stepCubed(abs(sin(t*0.25))));
+            pp0 = rs*0.25+rs*0.25*stepCubed(abs(sin(t*0.25)));
+
+            c.triangleMesh([-pp0,-pp0,pp0,-pp0,pp0,pp0,-pp0,pp0],[0,1,3,1,2,3]);
+            transformedPoint = c.getScreenCoord(pp0,0);
+
         }
         c.popMatrix();
         c.pushMatrix();
@@ -457,6 +467,7 @@ TestCanvasGL.prototype.draw = function()
 
             c.fill(stepSmoothInvSquared(pp1)*100,0,0);
             c.circle(x,y,pp0);
+
     }
         c.popMatrix();
 
@@ -516,7 +527,16 @@ TestCanvasGL.prototype.draw = function()
         c.popMatrix();
 
 
+    }
+    c.popMatrix();
 
+    c.noStroke();
+    c.pushMatrix();
+    {
+        c.fill(255*stepSmoothSquared(abs(sin(t))));
+        c.translate(transformedPoint[0],transformedPoint[1]);
+        c.rotate(QUARTER_PI);
+        c.rect(-2.5,-2.5,5,5);
     }
     c.popMatrix();
 

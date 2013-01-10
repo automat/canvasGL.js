@@ -141,6 +141,8 @@ function CanvasGL(parentDomElementId)
     this._tempBufferSplineVertices  = new Float32Array(_CGLConstants.SPLINE_DETAIL_MAX*4);
     this._tempBufferVertexColor     = new Float32Array(4);
 
+    this._tempScreenCoords = new Array(2);
+
     this._tempSplineVertices = [];
 
     this._currEllipseDetail = _CGLConstants.ELLIPSE_DETAIL_DEFAULT;
@@ -711,62 +713,49 @@ CanvasGL.prototype.catmullRomSpline = function(points)
 
     var d = this._currSplineDetail;
 
+    var h0,h1,h2,h3;
     var t,t2,t3;
 
     var i = 0,j;
+
     var vertices = [];
     var pl = points.length;
-    var index;
+    var ci,pi,ni,ni2;
 
     while(i < pl-1)
     {
         j = 0;
         while(j < d)
         {
-            t = j/d;
+            t = j/(d-2);
 
-            index = i;
+            ci = i;
 
-            vertices.push(this._catmullrom(points[Math.max(index,i-2)],
-                                           points[index],
-                                           points[Math.min(index+2,pl-2)],
-                                           points[Math.min(index+4,pl-2)],
+            vertices.push(this._catmullrom(points[Math.max(0,i-2)],
+                                           points[ci],
+                                           points[Math.min(ci+2,pl-2)],
+                                           points[Math.min(ci+4,pl-2)],
                                            t));
 
-            index = i+1;
+            ci = i+1;
 
-            vertices.push(this._catmullrom(points[Math.max(1,index-2)],
-                                           points[index],
-                points[Math.min(index+2,pl-1)],
-                points[Math.min(index+4,pl-1)],
+            vertices.push(this._catmullrom(points[Math.max(1,ci-2)],
+                                           points[ci],
+                points[Math.min(ci+2,pl-1)],
+                points[Math.min(ci+4,pl-1)],
                 t));
 
-            j+=0.1;
+
+            j+=2;
         }
-
-
-
-
-
-
-
         i+=2;
     }
-
-
 
     var gl = this.gl;
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
     this._applyStroke();
     this._setMvMatrixUniform();
     gl.drawArrays(gl.LINE_STRIP,0,vertices.length*0.5);
-
-
-
-
-
-
-
 };
 
 CanvasGL.prototype.beginSpline =  function()
@@ -782,9 +771,7 @@ CanvasGL.prototype.endSpline =  function()
 CanvasGL.prototype.splineVertex = function(x,y)
 {
     this._tempSplineVertices.push(x,y)
-}
-
-
+};
 
 CanvasGL.prototype._catmullrom = function(x0,x1,x2,x3,u)
 {
@@ -803,48 +790,6 @@ CanvasGL.prototype._catmullrom = function(x0,x1,x2,x3,u)
     return x0 * f1 + x1 * f2 + x2 * f3 + x3 * f4;
 
 };
-
-/*
-CanvasGL.prototype.catmullRomSplinePatch = function(x1,y1,x3,y3,x0,y0,x2,y2)
-{
-    var h00,h10,h01,h11, t,t2,t3;
-
-    var d = this._currSplineDetail;
-
-    var i = 0;
-    var vertices =this._tempBufferSplineVertices;
-
-    while(i < d)
-    {
-        t  = i / (d-2);
-        t2 = t * t;
-        t3 = t * t * t;
-
-        h00 =  2*t3-3*t2+1;
-        h10 = -2*t3+3*t2;
-        h01 =  t3-2*t2+t;
-        h11 =  t3-t2;
-
-        //vertices[i]  = x0*h00 + x3*h10 + x1*h01 + x2*h11;
-        //vertices[i+1]= y0*h00 + y3*h10 + y1*h01 + y2*h11;
-
-        vertices[i]  = 0.25*((2*x1)+(-x0+x2)*t+(2*x0-5*x1+4*x2-x3)*t2+(-x0+3*x1-3*x2+x3)*t3);
-        vertices[i+1]= 0.25*((2*y1)+(-y0+y2)*t+(2*y0-5*y1+4*y2-y3)*t2+(-y0+3*y1-3*y2+y3)*t3);
-
-        i+=2;
-    }
-
-    var gl = this.gl;
-
-    gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.DYNAMIC_DRAW);
-    this._applyStroke();
-    this._setMvMatrixUniform();
-    gl.drawArrays(gl.LINE_STRIP,0,d*0.5);
-
-
-
-};
-*/
 
 CanvasGL.prototype.triangleMesh = function(vertices,indices)
 {
@@ -1049,12 +994,27 @@ CanvasGL.prototype._loadProgram = function()
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
+// Screen Coords / unproject
+/*---------------------------------------------------------------------------------------------------------*/
+
+CanvasGL.prototype.getScreenCoord = function(x,y)
+{
+    var m = this._tMatrix;
+    var s = this._tempScreenCoords;
+
+    s[0] = m[ 0] * x + m[ 4] * y + m[12];
+    s[1] = m[ 1] * x + m[ 5] * y + m[13];
+
+    return s
+};
+
+/*---------------------------------------------------------------------------------------------------------*/
 // Internal Matrix apply
 /*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype._setMvMatrixUniform = function()
 {
-    this.gl.uniformMatrix4fv(this._locationTransMatrix,false,new Float32Array(this._tMatrix));
+    this.gl.uniformMatrix4fv(this._locationTransMatrix,false,this._tMatrix);
 };
 
 CanvasGL.prototype._loadIdentity = function()
@@ -1111,17 +1071,17 @@ CanvasGL.prototype.popMatrix = function()
 
 // Internal Matrix 4x4 class for all transformations
 
-// SX  0  0  0
-//  0 SY  0  0
-//  0  0 SZ  0
-// TX TY TZ  1
+// SX  0  0  0   0  1  2  3
+//  0 SY  0  0   4  5  6  7
+//  0  0 SZ  0   8  9 10 11
+// TX TY TZ  1  12 13 14 15
 
 CanvasGL.prototype.__makeMat44 = function()
 {
-    return [ 1, 0, 0, 0,
+    return new Float32Array([ 1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
-        0, 0, 0, 1 ];
+        0, 0, 0, 1 ]);
 };
 
 CanvasGL.prototype.__mat44Identity = function(m)
@@ -1132,6 +1092,11 @@ CanvasGL.prototype.__mat44Identity = function(m)
     m[15] = 1; m[12] = m[13] = m[14] = 0;
 
     return m;
+};
+
+CanvasGL.prototype.__mat44Copy = function(m)
+{
+    return new Float32Array(m);
 };
 
 CanvasGL.prototype.__makeMat44Scale = function(x,y)
