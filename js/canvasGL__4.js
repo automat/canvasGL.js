@@ -30,7 +30,7 @@ function CanvasGL(parentDomElementId)
                   height:_CGLConstants.HEIGHT_DEFAULT};
 
     this._glCanvas = document.createElement('canvas');
-    this._glCanvas.style.position = 'absolute';
+    this._glCanvas.style.position = 'relative';
     this._glCanvas.style.left = '0px';
     this._glCanvas.style.top = '0px';
 
@@ -125,7 +125,6 @@ function CanvasGL(parentDomElementId)
 
     this._vbo = gl.createBuffer();
     this._ibo = gl.createBuffer();
-    this._cbo = gl.createBuffer();
 
 
 
@@ -151,7 +150,7 @@ function CanvasGL(parentDomElementId)
     gl.enableVertexAttribArray(this._locationAttribTextureCoord);
     gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
 
-    //gl.enableVertexAttribArray(this._locationAttribVertexColor);
+    gl.enableVertexAttribArray(this._locationAttribVertexColor);
     //gl.vertexAttribPointer(    this._locationAttribVertexColor,4,gl.FLOAT,false,0,0);
 
 
@@ -308,17 +307,14 @@ CanvasGL.prototype.setTextureWrap = function(mode)
 
 CanvasGL.prototype._applyFill = function()
 {
-
     var gl = this.gl;
     var cf = this._fillColor;
     gl.uniform4f(this._locationUniformColor,cf[0],cf[1],cf[2],cf[3]);
     gl.uniform1f(this._locationUniformAlpha,cf[3]);
-
 };
 
 CanvasGL.prototype.fill = function()
 {
-
     var f = this._fillColor;
 
     f[3] = 1.0;

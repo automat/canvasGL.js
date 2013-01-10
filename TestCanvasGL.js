@@ -13,13 +13,15 @@ function TestCanvasGL(parentDomElementId)
     this.cgl.setSize(window.innerWidth,window.innerHeight);
     this.t = 0.0;
 
-    this.numImages = 1;
+    this.numImages = 2;
     this.numImagesLoaded = 0;
 
-    this.img = new CanvasGLImage();
+    this.img0 = new CanvasGLImage();
+    this.img1 = new CanvasGLImage();
     var c = this.cgl;
 
-    c.loadImage("tex512.jpg",this.img,this,"onImageLoaded");
+    c.loadImage("k512.jpg",this.img0,this,"onImageLoaded");
+    c.loadImage("j512.jpg",this.img1,this,"onImageLoaded");
 
 
 }
@@ -52,7 +54,8 @@ TestCanvasGL.prototype.draw = function()
     c.background(10);
     c.noStroke();
     c.noStroke();
-    c.fill(255);
+   c.fill(255);
+
 
 
     var i,j;
@@ -65,6 +68,7 @@ TestCanvasGL.prototype.draw = function()
     var transformedPoint = [];
 
 
+
     c.pushMatrix();
     {
         c.translate(rs,rs);
@@ -74,7 +78,7 @@ TestCanvasGL.prototype.draw = function()
         {
             pp0 = 255*abs(sin(t*0.25));
             c.translate(0,0);
-            c.image(this.img,0,0,rs2,rs2);
+            c.image(this.img1,0,0,rs2,rs2);
             c.fill(pp0,0,0,0.75);
             c.setEllipseDetail(40);
             c.circle(rs,rs,rs);
@@ -473,45 +477,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            /*
-            c.translate(rs2,rs*5);
-            var points = [0,0,rs*0.5,rs,rs,rs,rs2,rs2];
-            c.stroke(255,0,0);
-            c.lines(points);
-            var slopex,slopey,len;
-            var pl = points.length;
-            var startX,startY,endX,endY;
-            var a,b;
-            var d = 3;
-            i = 0;
-            var arr = new Array();
-            while(i<pl)
-            {
-                startX = points[i];
-                startY = points[i+1];
-                endX   = points[Math.min(i+2,pl-2)];
-                endY   = points[Math.min(i+1+2,pl-1)];
-                slopex = startX - endX;
-                slopey = startY - endY;
-                len = Math.sqrt(slopex*slopex+slopey*slopey);
-                slopex/=len;
-                slopey/=len;
-                a = slopex ;
-                b = slopey;
-                slopex = b;
-                slopey = -a;
 
-
-
-                arr.push(startX + d*slopex,
-                         startY + d*slopey,
-                         startX - d*slopex,
-                         startY - d*slopey);
-                i+=2;
-            }
-
-            c.triangleMesh(arr);
-            */
 
         }
         c.popMatrix();
@@ -520,7 +486,7 @@ TestCanvasGL.prototype.draw = function()
         {
             pp0 = 0.25+0.75*abs(sin(t*0.25));
             c.translate(0,rs*5);
-            c.texture(this.img,(sin(t*0.25)),cos(t*0.25),pp0,pp0);
+            c.texture(this.img0,(sin(t*0.25)),cos(t*0.25),pp0,pp0);
             c.rect(0,0,rs2,rs2);
             c.noTexture();
         }
@@ -539,6 +505,7 @@ TestCanvasGL.prototype.draw = function()
         c.rect(-2.5,-2.5,5,5);
     }
     c.popMatrix();
+
 
 
 
