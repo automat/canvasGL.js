@@ -477,7 +477,7 @@ TestCanvasGL.prototype.draw = function()
                     c.fill(Math.floor(pp4[0]*(1-pp7)+(255-pp4[0])*pp7),
                            0,0,1);
 
-                    c.rect(pp5[0] * (1-nn) + pp6[0] * nn - rs,pp5[1] * (1-nn) + pp6[1] * nn -rs,is,is);
+                    c.rect(pp5[0] * (1-nn) + pp6[0] * nn - rs,pp5[1] * (1-nn) + pp6[1] * nn -rs,is*(nn),is*(nn));
 
 
                     j+=s;

@@ -25,7 +25,7 @@
           <file leaf-file-name="TestCanvasGL.js" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="448" column="38" selection-start="10772" selection-end="10772" vertical-scroll-proportion="0.37777779">
+                <state line="479" column="108" selection-start="11638" selection-end="11638" vertical-scroll-proportion="0.8562963">
                   <folding />
                 </state>
               </provider>
@@ -437,7 +437,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -664,7 +664,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="448" column="38" selection-start="10772" selection-end="10772" vertical-scroll-proportion="0.37777779">
+        <state line="479" column="108" selection-start="11638" selection-end="11638" vertical-scroll-proportion="0.8562963">
           <folding />
         </state>
       </provider>
