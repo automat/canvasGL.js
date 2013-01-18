@@ -61,6 +61,8 @@ TestCanvasGL.prototype.animationLoop = function()
 
 };
 
+function TestCanvasGLDemo(){}
+
 TestCanvasGL.prototype.draw = function()
 {
 
@@ -75,65 +77,35 @@ TestCanvasGL.prototype.draw = function()
 
 
 
+    //12
     var i,j;
-    var rs = c.width/12,rs2 = rs*2;
-    var pa,ps,pp0,pp1,pp3,pp4;
+    var rs = c.width/16,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
+    var pa,ps;
+    var pp0,pp1,pp2,pp3,pp4,pp5,pp6,pp7;
+    var sint = sin(t),sint05 = sin(t*0.5),sint025 = sin(t*0.25);
+    var asint = abs(sint), asint05 = abs(sint05),asint025 = abs(sint025);
 
     var verticesA,verticesB;
     var indicesA,indicesB;
 
     var transformedPoint = [];
 
+    var img0 = this.img0, img1 = this.img1, img2 = this.img2;
 
-
-    c.pushMatrix();
+    function t01(x,y)
     {
-        c.translate(0,0);
-        c.scale(1,1);
-
         c.pushMatrix();
         {
-            pp0 = 255*abs(sin(t*0.25));
-            c.translate(0,0);
-            c.image(this.img0,0,0,rs2,rs2);
+            pp0 = 255*abs(sint025);
+            c.translate(x,y);
+            c.image(img0,0,0,rs2,rs2);
 
             c.setEllipseDetail(40);
-
-
         }
         c.popMatrix();
         c.pushMatrix();
         {
-            pp0 = rs*0.5;
-
-            c.translate(rs2+rs+pp0,pp0);
-            c.fill(stepCubed(abs(sin(t*0.25)))*150,0,0);
-            c.rotate(HALF_PI*stepCubed(abs(sin(t*0.25))));
-            pp0 = rs*0.25+rs*0.25*stepCubed(abs(sin(t*0.25)));
-
-            c.triangleMesh([-pp0,-pp0,pp0,-pp0,pp0,pp0,-pp0,pp0],[0,1,3,1,2,3]);
-            transformedPoint = c.getScreenCoord(pp0,0);
-
-        }
-        c.popMatrix();
-        c.pushMatrix();
-        {
-            c.translate(rs2,0);
-            c.fill(150,0,0);
-            c.triangle(0,0,rs,0,rs,rs);
-            c.triangle(rs,rs,rs2,rs,rs2,rs2);
-
-            c.translate(rs*0.5,rs+rs*0.5);
-            c.rotate(t*0.5);
-            c.fill(100+floor(155*abs(sin(t))));
-            c.setEllipseDetail(3+floor(27*abs(sin(t*0.25))));
-            c.ellipse(0,0,rs*0.25 + rs*0.25*abs(sin(t)),rs*0.5-rs*0.25*abs(sin(t)));
-
-        }
-        c.popMatrix();
-        c.pushMatrix();
-        {
-            c.translate(0,rs);
+            c.translate(x,y+rs);
             c.stroke(100,0,0);
 
             pa = 100;
@@ -147,7 +119,7 @@ TestCanvasGL.prototype.draw = function()
             while(++i < pa)
             {
                 pp0 = i/(pa)*PI-t*0.25;
-                verticesA.push(i*ps,rs*0.5 + rs*0.5*sin(pp0*pp1),i*ps,rs);
+                verticesA.push(i*ps,rs*0.5 +rs05*sin(pp0*pp1),i*ps,rs);
             }
             i = 0;
             c.fill(10);
@@ -155,6 +127,53 @@ TestCanvasGL.prototype.draw = function()
 
         }
         c.popMatrix();
+    }
+
+    function t02(x,y)
+    {
+        c.pushMatrix();
+        {
+            pp0 =rs05;
+
+            c.translate(x+rs+pp0,y+pp0);
+            c.fill(stepCubed(asint025)*150,0,0);
+            c.rotate(HALF_PI*stepCubed(asint025));
+            pp0 =rs025+rs*0.25*stepCubed(asint025);
+
+            c.triangleMesh([-pp0,-pp0,pp0,-pp0,pp0,pp0,-pp0,pp0],[0,1,3,1,2,3]);
+            transformedPoint = c.getScreenCoord(pp0,0);
+
+        }
+        c.popMatrix();
+        c.pushMatrix();
+        {
+            c.translate(x,y);
+            c.fill(150,0,0);
+            c.triangle(0,0,rs,0,rs,rs);
+            c.triangle(rs,rs,rs2,rs,rs2,rs2);
+
+            c.translate(rs*0.5,rs+rs05);
+            c.rotate(t*0.5);
+            c.fill(100+floor(155*asint));
+            c.setEllipseDetail(3+floor(27*asint025));
+            c.ellipse(0,0,rs*0.25 +rs025*asint,rs*0.5-rs*0.25*asint);
+
+        }
+        c.popMatrix();
+    }
+
+
+
+    c.pushMatrix();
+    {
+        c.translate(0,0);
+        c.scale(1,1);
+
+        t01(0,0);
+        t02(rs2,0);
+        t01(0,rs*8);
+
+
         c.pushMatrix();
         {
             c.translate(rs*4+6,6);
@@ -165,11 +184,11 @@ TestCanvasGL.prototype.draw = function()
 
 
 
-            var anchor0 = [(rs*2-6)-(rs*2-6)*pp4,pp3*(rs*2-12)],
-                anchor1 = [(rs*2-6)*pp4,(rs*2-12)-pp3*(rs*2-12)];
+            var anchor0 = [(rs2-6)-(rs2-6)*pp4,pp3*(rs2-12)],
+                anchor1 = [(rs2-6)*pp4,(rs2-12)-pp3*(rs2-12)];
 
-            var cntrl0 = [(rs*2-6)-(rs*2-6)*pp0,0],
-                cntrl1 = [(rs*2-6)*pp0,rs*2-12];
+            var cntrl0 = [(rs2-6)-(rs2-6)*pp0,0],
+                cntrl1 = [(rs2-6)*pp0,rs2-12];
 
             c.stroke(80);
             c.line(anchor0[0],anchor0[1],cntrl0[0],cntrl0[1]);
@@ -222,7 +241,7 @@ TestCanvasGL.prototype.draw = function()
             while(i < pp0.length)
             {
                 pp2 = i*pp1;
-                pp0[i] =randomFloat(rs2);
+                pp0[i]   =randomFloat(rs2);
                 pp0[i+1] = randomFloat(rs2);
                 i+=2;
             }
@@ -253,10 +272,10 @@ TestCanvasGL.prototype.draw = function()
         {
             c.setBlendFunc(CanvasGL.SRC_COLOR,CanvasGL.ONE_MINUS_SRC_COLOR);
             c.blend();
-            pp0 = 0+rs*0.75*stepSmooth(abs(sin(t*0.5)));
-            pp1 = rs*stepSmoothCubed(abs(sin(t*0.25)));
+            pp0 = 0+rs*0.75*stepSmooth(asint05);
+            pp1 = rs*stepSmoothCubed(abs(sint025));
             c.translate(rs2*4+rs,rs);
-            c.rotate(TWO_PI*4*stepSmoothCubed(abs(sin(t*0.25))));
+            c.rotate(TWO_PI*4*stepSmoothCubed(abs(sint025)));
             c.noStroke();
             c.fill(255,0,0,0.5);
             c.setEllipseDetail(30);
@@ -290,16 +309,16 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(0,rs*2+rs*0.5);
+            c.translate(0,rs2+rs*0.5);
 
             c.stroke(30);
             c.noFill();
-            c.rect(0,rs2,rs*2,rs*2);
+            c.rect(0,rs2,rs2,rs2);
 
             c.stroke(100,0,0);
 
             pa =100;
-            ps = (rs2*2)/(pa-1);
+            ps = (rs2)/(pa-1);
 
             verticesA = [];
             verticesB = [];
@@ -356,43 +375,7 @@ TestCanvasGL.prototype.draw = function()
             c.noStroke();
         }
         c.popMatrix();
-        c.pushMatrix();
-        {
-            var textdiv = document.getElementById("ontoptext");
 
-
-
-            c.translate(rs2+rs,rs2+rs);
-
-
-            verticesA = [];
-
-            i = 0;
-            pa = 100;
-            ps = TWO_PI / (pa-1);
-
-            var a, b, m, n1,n2,n3;
-
-            m  = 3;
-            n1 = 4;
-            n2 = 18;
-            n3 = 18;
-
-            a = b = 1;
-
-
-            while(i < pa)
-            {
-                pp0 =
-
-                i++;
-            }
-
-
-
-
-        }
-        c.popMatrix();
         c.pushMatrix();
         {
             var textdiv = document.getElementById("ontoptext");
@@ -427,7 +410,7 @@ TestCanvasGL.prototype.draw = function()
         c.popMatrix();
         c.pushMatrix();
         {
-            c.translate(rs2*2,rs2);
+            c.translate(rs4,rs2);
 
             pa = this.img0Data.length;
 
@@ -448,15 +431,15 @@ TestCanvasGL.prototype.draw = function()
 
             var is = Math.floor(pp0/(s));
 
-            var nn  = stepSmoothCubed(abs(sin(t*0.5)));
-            var pp5 = [];
-            var pp6 = [];
+            var nn  = stepSmoothCubed(asint05);
+            pp5 = [];
+            pp6 = [];
 
 
             c.translate(rs,rs);
 
 
-            var pp7 = stepSmoothCubed(abs(sin(t*0.125)));
+            pp7 = stepSmoothCubed(abs(sin(t*0.125)));
             c.noStroke();
 
             i = 0;
@@ -497,7 +480,7 @@ TestCanvasGL.prototype.draw = function()
             c.translate(rs2*4,rs2);
             c.fill(100,0,0);
             i = -1;
-            pa  = 10+ floor(20*stepSmooth(abs(sin(t*0.5))));
+            pa  = 10+ floor(20*stepSmooth(asint05));
             pp0 = rs2/ (pa);
             c.setEllipseDetail(10);
             while(++i < pa)
@@ -515,8 +498,8 @@ TestCanvasGL.prototype.draw = function()
         c.pushMatrix();
         {
             c.translate(0,rs*4);
-            pp0 = abs(sin(t));
-            pp1 = abs(sin(t*0.5));
+            pp0 = asint;
+            pp1 = asint05;
             c.setEllipseDetail(40);
             c.fill(255);
             c.circle(rs,rs,rs-11,rs-11,100);
@@ -533,7 +516,7 @@ TestCanvasGL.prototype.draw = function()
             pp3 = t*0.125;
             c.translate(rs*8,rs2*3);
             c.texture(this.img0,0.25+pp3,1.5,2,2);
-            pp1 = stepSmoothSquared(abs(sin(t*0.25)));
+            pp1 = stepSmoothSquared(asint025);
             pp0 = rs2*pp1;
             pp2 = 20*(1-pp1);
             c.quad(0,pp2,pp0,0,pp0,rs2,0,rs2-pp2);
@@ -554,9 +537,9 @@ TestCanvasGL.prototype.draw = function()
 
             c.popMatrix();
 
-            c.translate(rs*2,0);
+            c.translate(rs2,0);
             c.texture(this.img1,0.75,0.25+pp3,2,2);
-            pp1 = 1-stepSmoothSquared(abs(sin(t*0.25)));
+            pp1 = 1-stepSmoothSquared(asint025);
             pp0 = rs2*pp1;
             pp2 = 20*(1-pp1);
             c.quad(0,pp2,pp0,0,pp0,rs2,0,rs2-pp2);
@@ -579,12 +562,12 @@ TestCanvasGL.prototype.draw = function()
         c.popMatrix();
         c.pushMatrix();
         {
-            c.translate(rs*2,rs*4);
+            c.translate(rs2,rs*4);
 
 
             c.stroke(30);
             c.noFill();
-            c.rect(0,0,rs*2,rs*2);
+            c.rect(0,0,rs2,rs2);
 
             //c.setPixelPerfect(false);
 
@@ -597,8 +580,8 @@ TestCanvasGL.prototype.draw = function()
 
             verticesA = [];
 
-            pa = 3+floor(7*stepSquared(abs(sin(t*0.25))));
-            ps = rs*2/(pa-1);
+            pa = 3+floor(7*stepSquared(asint025));
+            ps =rs2/(pa-1);
 
             i = -1;
             while(++i < (pa-1))
@@ -613,7 +596,7 @@ TestCanvasGL.prototype.draw = function()
             c.stroke(20);
 
 
-            ps = rs*2/(pa-1);
+            ps =rs2/(pa-1);
 
             i = -1;
             while(++i < (pa-1)*2)
@@ -621,7 +604,7 @@ TestCanvasGL.prototype.draw = function()
                 j = -1;
                 while(++j < pa-1)
                 {
-                    c.rect(rs2*2+rs*2+ps*i,ps*j,ps,ps);
+                    c.rect(rs4+rs2+ps*i,ps*j,ps,ps);
                 }
             }
 
@@ -631,7 +614,7 @@ TestCanvasGL.prototype.draw = function()
             while(++i < pa)
             {
                 x = i*ps;
-                y = rs*2-(lerp(rs*2,0,i/(pa-1)));
+                y =rs2-(lerp(rs2,0,i/(pa-1)));
 
                 verticesA.push(x,y);
                 c.rect(x-2, y-2,4,4);
@@ -652,7 +635,7 @@ TestCanvasGL.prototype.draw = function()
             while(++i < pa)
             {
                 x = i*ps;
-                y = rs*2-(lerp(rs*2,0,stepSmooth(i/(pa-1))));
+                y =rs2-(lerp(rs2,0,stepSmooth(i/(pa-1))));
                 verticesA.push(x,y);
                 c.rect(x-2, y-2,4,4);
             }
@@ -666,7 +649,7 @@ TestCanvasGL.prototype.draw = function()
             while(++i < pa)
             {
                 x = i*ps;
-                y = rs*2-(lerp(rs*2,0,stepSquared(i/(pa-1))));
+                y =rs2-(lerp(rs2,0,stepSquared(i/(pa-1))));
                 verticesA.push(x,y);
                 c.rect(x-2, y-2,4,4);
             }
@@ -680,7 +663,7 @@ TestCanvasGL.prototype.draw = function()
             while(++i < pa)
             {
                 x = i*ps;
-                y = rs*2-(lerp(rs*2,0,stepInvSquared(i/(pa-1))));
+                y =rs2-(lerp(rs2,0,stepInvSquared(i/(pa-1))));
                 verticesA.push(x,y);
                 c.rect(x-2, y-2,4,4);
             }
@@ -696,7 +679,7 @@ TestCanvasGL.prototype.draw = function()
             while(++i < pa)
             {
                 x = i*ps;
-                y = rs*2-(lerp(rs*2,0,stepCubed(i/(pa-1))));
+                y =rs2-(lerp(rs2,0,stepCubed(i/(pa-1))));
                 verticesA.push(x,y);
                 c.rect(x-2, y-2,4,4);
             }
@@ -710,7 +693,7 @@ TestCanvasGL.prototype.draw = function()
             while(++i < pa)
             {
                 x = i*ps;
-                y = rs*2-(lerp(rs*2,0,stepInvCubed(i/(pa-1))));
+                y =rs2-(lerp(rs2,0,stepInvCubed(i/(pa-1))));
                 verticesA.push(x,y);
                 c.rect(x-2, y-2,4,4);
             }
@@ -718,26 +701,26 @@ TestCanvasGL.prototype.draw = function()
             c.lines(verticesA);
 
             c.noStroke();
-            c.translate(rs2*2,0);
+            c.translate(rs4,0);
 
-            pp1 = abs(sin(t));
+            pp1 = asint;
             pp0 = 4+6*stepCubed(pp1);
-            var pp2 = abs(sin(t*0.25));
-            x = (rs*2+pp0)+stepSmooth(pp2)*(rs*4-pp0*2);
-            y = (rs*2-pp0)-stepCubed(pp2)*(rs*2-pp0*2);
+            pp2 = asint025;
+            x = (rs2+pp0)+stepSmooth(pp2)*(rs*4-pp0*2);
+            y = (rs2-pp0)-stepCubed(pp2)*(rs2-pp0*2);
             c.fill(stepCubed(pp1)*100,0,0);
             c.circle(x,y,pp0);
             pp2 = abs(sin(t*0.25+PI*0.05));
-            x = (rs*2+pp0)+stepSmoothSquared(pp2)*(rs*4-pp0*2);
-            y = (rs*2-pp0)-stepSmoothSquared(pp2)*(rs*2-pp0*2);
+            x = (rs2+pp0)+stepSmoothSquared(pp2)*(rs*4-pp0*2);
+            y = (rs2-pp0)-stepSmoothSquared(pp2)*(rs2-pp0*2);
             c.fill(stepSquared(pp1)*100,0,0);
             c.circle(x,y,pp0);
             pp0 = 4+6*stepSmoothInvSquared(pp1);
 
             pp2 = abs(sin(t*0.25+PI*0.25));
 
-            x = (rs*2+pp0)+stepSmoothInvSquared(pp2)*(rs*4-pp0*2);
-            y = (rs*2-pp0)-stepSmoothInvSquared(pp2)*(rs*2-pp0*2);
+            x = (rs2+pp0)+stepSmoothInvSquared(pp2)*(rs*4-pp0*2);
+            y = (rs2-pp0)-stepSmoothInvSquared(pp2)*(rs2-pp0*2);
 
             c.fill(stepSmoothInvSquared(pp1)*100,0,0);
             c.circle(x,y,pp0);
@@ -745,8 +728,8 @@ TestCanvasGL.prototype.draw = function()
             pp2 = abs(sin(t*0.25+PI*0.5));
             pp0 = 4+6*stepSmoothInvSquared(pp1);
 
-            x = (rs*2+pp0)+stepSmoothCubed(pp2)*(rs*4-pp0*2);
-            y = (rs*2-pp0)-stepSmoothCubed(pp2)*(rs*2-pp0*2);
+            x = (rs2+pp0)+stepSmoothCubed(pp2)*(rs*4-pp0*2);
+            y = (rs2-pp0)-stepSmoothCubed(pp2)*(rs2-pp0*2);
 
             c.fill(stepSmoothInvSquared(pp1)*100,0,0);
             c.circle(x,y,pp0);
@@ -763,7 +746,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            pp0 = 0.25+0.75*abs(sin(t*0.25));
+            pp0 = 0.25+0.75*asint025;
             c.translate(0,rs*6);
             c.texture(this.img2,(sin(t*0.25)),cos(t*0.25),pp0,pp0);
             c.rect(0,0,rs2,rs2);
@@ -782,11 +765,7 @@ TestCanvasGL.prototype.draw = function()
 
     }
     c.popMatrix();
-
-
-
-
-
-
 };
+
+
 

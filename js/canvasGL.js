@@ -4,8 +4,12 @@
  * Time: 09:37
  */
 
+
+
+
 CanvasGLOptions = {};
 CanvasGLOptions.doLog = true;
+
 
 _CGLConstants = {};
 _CGLConstants.WIDTH_DEFAULT  = 300;
@@ -64,13 +68,10 @@ function CanvasGL(parentDomElementId)
 
             "void main()" +
             "{" +
-            "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;" +
-            "vec2 zeroToOne = transedPos / u_resolution;" +
-            "vec2 zeroToTwo = zeroToOne * 2.0;" +
-            "vec2 clipSpace = (zeroToTwo - 1.0);" +
-            "gl_Position = vec4(clipSpace.x,-clipSpace.y,0,1);" +
-            "v_texture_coord = a_texture_coord;" +
-
+                "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;" +
+                "vec2 clipSpace = transedPos / u_resolution * 2.0 - 1.0;" +
+                "gl_Position = vec4(clipSpace.x,-clipSpace.y,0,1);" +
+                "v_texture_coord = a_texture_coord;" +
             "}",
 
         this.gl.VERTEX_SHADER);
@@ -80,14 +81,13 @@ function CanvasGL(parentDomElementId)
 
     this._fragmentColorShader = this._loadShader(
 
-        "precision mediump float;" +
-
+            "precision mediump float;" +
             "uniform vec4      u_color;" +
             "uniform float     u_use_texture;" +
             "uniform sampler2D u_image;" +
-            "varying vec2      v_texture_coord;" +
             "uniform float     u_alpha;" +
-            "varying   vec4 v_vertex_color;" +
+            "varying vec2      v_texture_coord;" +
+            "varying vec4      v_vertex_color;" +
 
             "void main()" +
             "{" +
@@ -198,10 +198,7 @@ function CanvasGL(parentDomElementId)
 
     // Init temp values & arrays
 
-    this._bezierAnchor0x = this._bezierAnchor0y = null;
-    this._bezierAnchor1x = this._bezierAnchor1y = null;
-    this._bezierContrl0x = this._bezierContrl0y = null;
-    this._bezierContrl1x = this._bezierContrl1y = null;
+    this._tempBezierPoints = new Array(8);
 
     this._tempQuadTexCoords         = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0]);
 
@@ -217,7 +214,6 @@ function CanvasGL(parentDomElementId)
     this._tempBufferVertexColor     = new Float32Array(4);
 
     this._tempScreenCoords = new Array(2);
-
     this._tempSplineVertices = [];
 
     this._currEllipseDetail = _CGLConstants.ELLIPSE_DETAIL_DEFAULT;
@@ -227,9 +223,8 @@ function CanvasGL(parentDomElementId)
     this._currBlendSrc  = gl.SRC_ALPHA;
     this._currBlendDest = gl.ONE_MINUS_SRC_ALPHA;
 
-    // Attach canvases to parent DOM element
+    // Attach canvas to parent DOM element
 
-    //this.parent.appendChild(this._gl2dCanvas);
     this.parent.appendChild(this._glCanvas);
 }
 
@@ -534,7 +529,7 @@ CanvasGL.prototype._disableTexture = function()
 
 CanvasGL.prototype.texture = function(img,offsetX,offsetY,width,height)
 {
-    var quadTexCoords = this._tempQuadTexCoords;
+    var tc = this._tempQuadTexCoords;
     var gl = this.gl;
     if(offsetX  )
     {
@@ -542,23 +537,23 @@ CanvasGL.prototype.texture = function(img,offsetX,offsetY,width,height)
         width  = 1/width  || 1;
         height = 1/height || 1;
 
-        quadTexCoords[0]=offsetX; //0
-        quadTexCoords[1]=offsetY;
+        tc[0]=offsetX; //0
+        tc[1]=offsetY;
 
-        quadTexCoords[2]=offsetX+width; //1
-        quadTexCoords[3]=offsetY;
+        tc[2]=offsetX+width; //1
+        tc[3]=offsetY;
 
-        quadTexCoords[4]=offsetX; //3
-        quadTexCoords[5]=offsetY+height;
+        tc[4]=offsetX; //3
+        tc[5]=offsetY+height;
 
-        quadTexCoords[6]=offsetX+width; //1
-        quadTexCoords[7]=offsetY;
+        tc[6]=offsetX+width; //1
+        tc[7]=offsetY;
 
-        quadTexCoords[8]=offsetX+width; //2
-        quadTexCoords[9]=offsetY+height;
+        tc[8]=offsetX+width; //2
+        tc[9]=offsetY+height;
 
-        quadTexCoords[10]=offsetX; //3
-        quadTexCoords[11]=offsetY+height;
+        tc[10]=offsetX; //3
+        tc[11]=offsetY+height;
 
         gl.bindTexture(gl.TEXTURE_2D,img._t);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -568,26 +563,23 @@ CanvasGL.prototype.texture = function(img,offsetX,offsetY,width,height)
         return;
     }
 
-    quadTexCoords[0]=0.0; //0
-    quadTexCoords[1]=0.0;
+    tc[0]=0.0; //0
+    tc[1]=0.0;
 
-    quadTexCoords[2]=1.0; //1
-    quadTexCoords[3]=0.0;
+    tc[2]=1.0; //1
+    tc[3]=0.0;
 
-    quadTexCoords[4]=0.0; //3
-    quadTexCoords[5]=1.0;
+    tc[4]=0.0; //3
+    tc[5]=1.0;
 
-    quadTexCoords[6]=1.0; //1
-    quadTexCoords[7]=0.0;
+    tc[6]=1.0; //1
+    tc[7]=0.0;
 
-    quadTexCoords[8]=1.0; //2
-    quadTexCoords[9]=1.0;
+    tc[8]=1.0; //2
+    tc[9]=1.0;
 
-    quadTexCoords[10]=0.0; //3
-    quadTexCoords[11]=1.0;
-
-
-
+    tc[10]=0.0; //3
+    tc[11]=1.0;
 
     this._setCurrTexture(img._t);
 };
@@ -634,28 +626,28 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
     var gl = this.gl;
     var vbo = this._vbo;
-    var vertices = this._tempQuadFillVertices;
+    var v = this._tempQuadFillVertices;
 
     this._setMatrixUniform();
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
 
-    vertices[ 0] = x0;
-    vertices[ 1] = y0;
-    vertices[ 2] = x1;
-    vertices[ 3] = y1;
-    vertices[ 4] = x3;
-    vertices[ 5] = y3;
-    vertices[ 6] = x1;
-    vertices[ 7] = y1;
-    vertices[ 8] = x2;
-    vertices[ 9] = y2;
-    vertices[10] = x3;
-    vertices[11] = y3;
+    v[ 0] = x0;
+    v[ 1] = y0;
+    v[ 2] = x1;
+    v[ 3] = y1;
+    v[ 4] = x3;
+    v[ 5] = y3;
+    v[ 6] = x1;
+    v[ 7] = y1;
+    v[ 8] = x2;
+    v[ 9] = y2;
+    v[10] = x3;
+    v[11] = y3;
 
     if(this._fill && !this._texture)
     {
 
-        gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
         this._applyFill();
         gl.drawArrays(gl.TRIANGLES,0,6);
     }
@@ -664,14 +656,14 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
     {
 
         gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
-        gl.bufferData(gl.ARRAY_BUFFER,vertices.byteLength + this._tempQuadTexCoords.byteLength,gl.DYNAMIC_DRAW);
-        gl.bufferSubData(gl.ARRAY_BUFFER,0,vertices);
-        gl.bufferSubData(gl.ARRAY_BUFFER,vertices.byteLength,this._tempQuadTexCoords);
+        gl.bufferData(gl.ARRAY_BUFFER,v.byteLength + this._tempQuadTexCoords.byteLength,gl.DYNAMIC_DRAW);
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,v);
+        gl.bufferSubData(gl.ARRAY_BUFFER,v.byteLength,this._tempQuadTexCoords);
 
         gl.enableVertexAttribArray(this._locationAttribPosition);
         gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
         gl.enableVertexAttribArray(this._locationAttribTextureCoord);
-        gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,vertices.byteLength);
+        gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,v.byteLength);
 
         this._applyTexture();
         gl.drawArrays(gl.TRIANGLES,0,6);
@@ -679,17 +671,13 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
     if(this._stroke)
     {
-        vertices = this._tempQuadStrokeVertices;
-        vertices[ 0] = x0;
-        vertices[ 1] = y0;
-        vertices[ 2] = x1;
-        vertices[ 3] = y1;
-        vertices[ 4] = x2;
-        vertices[ 5] = y2;
-        vertices[ 6] = x3;
-        vertices[ 7] = y3;
+        v = this._tempQuadStrokeVertices;
+        v[ 0] = x0; v[ 1] = y0;
+        v[ 2] = x1; v[ 3] = y1;
+        v[ 4] = x2; v[ 5] = y2;
+        v[ 6] = x3; v[ 7] = y3;
 
-        gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
         this._applyStroke();
         gl.drawArrays(gl.LINE_LOOP,0,4);
     }
@@ -810,10 +798,10 @@ CanvasGL.prototype.line = function(x0,y0,x1,y1)
 
     var gl  = this.gl;
     var v   = this._tempLineVertices;
-    v[0] = x0;
-    v[1] = y0;
-    v[2] = x1;
-    v[3] = y1;
+
+    v[0] = x0;v[1] = y0;
+    v[2] = x1;v[3] = y1;
+
     gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
     this._applyStroke();
     this._setMatrixUniform();
@@ -823,15 +811,12 @@ CanvasGL.prototype.line = function(x0,y0,x1,y1)
 CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
     var d = this._currBezierDetail;
+    var p = this._tempBezierPoints;
 
-    this._bezierAnchor0x = x0;
-    this._bezierAnchor0y = y0;
-    this._bezierAnchor1x = x2;
-    this._bezierAnchor1y = y2;
-    this._bezierContrl0x = x1;
-    this._bezierContrl0y = y1;
-    this._bezierContrl1x = x3;
-    this._bezierContrl1y = y3;
+    p[0] = x0;p[1] = y0;
+    p[2] = x2;p[3] = y2;
+    p[4] = x1;p[5] = y1;
+    p[6] = x3;p[7] = y3;
 
     var i = 0;
     var t,nt,nt3,nt2,t3,t2;
@@ -864,21 +849,19 @@ CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
 CanvasGL.prototype.bezierPoint = function(d)
 {
+    var nt  = 1 - d,
+        nt3 = nt * nt * nt,
+        nt2 = nt * nt;
 
-    var nt  = 1 - d;
-    var nt3 = nt * nt * nt;
-    var nt2 = nt * nt;
-    var t3  = d * d * d;
-    var t2  = d * d;
+    var t3  = d * d * d,
+        t2  = d * d;
 
-    var x0 = this._bezierAnchor0x;
-    var y0 = this._bezierAnchor0y;
-    var x2 = this._bezierAnchor1x;
-    var y2 = this._bezierAnchor1y;
-    var x1 = this._bezierContrl0x;
-    var y1 = this._bezierContrl0y;
-    var x3 = this._bezierContrl1x;
-    var y3 = this._bezierContrl1y;
+    var p = this._tempBezierPoints;
+
+    var x0 = p[0],y0 = p[1],
+        x2 = p[2],y2 = p[3],
+        x1 = p[4],y1 = p[5],
+        x3 = p[6],y3 = p[7];
 
     return [nt3*x0+3*nt2*d*x1+3*nt*t2*x2+t3*x3,
             nt3*y0+3*nt2*d*y1+3*nt*t2*y2+t3*y3];
@@ -1153,7 +1136,7 @@ CanvasGL.prototype._loadShader = function(source,type)
 
     if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))
     {
-        if(CanvasGLOptions.doLog)console.log("Could not compile shader.");
+        console.log("Could not compile shader.");
         gl.deleteShader(shader);
         shader = null;
     }
@@ -1170,7 +1153,7 @@ CanvasGL.prototype._loadProgram = function()
     gl.linkProgram(program);
     if(!gl.getProgramParameter(program,gl.LINK_STATUS))
     {
-        if(CanvasGLOptions.doLog)console.log("Could not link program.");
+        console.log("Could not link program.");
         gl.deleteProgram(program);
         program = null;
     }
@@ -1267,9 +1250,9 @@ CanvasGL.prototype.popMatrix = function()
 CanvasGL.prototype.__makeMat44 = function()
 {
     return new Float32Array([ 1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1 ]);
+                              0, 1, 0, 0,
+                              0, 0, 1, 0,
+                              0, 0, 0, 1 ]);
 };
 
 CanvasGL.prototype.__mat44Identity = function(m)
