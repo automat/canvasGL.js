@@ -7,9 +7,8 @@
 
 
 
-CanvasGLOptions = {};
-CanvasGLOptions.doLog = true;
-
+CGL = {};
+CGL.SIZE_OF_VERTEX = 2;
 
 _CGLConstants = {};
 _CGLConstants.WIDTH_DEFAULT  = 300;
@@ -20,6 +19,8 @@ _CGLConstants.ELLIPSE_DETAIL_DEFAULT= 10;
 _CGLConstants.ELLIPSE_DETAIL_MAX    = 50;
 _CGLConstants.SPLINE_DETAIL_DEFAULT = 10;
 _CGLConstants.SPLINE_DETAIL_MAX     = 50;
+
+
 
 /** ------------------------------------------------------------------------------------------------------------------
  *
@@ -40,7 +41,7 @@ function CanvasGL(parentDomElementId)
 
     //Init webgl
 
-    this._usedBrowser = null;
+    this._usedBrowser    = null;
     this._implementation = null;
     var names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
     this.gl = null;
@@ -49,7 +50,7 @@ function CanvasGL(parentDomElementId)
         try
         {
             this.gl = this._glCanvas.getContext(names[i],{ antialias: true});
-        } catch (e){if(CanvasGLOptions.doLog)console.log("WebGL context could not be initialized");}
+        } catch (e){console.log("WebGL context could not be initialized");}
         if(this.gl){this._implementation = names[i];break;}
     }
 
@@ -58,7 +59,7 @@ function CanvasGL(parentDomElementId)
 
     this._vertexShader = this._loadShader(
 
-        "uniform   mat4 a_matrix;" +
+            "uniform   mat3 a_matrix;" +
             "attribute vec2 a_position; " +
             "uniform   vec2 u_resolution;" +
             "attribute vec2 a_texture_coord;" +
@@ -68,9 +69,8 @@ function CanvasGL(parentDomElementId)
 
             "void main()" +
             "{" +
-                "vec2 transedPos = vec2(a_matrix * vec4(a_position.xy,0,1)).xy;" +
-                "vec2 clipSpace = transedPos / u_resolution * 2.0 - 1.0;" +
-                "gl_Position = vec4(clipSpace.x,-clipSpace.y,0,1);" +
+                "vec2 clipSpace  = vec2(a_matrix * vec3(a_position.xy,1)).xy / u_resolution * 2.0 - 1.0;" +
+                "gl_Position     = vec4(clipSpace.x,-clipSpace.y,0,1);" +
                 "v_texture_coord = a_texture_coord;" +
             "}",
 
@@ -91,10 +91,9 @@ function CanvasGL(parentDomElementId)
 
             "void main()" +
             "{" +
-            "vec4 texColor  = texture2D(u_image,v_texture_coord) * u_use_texture;" +
-            "vec4 vertColor = u_color * (1.0 - u_use_texture);" +
-            //"gl_FragColor = vec4((vertColor+texColor).xyz,u_alpha);" +
-            "gl_FragColor = vertColor+texColor;;" +
+                "vec4 texColor  = texture2D(u_image,v_texture_coord) * u_use_texture;" +
+                "vec4 vertColor = u_color * (1.0 - u_use_texture);" +
+                "gl_FragColor = vertColor+texColor;" +
             "}",
 
         this.gl.FRAGMENT_SHADER);
@@ -157,10 +156,11 @@ function CanvasGL(parentDomElementId)
 
     // Create matrix stack and apply to shader
 
-    this._tMatrix  = this.__makeMat44();
-    this._tMatrixStack = [];
+    this._transMatrix  = this.__makeMat33();
+    this._tempMatrix   = this.__makeMat33();
+    this._transMatrixStack = [];
 
-    gl.uniformMatrix4fv(this._locationTransMatrix,false,new Float32Array(this._tMatrix));
+    gl.uniformMatrix3fv(this._locationTransMatrix,false,new Float32Array(this._transMatrix));
 
 
     // Enable gl flags
@@ -222,6 +222,8 @@ function CanvasGL(parentDomElementId)
 
     this._currBlendSrc  = gl.SRC_ALPHA;
     this._currBlendDest = gl.ONE_MINUS_SRC_ALPHA;
+
+    this._tempShapeVertices = new _CGLInternal.PoolArray(100);
 
     // Attach canvas to parent DOM element
 
@@ -700,14 +702,15 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
     var cx = cm == 0 ? x : x + radiusX;
     var cy = cm == 0 ? y : y + radiusY;
 
-    var gl  = this.gl;
-    var res = this._currEllipseDetail;
-    var step = Math.PI / res;
+    var d = this._currEllipseDetail;
+    var v = this._tempBufferCircleVertices;
+    var l = d * 2;
+
+    var step = Math.PI / d;
     var i = 0;
     var s;
-    var v =this._tempBufferCircleVertices;
-    var vlen = res * 2;
-    while(i < vlen)
+
+    while(i < l)
     {
         s      = step * i;
         v[i]   = cx + radiusX * Math.cos(s);
@@ -715,27 +718,71 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
         i+=2;
     }
 
+    var gl  = this.gl;
     gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
     this._setMatrixUniform();
 
     if(this._fill && !this._texture)
     {
         this._applyFill();
-        gl.drawArrays(gl.TRIANGLE_FAN,0, vlen*0.5);
+        gl.drawArrays(gl.TRIANGLE_FAN,0,d);
     }
 
     if(this._stroke)
     {
         this._applyStroke();
-        gl.drawArrays(gl.LINE_LOOP,0,vlen*0.5);
+        gl.drawArrays(gl.LINE_LOOP,0,d);
     }
-
-
 };
+
+//http://slabode.exofire.net/circle_draw.shtml
 
 CanvasGL.prototype.circle = function(x,y,radius)
 {
-    this.ellipse(x,y,radius,radius);
+    if(!this._fill && !this._stroke)return;
+
+    var cm = this._ellipseMode;
+
+    var cx = cm == 0 ? x : x + radius;
+    var cy = cm == 0 ? y : y + radius;
+
+    var d = this._currEllipseDetail;
+    var v = this._tempBufferCircleVertices;
+    var l = d * 2;
+
+    var i = 0;
+
+    var theta = 2 * Math.PI / d;
+    var c = Math.cos(theta), s = Math.sin(theta);
+    var t;
+    var ox = radius, oy = 0;
+
+    while(i < l)
+    {
+        v[i]   = ox + x;
+        v[i+1] = oy + y;
+        t  = ox;
+        ox = c * ox - s * oy;
+        oy = s * t  + c * oy;
+        i+=2;
+    }
+
+    var gl  = this.gl;
+
+    gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
+    this._setMatrixUniform();
+
+    if(this._fill && !this._texture)
+    {
+        this._applyFill();
+        gl.drawArrays(gl.TRIANGLE_FAN,0,d);
+    }
+
+    if(this._stroke)
+    {
+        this._applyStroke();
+        gl.drawArrays(gl.LINE_LOOP,0,d);
+    }
 };
 
 CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,stopAngle,innerRadiusX,innerRadiusY)
@@ -807,6 +854,12 @@ CanvasGL.prototype.line = function(x0,y0,x1,y1)
     this._setMatrixUniform();
     gl.drawArrays(gl.LINES,0,2);
 };
+
+CanvasGL.prototype.beginShape = function(){};
+
+CanvasGL.prototype.endShape = function(){};
+
+CanvasGL.prototype.vertex = function(x,y){};
 
 CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
@@ -952,12 +1005,12 @@ CanvasGL.prototype._catmullrom = function(x0,x1,x2,x3,u)
 
 };
 
-CanvasGL.prototype.triangleMesh = function(vertices,indices)
+CanvasGL.prototype.mesh = function(vertices,faceIndices)
 {
     if(!this._fill)return;
 
     var gl = this.gl;
-    var ind = new Uint16Array(indices || this._indicesLinearCW(vertices));
+    var ind = new Uint16Array(faceIndices || this._faceIndicesLinearCW(vertices));
 
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,ind,gl.DYNAMIC_DRAW);
@@ -1170,11 +1223,11 @@ CanvasGL.prototype.getScreenCoord = function(x,y)
     x = x || 0;
     y = y || 0;
 
-    var m = this._tMatrix;
+    var m = this._transMatrix;
     var s = this._tempScreenCoords;
 
-    s[0] = m[ 0] * x + m[ 4] * y + m[12];
-    s[1] = m[ 1] * x + m[ 5] * y + m[13];
+    s[0] = m[ 0] * x + m[ 3] * y + m[6];
+    s[1] = m[ 1] * x + m[ 4] * y + m[7];
 
     return s
 };
@@ -1185,12 +1238,12 @@ CanvasGL.prototype.getScreenCoord = function(x,y)
 
 CanvasGL.prototype._setMatrixUniform = function()
 {
-    this.gl.uniformMatrix4fv(this._locationTransMatrix,false,this._tMatrix);
+    this.gl.uniformMatrix3fv(this._locationTransMatrix,false,this._transMatrix);
 };
 
 CanvasGL.prototype._loadIdentity = function()
 {
-    this.__mat44Identity(this._tMatrix);
+    this.__mat33Identity(this._transMatrix);
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -1199,17 +1252,17 @@ CanvasGL.prototype._loadIdentity = function()
 
 CanvasGL.prototype.translate = function(x,y)
 {
-    this._tMatrix = this.__mat44MultPost(this._tMatrix,this.__makeMat44Translate(x,y));
+    this._transMatrix = this.__mat33MultPost(this._transMatrix,this.__makeMat33Translate(x,y));
 };
 
 CanvasGL.prototype.scale = function(x,y)
 {
-    this._tMatrix = this.__mat44MultPost(this._tMatrix,this.__makeMat44Scale(x,y));
+    this._transMatrix = this.__mat33MultPost(this._transMatrix,this.__makeMat33Scale(x,y));
 };
 
 CanvasGL.prototype.rotate = function(a)
 {
-    this._tMatrix = this.__mat44MultPost(this._tMatrix,this.__makeMat44RotationZ(a));
+    this._transMatrix = this.__mat33MultPost(this._transMatrix,this.__makeMat33Rotation(a));
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -1218,21 +1271,21 @@ CanvasGL.prototype.rotate = function(a)
 
 CanvasGL.prototype.pushMatrix = function()
 {
-    this._tMatrixStack.push(this.__makeMat44Copy(this._tMatrix));
+    this._transMatrixStack.push(this.__makeMat33Copy(this._transMatrix));
 };
 
 CanvasGL.prototype.popMatrix = function()
 {
-    var stack = this._tMatrixStack;
+    var stack = this._transMatrixStack;
 
     if(stack.length == 0)
     {
         throw "Invalid pop!";
     }
 
-    this._tMatrix = stack.pop();
+    this._transMatrix = stack.pop();
 
-    return this._tMatrix;
+    return this._transMatrix;
 
 };
 
@@ -1240,127 +1293,117 @@ CanvasGL.prototype.popMatrix = function()
 // Private matrix
 /*---------------------------------------------------------------------------------------------------------*/
 
-// Internal Matrix 4x4 class for all transformations
+// Internal Matrix 3x3 class for all transformations
 
-// SX  0  0  0   0  1  2  3
-//  0 SY  0  0   4  5  6  7
-//  0  0 SZ  0   8  9 10 11
-// TX TY TZ  1  12 13 14 15
 
-CanvasGL.prototype.__makeMat44 = function()
+
+// SX  0  0   0  1  2
+//  0 SY  0   3  4  5
+// TX TY  1   6  7  8
+
+CanvasGL.prototype.__tempMatrix = function()
 {
-    return new Float32Array([ 1, 0, 0, 0,
-                              0, 1, 0, 0,
-                              0, 0, 1, 0,
-                              0, 0, 0, 1 ]);
+    return this.__mat33Identity(this._tempMatrix);
 };
 
-CanvasGL.prototype.__mat44Identity = function(m)
+CanvasGL.prototype.__makeMat33 = function()
 {
-    m[ 0] = 1; m[ 1] = m[ 2] = m[ 3] = 0;
-    m[ 5] = 1; m[ 4] = m[ 6] = m[ 7] = 0;
-    m[10] = 1; m[ 8] = m[ 9] = m[11] = 0;
-    m[15] = 1; m[12] = m[13] = m[14] = 0;
+    return new Float32Array([ 1, 0, 0,
+                              0, 1, 0,
+                              0, 0, 1]);
+};
 
+CanvasGL.prototype.__mat33Identity = function(m)
+{
+    m[ 0] = 1;m[ 4] = 1;m[ 8] = 1;
+    m[ 1] = m[ 2] = m[ 3] = m[ 5] = m[ 6] = m[ 7] = 0;
     return m;
 };
 
-CanvasGL.prototype.__mat44Copy = function(m)
+CanvasGL.prototype.__mat33Copy = function(m)
 {
     return new Float32Array(m);
 };
 
-CanvasGL.prototype.__makeMat44Scale = function(x,y)
+CanvasGL.prototype.__makeMat33Scale = function(x,y)
 {
-    var  m = this.__makeMat44();
+    var  m = this.__tempMatrix();
     m[0] = x;
-    m[5] = y;
-    return m;
-
-};
-
-CanvasGL.prototype.__makeMat44Translate = function(x,y)
-{
-    var m = this.__makeMat44();
-    m[12] = x;
-    m[13] = y;
+    m[4] = y;
     return m;
 };
 
-CanvasGL.prototype.__makeMat44RotationZ = function(a)
+CanvasGL.prototype.__makeMat33Translate = function(x,y)
 {
-    var m = this.__makeMat44();
+    var  m = this.__tempMatrix();
+    m[6] = x;
+    m[7] = y;
+    return m;
+};
+
+CanvasGL.prototype.__makeMat33Rotation = function(a)
+{
+    var  m = this.__tempMatrix();
 
     var sin = Math.sin(a),
         cos = Math.cos(a);
 
     m[0] = cos;
     m[1] = sin;
-    m[4] = -sin;
-    m[5] = cos;
-
+    m[3] = -sin;
+    m[4] = cos;
     return m;
 };
 
-CanvasGL.prototype.__makeMat44Copy = function(m)
+CanvasGL.prototype.__makeMat33Copy = function(m)
 {
-    var d = this.__makeMat44();
+    var d = this.__makeMat33();
 
-    d[ 0] = m[ 0];d[ 1] = m[ 1];d[ 2] = m[ 2];d[ 3] = m[ 3];
-    d[ 4] = m[ 4];d[ 5] = m[ 5];d[ 6] = m[ 6];d[ 7] = m[ 7];
-    d[ 8] = m[ 8];d[ 9] = m[ 9];d[10] = m[10];d[11] = m[11];
-    d[12] = m[12];d[13] = m[13];d[14] = m[14];d[15] = m[15];
+    d[ 0] = m[ 0];d[ 1] = m[ 1];d[ 2] = m[ 2];
+    d[ 3] = m[ 3];d[ 4] = m[ 4];d[ 5] = m[ 5];
+    d[ 6] = m[ 6];d[ 7] = m[ 7];d[ 8] = m[ 8];
 
     return d;
 };
 
-CanvasGL.prototype.__mat44MultPre = function(m0,m1)
+CanvasGL.prototype.__mat33MultPre = function(m0,m1)
 {
-    var m = this.__makeMat44();
+    var m = this.__makeMat33();
 
-    var m000 = m0[ 0],m001 = m0[ 1],m002 = m0[ 2],m003 = m0[ 3],
-        m004 = m0[ 4],m005 = m0[ 5],m006 = m0[ 6],m007 = m0[ 7],
-        m008 = m0[ 8],m009 = m0[ 9],m010 = m0[10],m011 = m0[11],
-        m012 = m0[12],m013 = m0[13],m014 = m0[14],m015 = m0[15];
 
-    var m100 = m1[ 0],m101 = m1[ 1],m102 = m1[ 2],m103 = m1[ 3],
-        m104 = m1[ 4],m105 = m1[ 5],m106 = m1[ 6],m107 = m1[ 7],
-        m108 = m1[ 8],m109 = m1[ 9],m110 = m1[10],m111 = m1[11],
-        m112 = m1[12],m113 = m1[13],m114 = m1[14],m115 = m1[15];
+   var m000 = m0[ 0],m001 = m0[ 1],m002 = m0[ 2],
+       m003 = m0[ 3],m004 = m0[ 4],m005 = m0[ 5],
+       m006 = m0[ 6],m007 = m0[ 7],m008 = m0[8];
 
-    m[ 0] = m000*m100 + m001*m104 + m002*m108 + m003*m112;
-    m[ 1] = m000*m101 + m001*m105 + m002*m109 + m003*m113;
-    m[ 2] = m000*m102 + m001*m106 + m002*m110 + m003*m114;
-    m[ 3] = m000*m103 + m001*m107 + m002*m111 + m003*m115;
+   var m100 = m1[ 0],m101 = m1[ 1],m102 = m1[ 2],
+       m103 = m1[ 3],m104 = m1[ 4],m105 = m1[ 5],
+       m106 = m1[ 6],m107 = m1[ 7],m108 = m1[8];
 
-    m[ 4] = m004*m100 + m005*m104 + m006*m108 + m007*m112;
-    m[ 5] = m004*m101 + m005*m105 + m006*m109 + m007*m113;
-    m[ 6] = m004*m102 + m005*m106 + m006*m110 + m007*m114;
-    m[ 7] = m004*m103 + m005*m107 + m006*m111 + m007*m115;
+    m[ 0] = m000*m100 + m001*m103 + m002*m106;
+    m[ 1] = m000*m101 + m001*m104 + m002*m107;
+    m[ 2] = m000*m102 + m001*m105 + m002*m108;
 
-    m[ 8] = m008*m100 + m009*m104 + m010*m108 + m011*m112;
-    m[ 9] = m008*m101 + m009*m105 + m010*m109 + m011*m113;
-    m[10] = m008*m102 + m009*m106 + m010*m110 + m011*m114;
-    m[11] = m008*m103 + m009*m107 + m010*m111 + m011*m115;
+    m[ 3] = m003*m100 + m004*m103 + m005*m106;
+    m[ 4] = m003*m101 + m004*m104 + m005*m107;
+    m[ 5] = m003*m102 + m004*m105 + m005*m108;
 
-    m[12] = m012*m100 + m013*m104 + m014*m108 + m015*m112;
-    m[13] = m012*m101 + m013*m105 + m014*m109 + m015*m113;
-    m[14] = m012*m102 + m013*m106 + m014*m110 + m015*m114;
-    m[15] = m012*m103 + m013*m107 + m014*m111 + m015*m115;
+    m[ 6] = m006*m100 + m007*m103 + m008*m106;
+    m[ 7] = m006*m101 + m007*m104 + m008*m107;
+    m[ 8] = m006*m102 + m007*m105 + m008*m108;
 
     return m;
 };
 
-CanvasGL.prototype.__mat44MultPost = function(mat0,mat1)
+CanvasGL.prototype.__mat33MultPost = function(mat0,mat1)
 {
-    return this.__mat44MultPre(mat1,mat0);
+    return this.__mat33MultPre(mat1,mat0);
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Helper
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype._indicesLinearCW = function(vertices)
+CanvasGL.prototype._faceIndicesLinearCW = function(vertices)
 {
     var a = new Array((vertices.length/2-2)*3);
     var i = 0;
@@ -1374,7 +1417,7 @@ CanvasGL.prototype._indicesLinearCW = function(vertices)
     return a;
 };
 
-CanvasGL.prototype._indicesLinearCCW = function(vertices)
+CanvasGL.prototype._faceIndicesLinearCCW = function(vertices)
 {
     var a = new Array((vertices.length/2-2)*3);
     var i = 0;
@@ -1746,4 +1789,53 @@ function lerpColor(col0,col1,a)
 
 /*---------------------------------------------------------------------------------------------------------*/
 
+_CGLInternal = {};
+_CGLInternal.PoolArray = function(reserveAmount)
+{
+    this._DEFAULT_SIZE = 100;
+    this._array        = [];
+    this._index        = 0;
+    this._count        = 0;
+    this._reservedSize = 0;
+    this.reserve( reserveAmount );
+};
+
+_CGLInternal.PoolArray.prototype.reserve = function(amount)
+{
+    this._reservedSize = Math.round(amount);
+    this._array.length = this._reservedSize;
+};
+
+_CGLInternal.PoolArray.prototype.reservedSize = function()
+{
+    return this._reservedSize;
+};
+
+_CGLInternal.PoolArray.prototype.size = function()
+{
+    return this._count;
+};
+
+_CGLInternal.PoolArray.prototype.add = function(obj)
+{
+    if(this._count >= this._reservedSize)
+    {
+        this.reserve(this._count*1.1);
+    }
+
+    this._array[this._index]=obj;
+    this._index++;
+    this._count++;
+};
+
+_CGLInternal.PoolArray.prototype.reset = function()
+{
+    this._count = 0;
+    this._index = 0;
+};
+
+_CGLInternal.PoolArray.prototype.get = function(index)
+{
+    return this._array[index];
+};
 

@@ -123,7 +123,7 @@ TestCanvasGL.prototype.draw = function()
             }
             i = 0;
             c.fill(10);
-            c.triangleMesh(verticesA);
+            c.mesh(verticesA);
 
         }
         c.popMatrix();
@@ -140,7 +140,7 @@ TestCanvasGL.prototype.draw = function()
             c.rotate(HALF_PI*stepCubed(asint025));
             pp0 =rs025+rs*0.25*stepCubed(asint025);
 
-            c.triangleMesh([-pp0,-pp0,pp0,-pp0,pp0,pp0,-pp0,pp0],[0,1,3,1,2,3]);
+            c.mesh([-pp0,-pp0,pp0,-pp0,pp0,pp0,-pp0,pp0],[0,1,3,1,2,3]);
             transformedPoint = c.getScreenCoord(pp0,0);
 
         }

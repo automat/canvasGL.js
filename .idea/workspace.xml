@@ -19,22 +19,22 @@
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.37603796">
+    <splitter split-orientation="horizontal" split-proportion="0.5">
       <split-first>
         <leaf>
-          <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="true">
+          <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="103" column="9" selection-start="2402" selection-end="2402" vertical-scroll-proportion="2.6410255">
+                <state line="30" column="18" selection-start="778" selection-end="778" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="false">
+          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="29" column="37" selection-start="767" selection-end="767" vertical-scroll-proportion="0.0">
+                <state line="225" column="62" selection-start="7893" selection-end="7893" vertical-scroll-proportion="0.46394983">
                   <folding />
                 </state>
               </provider>
@@ -61,7 +61,7 @@
           <file leaf-file-name="index.html" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/index.html">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="20" column="31" selection-start="277" selection-end="277" vertical-scroll-proportion="0.0">
+                <state line="20" column="31" selection-start="277" selection-end="277" vertical-scroll-proportion="-1.3846154">
                   <folding />
                 </state>
               </provider>
@@ -83,21 +83,8 @@
           <file leaf-file-name="canvasGL.js" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="219" column="39" selection-start="7731" selection-end="7731" vertical-scroll-proportion="1.3846154">
-                  <folding>
-                    <element signature="e#12746#13472#0" expanded="false" />
-                    <element signature="e#12801#13444#0" expanded="false" />
-                    <element signature="e#13517#13594#0" expanded="false" />
-                    <element signature="e#13641#13716#0" expanded="false" />
-                    <element signature="e#13765#13855#0" expanded="false" />
-                    <element signature="e#13906#13994#0" expanded="false" />
-                    <element signature="e#14039#14112#0" expanded="false" />
-                    <element signature="e#14159#14230#0" expanded="false" />
-                    <element signature="e#14279#14357#0" expanded="false" />
-                    <element signature="e#14408#14484#0" expanded="false" />
-                    <element signature="e#14528#14557#0" expanded="false" />
-                    <element signature="e#14619#14800#0" expanded="false" />
-                  </folding>
+                <state line="188" column="20" selection-start="6227" selection-end="6227" vertical-scroll-proportion="-13.355958">
+                  <folding />
                 </state>
               </provider>
             </entry>
@@ -329,14 +316,14 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3286334" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.11122826" sideWeight="0.52603036" order="1" side_tool="true" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.11122826" sideWeight="0.7603037" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.23969631" sideWeight="0.98675495" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.23969631" sideWeight="0.98675495" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -401,7 +388,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="17" />
+      <option name="time" value="18" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
@@ -413,13 +400,6 @@
     <entry file="file://$PROJECT_DIR$/test.html">
       <provider selected="true" editor-type-id="text-editor">
         <state line="5" column="26" selection-start="125" selection-end="125" vertical-scroll-proportion="-3.2692308">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/js/math.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="68" column="129" selection-start="972" selection-end="1090" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -454,6 +434,13 @@
         <state line="170" column="22" selection-start="7268" selection-end="7268" vertical-scroll-proportion="4.2814813" />
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="30" column="18" selection-start="778" selection-end="778" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/js/matrix.js">
       <provider selected="true" editor-type-id="text-editor">
         <state line="131" column="4" selection-start="3088" selection-end="5837" vertical-scroll-proportion="0.0">
@@ -470,35 +457,22 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/index.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="20" column="31" selection-start="277" selection-end="277" vertical-scroll-proportion="0.0">
+        <state line="20" column="31" selection-start="277" selection-end="277" vertical-scroll-proportion="-1.3846154">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
+    <entry file="file://$PROJECT_DIR$/js/math.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="103" column="9" selection-start="2402" selection-end="2402" vertical-scroll-proportion="2.6410255">
+        <state line="68" column="129" selection-start="972" selection-end="1090" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="219" column="39" selection-start="7731" selection-end="7731" vertical-scroll-proportion="1.3846154">
-          <folding>
-            <element signature="e#12746#13472#0" expanded="false" />
-            <element signature="e#12801#13444#0" expanded="false" />
-            <element signature="e#13517#13594#0" expanded="false" />
-            <element signature="e#13641#13716#0" expanded="false" />
-            <element signature="e#13765#13855#0" expanded="false" />
-            <element signature="e#13906#13994#0" expanded="false" />
-            <element signature="e#14039#14112#0" expanded="false" />
-            <element signature="e#14159#14230#0" expanded="false" />
-            <element signature="e#14279#14357#0" expanded="false" />
-            <element signature="e#14408#14484#0" expanded="false" />
-            <element signature="e#14528#14557#0" expanded="false" />
-            <element signature="e#14619#14800#0" expanded="false" />
-          </folding>
+        <state line="188" column="20" selection-start="6227" selection-end="6227" vertical-scroll-proportion="-13.355958">
+          <folding />
         </state>
       </provider>
     </entry>
