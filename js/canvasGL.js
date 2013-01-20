@@ -93,8 +93,10 @@ function CanvasGL(parentDomElementId)
             "void main()" +
             "{" +
                 "vec4 texColor  = texture2D(u_image,v_texture_coord) * u_use_texture;" +
-                "vec4 vertColor = u_color * (1.0 - u_use_texture);" +
-                "gl_FragColor = vertColor+texColor;" +
+                //"vec4 vertColor = u_color * (1.0 - u_use_texture);" +
+                //"gl_FragColor   = v_vertex_color*(1.0-u_use_texture)+texColor;" +
+                //"gl_FragColor   = v_vertex_color*(1.0-u_use_texture)+texColor;" +
+                "gl_FragColor = v_vertex_color * (1.0 - u_use_texture) + texColor;"+
             "}",
 
         this.gl.FRAGMENT_SHADER);
@@ -151,7 +153,7 @@ function CanvasGL(parentDomElementId)
     gl.enableVertexAttribArray(this._locationAttribTextureCoord);
     gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,0);
 
-    //gl.enableVertexAttribArray(this._locationAttribVertexColor);
+    gl.enableVertexAttribArray(this._locationAttribVertexColor);
     //gl.vertexAttribPointer(    this._locationAttribVertexColor,4,gl.FLOAT,false,0,0);
 
 
@@ -183,8 +185,6 @@ function CanvasGL(parentDomElementId)
     this._textureWrap = CanvasGL.CLAMP;
     this._fill        = true;
     this._stroke      = true;
-    this._fillColor   = colorf(1.0,1.0);
-    this._strokeColor = colorf(1.0,1.0);
     this._texture     = false;
     this._textureCurr = null;
     this._c2dTexture  = this._c2dPrepareTexture();
@@ -205,16 +205,27 @@ function CanvasGL(parentDomElementId)
 
     this._tempQuadTexCoords         = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0]);
 
-    this._tempQuadFillVertices      = new Float32Array(12);
-    this._tempQuadStrokeVertices    = new Float32Array(8);
-    this._tempTriangleVertices      = new Float32Array(6);
-    this._tempLineVertices          = new Float32Array(4);
-    this._tempPointVertices         = new Float32Array(2);
-    this._tempBufferCircleVertices  = new Float32Array(_CGLConstants.ELLIPSE_DETAIL_MAX*2);
-    this._tempBufferBezierVertices  = new Float32Array(_CGLConstants.BEZIER_DETAIL_MAX*2);
-    this._tempBufferArcVertices     = new Float32Array(_CGLConstants.ELLIPSE_DETAIL_MAX*4);
-    this._tempBufferSplineVertices  = new Float32Array(_CGLConstants.SPLINE_DETAIL_MAX*4);
-    this._tempBufferVertexColor     = new Float32Array(4);
+    this._tempBufferQuadFillVertices      = new Float32Array(12);
+    this._tempBufferQuadStrokeVertices    = new Float32Array(8);
+    this._tempBufferTriangleVertices      = new Float32Array(6);
+    this._tempBufferLineVertices          = new Float32Array(4);
+    this._tempBufferPointVertices         = new Float32Array(2);
+    this._tempBufferCircleVertices        = new Float32Array(_CGLConstants.ELLIPSE_DETAIL_MAX*2);
+    this._tempBufferBezierVertices        = new Float32Array(_CGLConstants.BEZIER_DETAIL_MAX*2);
+    this._tempBufferArcVertices           = new Float32Array(_CGLConstants.ELLIPSE_DETAIL_MAX*4);
+    this._tempBufferSplineVertices        = new Float32Array(_CGLConstants.SPLINE_DETAIL_MAX*4);
+    this._tempBufferVertexColor           = new Float32Array(4);
+
+
+    this._tempBufferQuadFillColors        = new Float32Array(this._color1fArr(1.0,6*4));
+    this._tempBufferQuadStrokeColors      = new Float32Array(this._color1fArr(1.0,4*4));
+    this._tempBufferTriangleColors        = new Float32Array(this._color1fArr(1.0,3*4));
+    this._tempBufferLineColors            = new Float32Array(this._color1fArr(1.0,2*4));
+    this._tempBufferPointColor            = new Float32Array(this._color1fArr(1.0,4));
+
+    this._fillColor    = colorf(1.0,1.0);
+    this._strokeColor  = colorf(1.0,1.0);
+    this._tempColorArr = [];
 
     this._tempScreenCoords = new Array(2);
     this._tempSplineVertices = [];
@@ -225,6 +236,11 @@ function CanvasGL(parentDomElementId)
 
     this._currBlendSrc  = gl.SRC_ALPHA;
     this._currBlendDest = gl.ONE_MINUS_SRC_ALPHA;
+
+    // Immidiate mode wrapper (Insprired by Memo Akten)
+
+    this._imDEFAULT_RESERVE_AMOUNT= 500;
+
 
     this._tempShapeVertices = new _CGLInternal.PoolArray(100);
 
@@ -316,7 +332,7 @@ CanvasGL.prototype.setBlendFunc = function(src,dest)
 CanvasGL.prototype.setPixelPerfect = function(b)
 {
     this._isPixelPerfect = b;
-}
+};
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Shape fill/stroke/texture
@@ -371,48 +387,62 @@ CanvasGL.prototype.fill1i = function(k)
 {
     var f = this._fillColor;
     f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
+    this._fill = true;
 };
 
 CanvasGL.prototype.fill2i = function(k,a)
 {
     var f = this._fillColor;
     f[0] = f[1] = f[2] = k/255;f[3] = a;
+    this._fill = true;
 };
 
 CanvasGL.prototype.fill3i = function(r,g,b)
 {
     var f = this._fillColor;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
+    this._fill = true;
 };
 
 CanvasGL.prototype.fill4i = function(r,g,b,a)
 {
     var f = this._fillColor;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = a;
+    this._fill = true;
 };
 
 CanvasGL.prototype.fill1f = function(k)
 {
     var f = this._fillColor;
     f[0] = f[1] = f[2] = k;f[3] = 1.0;
+    this._fill = true;
 };
 
 CanvasGL.prototype.fill2f = function(k,a)
 {
     var f = this._fillColor;
     f[0] = f[1] = f[2] = k;f[3] = a;
+    this._fill = true;
 };
 
 CanvasGL.prototype.fill3f = function(r,g,b)
 {
     var f = this._fillColor;
     f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
+    this._fill = true;
 };
 
 CanvasGL.prototype.fill4f = function(r,g,b,a)
 {
     var f = this._fillColor;
     f[0] = r;f[1] = g; f[2] = b;f[3] = a;
+    this._fill = true;
+};
+
+CanvasGL.prototype.fillArr =  function()
+{
+    this._fillColor = a;
+    this._fill = true;
 };
 
 CanvasGL.prototype.noFill = function()
@@ -469,54 +499,115 @@ CanvasGL.prototype.stroke1i = function(k)
 {
     var f = this._strokeColor;
     f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
+    this._stroke = true;
 };
 
 CanvasGL.prototype.stroke2i = function(k,a)
 {
     var f = this._strokeColor;
     f[0] = f[1] = f[2] = k/255;f[3] = a;
+    this._stroke = true;
 };
 
 CanvasGL.prototype.stroke3i = function(r,g,b)
 {
     var f = this._strokeColor;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
+    this._stroke = true;
 };
 
 CanvasGL.prototype.stroke4i = function(r,g,b,a)
 {
     var f = this._strokeColor;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = a;
+    this._stroke = true;
 };
 
 CanvasGL.prototype.stroke1f = function(k)
 {
     var f = this._strokeColor;
     f[0] = f[1] = f[2] = k;f[3] = 1.0;
+    this._stroke = true;
 };
 
 CanvasGL.prototype.stroke2f = function(k,a)
 {
     var f = this._strokeColor;
     f[0] = f[1] = f[2] = k;f[3] = a;
+    this._stroke = true;
 };
 
 CanvasGL.prototype.stroke3f = function(r,g,b)
 {
     var f = this._strokeColor;
     f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
+    this._stroke = true;
 };
 
 CanvasGL.prototype.stroke4f = function(r,g,b,a)
 {
     var f = this._strokeColor;
     f[0] = r;f[1] = g; f[2] = b;f[3] = a;
+    this._stroke = true;
+};
+
+CanvasGL.prototype.strokeArr = function(a)
+{
+    this._strokeColor = a;
+    this._stroke = true;
 };
 
 CanvasGL.prototype.noStroke = function()
 {
     this._stroke = false;
 };
+
+CanvasGL.prototype._applyColorToColorBuffer = function(color,buffer,mode)
+{
+    var i = 0;
+
+    if(color.length == 4)
+    {
+        while(i < buffer.length)
+        {
+            buffer[i]  =color[0];
+            buffer[i+1]=color[1];
+            buffer[i+2]=color[2];
+            buffer[i+3]=color[3];
+            i+=4;
+        }
+    }
+    else
+    {
+        if(color.length != buffer.length)
+        {
+            console.log("Color array length not equal to number of vertices.");
+            return buffer;
+        }
+
+        while(i < buffer.length)
+        {
+            buffer[i] = color[i];
+            buffer[i+1] = color[i+1];
+            buffer[i+2] = color[i+2];
+            buffer[i+3] = color[i+3];
+            i+=4;
+        }
+    }
+
+
+
+    return buffer;
+};
+
+CanvasGL.prototype._color1fArr = function(k,length)
+{
+    var a = new Array(length);
+    var i = -1;
+    while(++i < length){a[i]=k;}
+    return a;
+};
+
 
 
 // Texture
@@ -636,10 +727,12 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
     var gl = this.gl;
     var vbo = this._vbo;
-    var v = this._tempQuadFillVertices;
+    var v = this._tempBufferQuadFillVertices;
+    var glArrayBuffer = gl.ARRAY_BUFFER,
+        glDynamicDraw = gl.DYNAMIC_DRAW;
 
     this._setMatrixUniform();
-    gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+    gl.bindBuffer(glArrayBuffer,vbo);
 
     v[ 0] = x0;
     v[ 1] = y0;
@@ -654,26 +747,42 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
     v[10] = x3;
     v[11] = y3;
 
+    var c;
+    var vblen = v.byteLength;
+    var cblen;
+
     if(this._fill && !this._texture)
     {
+        c = this._applyColorToColorBuffer(this._fillColor,this._tempBufferQuadFillColors,null);
+        cblen = c.byteLength;
 
-        gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
+        gl.bufferData(glArrayBuffer,vblen + cblen,glDynamicDraw);
+        gl.bufferSubData(glArrayBuffer,0,v);
+        gl.bufferSubData(glArrayBuffer,vblen,c);
+        gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribVertexColor,4,gl.FLOAT,false,0,vblen);
+        gl.drawArrays(gl.TRIANGLES,0,6);
+
+        /*
+        gl.bufferData(glArrayBuffer,v,glDynamicDraw);
         this._applyFill();
         gl.drawArrays(gl.TRIANGLES,0,6);
+        */
+
     }
 
     if(this._texture)
     {
+        var qtc   = this._tempQuadTexCoords;
+        var tblen = qtc.byteLength;
 
-        gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
-        gl.bufferData(gl.ARRAY_BUFFER,v.byteLength + this._tempQuadTexCoords.byteLength,gl.DYNAMIC_DRAW);
-        gl.bufferSubData(gl.ARRAY_BUFFER,0,v);
-        gl.bufferSubData(gl.ARRAY_BUFFER,v.byteLength,this._tempQuadTexCoords);
+        gl.bindBuffer(glArrayBuffer,vbo);
+        gl.bufferData(glArrayBuffer,vblen + tblen,glDynamicDraw);
+        gl.bufferSubData(glArrayBuffer,0,v);
+        gl.bufferSubData(glArrayBuffer,vblen,qtc);
+        gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribTextureCoord,2,gl.FLOAT,false,0,vblen);
 
-        gl.enableVertexAttribArray(this._locationAttribPosition);
-        gl.vertexAttribPointer(    this._locationAttribPosition,2,gl.FLOAT,false,0,0);
-        gl.enableVertexAttribArray(this._locationAttribTextureCoord);
-        gl.vertexAttribPointer(    this._locationAttribTextureCoord,2,gl.FLOAT,false,0,v.byteLength);
 
         this._applyTexture();
         gl.drawArrays(gl.TRIANGLES,0,6);
@@ -681,15 +790,29 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
     if(this._stroke)
     {
-        v = this._tempQuadStrokeVertices;
+        c = this._applyColorToColorBuffer(this._strokeColor,this._tempBufferQuadStrokeColors,null);
+        v = this._tempBufferQuadStrokeVertices;
         v[ 0] = x0; v[ 1] = y0;
         v[ 2] = x1; v[ 3] = y1;
         v[ 4] = x2; v[ 5] = y2;
         v[ 6] = x3; v[ 7] = y3;
 
-        gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
+        vblen = v.byteLength;
+        cblen = c.byteLength;
+
+        gl.bufferData(glArrayBuffer,vblen + cblen,glDynamicDraw);
+        gl.bufferSubData(glArrayBuffer,0,v);
+        gl.bufferSubData(glArrayBuffer,vblen,c);
+        gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribVertexColor,4,gl.FLOAT,false,0,vblen);
+        gl.drawArrays(gl.LINE_LOOP,0,4);
+
+
+        /*
+        gl.bufferData(glArrayBuffer,v,glDynamicDraw);
         this._applyStroke();
         gl.drawArrays(gl.LINE_LOOP,0,4);
+        */
     }
 };
 
@@ -852,7 +975,7 @@ CanvasGL.prototype.line = function(x0,y0,x1,y1)
     if(!this._stroke)return;
 
     var gl  = this.gl;
-    var v   = this._tempLineVertices;
+    var v   = this._tempBufferLineVertices;
 
     v[0] = x0;v[1] = y0;
     v[2] = x1;v[3] = y1;
@@ -897,7 +1020,6 @@ CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
         vertices[i+1]= nt3*y0+3*nt2*t*y1+3*nt*t2*y2+t3*y3;
 
         i+=2;
-
     }
 
     var gl = this.gl;
@@ -1036,7 +1158,7 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
     if(!this._fill && !this._stroke)return;
 
     var gl = this.gl;
-    var v  = this._tempTriangleVertices;
+    var v  = this._tempBufferTriangleVertices;
     v[0] = x0;
     v[1] = y0;
     v[2] = x1;
@@ -1062,7 +1184,7 @@ CanvasGL.prototype.point = function(x,y)
 {
     if(!this._fill)return;
     var gl = this.gl;
-    var v  = this._tempPointVertices;
+    var v  = this._tempBufferPointVertices;
     v[0] = x;
     v[1] = y;
     gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);

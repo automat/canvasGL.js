@@ -72,16 +72,20 @@ TestCanvasGL.prototype.draw = function()
 
     c.background(10);
     c.noStroke();
-    c.noStroke();
-   c.fill(255);
-
-    c.translate(0,0);
-    c.fill(150,0,0);
+    c.fill(100,0,0);
     c.rect(0,0,100,100);
+    c.noFill();
+    c.strokeArr([1.0,1.0,1.0,1.0,
+                 1.0,0.0,1.0,1.0,
+                 1.0,1.0,1.0,1.0,
+                 1.0,1.0,1.0,0.0]);
+    c.rect(100,0,100,100);
+
+
+
 
 
     /*
-
     //12
     var i,j;
     var rs = c.width/16,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
