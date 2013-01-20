@@ -72,6 +72,7 @@ function CanvasGL(parentDomElementId)
                 "vec2 clipSpace  = vec2(a_matrix * vec3(a_position.xy,1)).xy / u_resolution * 2.0 - 1.0;" +
                 "gl_Position     = vec4(clipSpace.x,-clipSpace.y,0,1);" +
                 "v_texture_coord = a_texture_coord;" +
+                "v_vertex_color  = a_vertex_color;" +
             "}",
 
         this.gl.VERTEX_SHADER);
@@ -174,6 +175,8 @@ function CanvasGL(parentDomElementId)
     this._gl2d = this._gl2dCanvas.getContext('2d');
 
     // Set draw modes
+
+    this._isPixelPerfect = false;
 
     this._ellipseMode = CanvasGL.CENTER;
     this._rectMode    = CanvasGL.CORNER;
@@ -309,6 +312,11 @@ CanvasGL.prototype.setBlendFunc = function(src,dest)
     this._currBlendSrc = src;
     this._currBlendDest = dest;
 };
+
+CanvasGL.prototype.setPixelPerfect = function(b)
+{
+    this._isPixelPerfect = b;
+}
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Shape fill/stroke/texture

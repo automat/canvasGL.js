@@ -75,7 +75,12 @@ TestCanvasGL.prototype.draw = function()
     c.noStroke();
    c.fill(255);
 
+    c.translate(0,0);
+    c.fill(150,0,0);
+    c.rect(0,0,100,100);
 
+
+    /*
 
     //12
     var i,j;
@@ -359,14 +364,7 @@ TestCanvasGL.prototype.draw = function()
                 c.fill(map(verticesA[i],0,rs2,0,255));
                 c.circle(verticesA[i],verticesA[i+1],pp0);
                 c.circle(verticesB[i],verticesB[i+1],pp0);
-                /*
-                c.fill(255);
-                c.circle(verticesA[i],verticesA[i+1],3);
-                c.circle(verticesB[i],verticesB[i+1],3);
-                c.fill(0);
-                c.circle(verticesA[i],verticesA[i+1],2.2);
-                c.circle(verticesB[i],verticesB[i+1],2.2);
-                */
+
 
                 i+=2;
             }
@@ -765,6 +763,7 @@ TestCanvasGL.prototype.draw = function()
 
     }
     c.popMatrix();
+    */
 };
 
 
