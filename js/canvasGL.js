@@ -202,10 +202,10 @@ function CanvasGL(parentDomElementId)
 
     this._tempBezierPoints = new Array(8);
 
-    this._tempQuadTexCoords         = new Float32Array([ 0.0, 1.0,
-                                                         1.0, 0.0,
+    this._tempQuadTexCoords         = new Float32Array([ 0.0, 0.0,
+                                                         0.0, 1.0,
                                                          1.0, 1.0,
-                                                         0.0, 1.0 ]);
+                                                         1.0, 0.0 ]);
 
     this._tempQuadTexCoords6        = new Float32Array([0.0,0.0,
                                                         1.0,0.0,
@@ -863,12 +863,12 @@ CanvasGL.prototype.textureTest = function(x,y,width,height)
 
     v[ 0] = x;
     v[ 1] = y;
-    v[ 2] = xw;
-    v[ 3] = y;
-    v[ 4] = x;
+    v[ 2] = x;
+    v[ 3] = yh;
+    v[ 4] = xw;
     v[ 5] = yh;
     v[ 6] = xw;
-    v[ 7] = yh;
+    v[ 7] = y;
 
 
 
@@ -890,6 +890,58 @@ CanvasGL.prototype.textureTest = function(x,y,width,height)
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
     this._disableTexture();
+
+    /*
+    var gl = this.gl;
+
+    var v = this._tempBufferQuadVertices,
+        c = this._tempBufferQuadColors,
+        t = this._tempQuadTexCoords;
+
+    var vblen = v.byteLength,
+        cblen = c.byteLength,
+        tblen = t.byteLength,
+        tlen  = vblen + cblen + tblen;
+
+    var offSetV = 0,
+        offSetC = offSetV + vblen,
+        offSetT = vblen + cblen;
+
+    var xw = x+width,
+        yh = y+height;
+
+
+
+    v[ 0] = x;
+    v[ 1] = y;
+    v[ 2] = xw;
+    v[ 3] = y;
+    v[ 4] = xw;
+    v[ 5] = yh;
+    v[ 6] = x;
+    v[ 7] = yh;
+
+
+
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
+    gl.bufferData(gl.ARRAY_BUFFER,tlen,gl.DYNAMIC_DRAW);
+
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,v);
+    gl.bufferSubData(gl.ARRAY_BUFFER,offSetC,c);
+    gl.bufferSubData(gl.ARRAY_BUFFER,offSetT,t);
+
+    gl.vertexAttribPointer(this._locationAttribPosition,    2,gl.FLOAT,false,0,offSetV);
+    gl.vertexAttribPointer(this._locationAttribVertexColor, 4,gl.FLOAT,false,0,offSetC);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord,2,gl.FLOAT,false,0,offSetT);
+
+    gl.uniform1f(this._locationUniformUseTexture,0.5);
+    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+    gl.uniform1f(this._locationUniformImage,0);
+    gl.drawArrays(gl.TRIANGLE_FAN,0,4);
+
+    this._disableTexture();
+    */
 
 };
 
