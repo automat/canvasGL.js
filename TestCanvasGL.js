@@ -72,14 +72,48 @@ TestCanvasGL.prototype.draw = function()
 
     c.background(10);
     c.noStroke();
-    c.fill(100,0,0);
-    c.rect(0,0,100,100);
-    c.noFill();
     c.strokeArr([1.0,1.0,1.0,1.0,
                  1.0,0.0,1.0,1.0,
                  1.0,1.0,1.0,1.0,
                  1.0,1.0,1.0,0.0]);
+    c.fill(100,0,0);
+    c.rect(0,0,100,100);
+    c.noFill();
+
     c.rect(100,0,100,100);
+
+    c.strokeArr([1.0,1.0,1.0,1.0,
+                 1.0,0.0,1.0,1.0]);
+
+    c.line(120,20,180,80);
+
+
+    c.setEllipseDetail(3+floor(abs(sin(t*0.25)*27)));
+    c.noStroke();
+    c.strokeArr(c._lerpedColor(colori(0),colori(255), c.getEllipseDetail()));
+    c.fillArr(c._lerpedColor(colori(255),colori(0), c.getEllipseDetail()));
+    c.circle(250,50,50);
+    c.ellipse(350,50,50,25);
+    c.noStroke();
+
+
+    c.fillArr([1.0,1.0,1.0,1.0,
+               1.0,0.0,0.0,1.0,
+               0.0,1.0,0.0,1.0,
+               0.0,0.0,1.0,1.0]);
+    c.rect(400,0,100,100);
+
+
+
+    c.fillArr([1.0,1.0,1.0,1.0,
+               1.0,0.0,0.0,1.0,
+        1.0,1.0,0.0,1.0,
+        0.0,0.0,1.0,1.0]);
+
+    c.quad(520,20,580,20,580,80,520,80);
+    c.texture(this.img2);
+    c.textureTest(0,100,200,200);
+    //c.rect(0,100,100,100);
 
 
 

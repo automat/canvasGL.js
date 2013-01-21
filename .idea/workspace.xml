@@ -22,19 +22,10 @@
     <splitter split-orientation="horizontal" split-proportion="0.46125463">
       <split-first>
         <leaf>
-          <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="false">
+          <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="98" column="0" selection-start="2295" selection-end="2295" vertical-scroll-proportion="0.0">
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
-              <provider selected="true" editor-type-id="text-editor">
-                <state line="769" column="10" selection-start="20977" selection-end="20977" vertical-scroll-proportion="0.520362">
+                <state line="114" column="25" selection-start="2688" selection-end="2688" vertical-scroll-proportion="0.8947368">
                   <folding />
                 </state>
               </provider>
@@ -52,17 +43,20 @@
           <file leaf-file-name="index.html" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/index.html">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="39" column="13" selection-start="688" selection-end="688" vertical-scroll-proportion="-25.5">
+                <state line="27" column="23" selection-start="483" selection-end="483" vertical-scroll-proportion="-7.6538463">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="math.js" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/js/math.js">
+          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="68" column="129" selection-start="972" selection-end="1090" vertical-scroll-proportion="0.0">
-                  <folding />
+                <state line="204" column="62" selection-start="7015" selection-end="7015" vertical-scroll-proportion="0.0">
+                  <folding>
+                    <marker date="1358788623857" expanded="true" signature="7008:7678" placeholder="[...]" />
+                    <marker date="1358788623857" expanded="true" signature="27196:28077" placeholder="/*...*/" />
+                  </folding>
                 </state>
               </provider>
             </entry>
@@ -74,7 +68,7 @@
           <file leaf-file-name="canvasGL.js" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="336" column="38" selection-start="11206" selection-end="11206" vertical-scroll-proportion="-5.7843137">
+                <state line="876" column="15" selection-start="24809" selection-end="24809" vertical-scroll-proportion="1.2533532">
                   <folding />
                 </state>
               </provider>
@@ -105,8 +99,8 @@
         <option value="$PROJECT_DIR$/js/perlin-noise-simplex.js" />
         <option value="$PROJECT_DIR$/imports.js" />
         <option value="$PROJECT_DIR$/index.html" />
-        <option value="$PROJECT_DIR$/TestCanvasGL.js" />
         <option value="$PROJECT_DIR$/js/canvasGL.js" />
+        <option value="$PROJECT_DIR$/TestCanvasGL.js" />
       </list>
     </option>
   </component>
@@ -149,7 +143,7 @@
     <option name="STATE" value="0" />
   </component>
   <component name="ProjectView">
-    <navigator proportions="" version="1" splitterProportion="0.5">
+    <navigator currentView="ProjectPane" proportions="" version="1" splitterProportion="0.5">
       <flattenPackages />
       <showMembers />
       <showModules />
@@ -160,7 +154,43 @@
       <autoscrollFromSource />
       <sortByType />
     </navigator>
-    <panes />
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="canvasGL.js" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="canvasGL.js" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="canvasGL.js" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="canvasGL.js" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="canvasGL.js" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="js" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
@@ -277,8 +307,8 @@
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3286334" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.11122826" sideWeight="0.52603036" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.053769108" sideWeight="0.7603037" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.23969631" sideWeight="0.993125" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.053769108" sideWeight="0.7418655" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.25131994" sideWeight="0.993125" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -343,7 +373,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="18" />
+      <option name="time" value="19" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
@@ -368,9 +398,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/test.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="5" column="26" selection-start="125" selection-end="125" vertical-scroll-proportion="-3.2692308">
-          <folding />
-        </state>
+        <state line="5" column="26" selection-start="125" selection-end="125" vertical-scroll-proportion="-3.2692308" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/l512.jpg">
@@ -403,6 +431,25 @@
         <state line="170" column="22" selection-start="7268" selection-end="7268" vertical-scroll-proportion="4.2814813" />
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/js/matrix.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="131" column="4" selection-start="3088" selection-end="5837" vertical-scroll-proportion="0.02514793" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/js/math.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="68" column="129" selection-start="972" selection-end="1090" vertical-scroll-proportion="0.02631579">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/index.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="27" column="23" selection-start="483" selection-end="483" vertical-scroll-proportion="-7.6538463">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/imports.js">
       <provider selected="true" editor-type-id="text-editor">
         <state line="11" column="75" selection-start="484" selection-end="484" vertical-scroll-proportion="0.0">
@@ -410,37 +457,16 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/index.html">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="39" column="13" selection-start="688" selection-end="688" vertical-scroll-proportion="-25.5">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/js/math.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="68" column="129" selection-start="972" selection-end="1090" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/js/matrix.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="131" column="4" selection-start="3088" selection-end="5837" vertical-scroll-proportion="0.02514793">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/TestCanvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="98" column="0" selection-start="2295" selection-end="2295" vertical-scroll-proportion="0.0">
+        <state line="114" column="25" selection-start="2688" selection-end="2688" vertical-scroll-proportion="0.8947368">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="336" column="38" selection-start="11206" selection-end="11206" vertical-scroll-proportion="-5.7843137">
+        <state line="876" column="15" selection-start="24809" selection-end="24809" vertical-scroll-proportion="1.2533532">
           <folding />
         </state>
       </provider>

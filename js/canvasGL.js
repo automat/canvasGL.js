@@ -85,6 +85,7 @@ function CanvasGL(parentDomElementId)
             "precision mediump float;" +
             "uniform vec4      u_color;" +
             "uniform float     u_use_texture;" +
+            "uniform float     u_use_vertex_color;" +
             "uniform sampler2D u_image;" +
             "uniform float     u_alpha;" +
             "varying vec2      v_texture_coord;" +
@@ -92,11 +93,11 @@ function CanvasGL(parentDomElementId)
 
             "void main()" +
             "{" +
-                "vec4 texColor  = texture2D(u_image,v_texture_coord) * u_use_texture;" +
+                "vec4 texColor  = texture2D(u_image,v_texture_coord);" +
                 //"vec4 vertColor = u_color * (1.0 - u_use_texture);" +
                 //"gl_FragColor   = v_vertex_color*(1.0-u_use_texture)+texColor;" +
                 //"gl_FragColor   = v_vertex_color*(1.0-u_use_texture)+texColor;" +
-                "gl_FragColor = v_vertex_color * (1.0 - u_use_texture) + texColor;"+
+                "gl_FragColor = v_vertex_color * (1.0 - u_use_texture) + texColor * u_use_texture;"+
             "}",
 
         this.gl.FRAGMENT_SHADER);
@@ -112,15 +113,16 @@ function CanvasGL(parentDomElementId)
 
     // Save attribute and uniform locations from shader
 
-    this._locationAttribPosition     = gl.getAttribLocation( this._program, "a_position");
-    this._locationTransMatrix        = gl.getUniformLocation(this._program, "a_matrix");
-    this._locationAttribTextureCoord = gl.getAttribLocation( this._program, "a_texture_coord");
-    this._locationUniformResolution  = gl.getUniformLocation(this._program, "u_resolution");
-    this._locationUniformColor       = gl.getUniformLocation(this._program, "u_color");
-    this._locationUniformUseTexture  = gl.getUniformLocation(this._program, "u_use_texture");
-    this._locationUniformImage       = gl.getUniformLocation(this._program, "u_image");
-    this._locationUniformAlpha       = gl.getUniformLocation(this._program, "u_alpha");
-    this._locationAttribVertexColor  = gl.getAttribLocation( this._program, "a_vertex_color");
+    this._locationAttribPosition        = gl.getAttribLocation( this._program, "a_position");
+    this._locationTransMatrix           = gl.getUniformLocation(this._program, "a_matrix");
+    this._locationAttribTextureCoord    = gl.getAttribLocation( this._program, "a_texture_coord");
+    this._locationAttribVertexColor     = gl.getAttribLocation( this._program, "a_vertex_color");
+    this._locationUniformResolution     = gl.getUniformLocation(this._program, "u_resolution");
+    this._locationUniformColor          = gl.getUniformLocation(this._program, "u_color");
+    this._locationUniformImage          = gl.getUniformLocation(this._program, "u_image");
+    this._locationUniformAlpha          = gl.getUniformLocation(this._program, "u_alpha");
+    this._locationUniformUseTexture     = gl.getUniformLocation(this._program, "u_use_texture");
+    this._locationUniformUseVertexColor = gl.getUniformLocation(this._program, "u_use_vertex_color");
 
 
     // Create Buffers
@@ -130,12 +132,9 @@ function CanvasGL(parentDomElementId)
     this._cbo = gl.createBuffer();
 
 
-
     // Create default blank texture and texture coords / use color and set alpha to 1.0
 
     this._blankTexture = gl.createTexture();
-    this._textureCoords = [0.0,0.0,1.0,0.0,1.0,1.0,0.0,1.0];
-
     gl.bindTexture(gl.TEXTURE_2D,this._blankTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([1,1,1,1]));
 
@@ -203,10 +202,22 @@ function CanvasGL(parentDomElementId)
 
     this._tempBezierPoints = new Array(8);
 
-    this._tempQuadTexCoords         = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0]);
+    this._tempQuadTexCoords         = new Float32Array([ 0.0, 1.0,
+                                                         1.0, 0.0,
+                                                         1.0, 1.0,
+                                                         0.0, 1.0 ]);
 
-    this._tempBufferQuadFillVertices      = new Float32Array(12);
-    this._tempBufferQuadStrokeVertices    = new Float32Array(8);
+    this._tempQuadTexCoords6        = new Float32Array([0.0,0.0,
+                                                        1.0,0.0,
+                                                        0.0,1.0,
+                                                        1.0,0.0,
+                                                        1.0,1.0,
+                                                        0.0,1.0]);
+
+    this._tempBufferQuadVertices12  = new Float32Array(12);
+
+
+    this._tempBufferQuadVertices          = new Float32Array(8);
     this._tempBufferTriangleVertices      = new Float32Array(6);
     this._tempBufferLineVertices          = new Float32Array(4);
     this._tempBufferPointVertices         = new Float32Array(2);
@@ -217,15 +228,32 @@ function CanvasGL(parentDomElementId)
     this._tempBufferVertexColor           = new Float32Array(4);
 
 
-    this._tempBufferQuadFillColors        = new Float32Array(this._color1fArr(1.0,6*4));
-    this._tempBufferQuadStrokeColors      = new Float32Array(this._color1fArr(1.0,4*4));
+    this._tempBufferQuadColors            = new Float32Array(this._color1fArr(1.0,4*4));
     this._tempBufferTriangleColors        = new Float32Array(this._color1fArr(1.0,3*4));
     this._tempBufferLineColors            = new Float32Array(this._color1fArr(1.0,2*4));
     this._tempBufferPointColor            = new Float32Array(this._color1fArr(1.0,4));
+    this._tempBufferCircleColors          = null;
 
-    this._fillColor    = colorf(1.0,1.0);
-    this._strokeColor  = colorf(1.0,1.0);
+    this._tempBlankQuadColors = new Float32Array([1.0,1.0,1.0,1.0,
+                                                  1.0,1.0,1.0,1.0,
+                                                  1.0,1.0,1.0,1.0,
+                                                  1.0,1.0,1.0,1.0]);
+
+    this._tempBlankQuadColors6 = new Float32Array([1.0,1.0,1.0,1.0,
+                                                   1.0,1.0,1.0,1.0,
+                                                   1.0,1.0,1.0,1.0,
+                                                   1.0,1.0,1.0,1.0,
+                                                   1.0,1.0,1.0,1.0,
+                                                   1.0,1.0,1.0,1.0]);
+
+    this._tempFillColor4   = colorf(1.0,1.0);
+    this._tempStrokeColor4 = colorf(1.0,1.0);
     this._tempColorArr = [];
+    this._fillColor    = this._tempFillColor4;
+    this._strokeColor  = this._tempStrokeColor4;
+
+
+    this._usePerVertexColoring = false;
 
     this._tempScreenCoords = new Array(2);
     this._tempSplineVertices = [];
@@ -309,7 +337,6 @@ CanvasGL.prototype.setBezierDetail = function(a)
 {
     var md = _CGLConstants.BEZIER_DETAIL_MAX;
     this._currBezierDetail = a > md ? md : a;
-
 };
 
 CanvasGL.prototype.setSplineDetail = function(a)
@@ -334,6 +361,26 @@ CanvasGL.prototype.setPixelPerfect = function(b)
     this._isPixelPerfect = b;
 };
 
+CanvasGL.prototype.getPixelPerfect = function()
+{
+    return this._isPixelPerfect;
+};
+
+CanvasGL.prototype.getEllipseDetail = function()
+{
+    return this._currEllipseDetail;
+};
+
+CanvasGL.prototype.getBezierDetail = function()
+{
+    return this._currBezierDetail;
+};
+
+CanvasGL.prototype.getSplineDetail = function()
+{
+    return this._currSplineDetail;
+};
+
 /*---------------------------------------------------------------------------------------------------------*/
 // Shape fill/stroke/texture
 /*---------------------------------------------------------------------------------------------------------*/
@@ -351,7 +398,7 @@ CanvasGL.prototype._applyFill = function()
 CanvasGL.prototype.fill = function()
 {
 
-    var f = this._fillColor;
+    var f = this._fillColor = this._tempFillColor4;
 
     f[3] = 1.0;
 
@@ -380,68 +427,78 @@ CanvasGL.prototype.fill = function()
             break;
     }
 
+    this._perVertexColoring(false);
     this._fill = true;
 };
 
 CanvasGL.prototype.fill1i = function(k)
 {
-    var f = this._fillColor;
+    var f = this._fillColor = this._tempFillColor4;
     f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
+    this._perVertexColoring(false);
     this._fill = true;
 };
 
 CanvasGL.prototype.fill2i = function(k,a)
 {
-    var f = this._fillColor;
+    var f = this._fillColor = this._tempFillColor4;
     f[0] = f[1] = f[2] = k/255;f[3] = a;
+    this._perVertexColoring(false);
     this._fill = true;
 };
 
 CanvasGL.prototype.fill3i = function(r,g,b)
 {
-    var f = this._fillColor;
+    var f = this._fillColor = this._tempFillColor4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
+    this._perVertexColoring(false);
     this._fill = true;
 };
 
 CanvasGL.prototype.fill4i = function(r,g,b,a)
 {
-    var f = this._fillColor;
+    var f = this._fillColor = this._tempFillColor4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = a;
+    this._perVertexColoring(false);
     this._fill = true;
 };
 
 CanvasGL.prototype.fill1f = function(k)
 {
-    var f = this._fillColor;
+    var f = this._fillColor = this._tempFillColor4;
     f[0] = f[1] = f[2] = k;f[3] = 1.0;
+    this._perVertexColoring(false);
     this._fill = true;
 };
 
 CanvasGL.prototype.fill2f = function(k,a)
 {
-    var f = this._fillColor;
+    var f = this._fillColor = this._tempFillColor4;
     f[0] = f[1] = f[2] = k;f[3] = a;
+    this._perVertexColoring(false);
     this._fill = true;
 };
 
 CanvasGL.prototype.fill3f = function(r,g,b)
 {
-    var f = this._fillColor;
+    var f = this._fillColor = this._tempFillColor4;;
     f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
+    this._perVertexColoring(false);
     this._fill = true;
 };
 
 CanvasGL.prototype.fill4f = function(r,g,b,a)
 {
-    var f = this._fillColor;
+    var f = this._fillColor = this._tempFillColor4;;
     f[0] = r;f[1] = g; f[2] = b;f[3] = a;
+    this._perVertexColoring(false);
     this._fill = true;
 };
 
-CanvasGL.prototype.fillArr =  function()
+CanvasGL.prototype.fillArr =  function(a)
 {
     this._fillColor = a;
+    this._perVertexColoring(true);
     this._fill = true;
 };
 
@@ -463,7 +520,7 @@ CanvasGL.prototype._applyStroke =function()
 
 CanvasGL.prototype.stroke = function()
 {
-    var f = this._strokeColor;
+    var f = this._strokeColor = this._tempStrokeColor4;
 
     f[3] = 1.0;
 
@@ -492,68 +549,78 @@ CanvasGL.prototype.stroke = function()
             break;
     }
 
+    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.stroke1i = function(k)
 {
-    var f = this._strokeColor;
+    var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
+    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.stroke2i = function(k,a)
 {
-    var f = this._strokeColor;
+    var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = f[1] = f[2] = k/255;f[3] = a;
+    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.stroke3i = function(r,g,b)
 {
-    var f = this._strokeColor;
+    var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
+    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.stroke4i = function(r,g,b,a)
 {
-    var f = this._strokeColor;
+    var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = a;
+    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.stroke1f = function(k)
 {
-    var f = this._strokeColor;
+    var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = f[1] = f[2] = k;f[3] = 1.0;
+    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.stroke2f = function(k,a)
 {
-    var f = this._strokeColor;
+    var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = f[1] = f[2] = k;f[3] = a;
+    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.stroke3f = function(r,g,b)
 {
-    var f = this._strokeColor;
+    var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
+    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.stroke4f = function(r,g,b,a)
 {
-    var f = this._strokeColor;
+    var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = a;
+    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.strokeArr = function(a)
 {
     this._strokeColor = a;
+    this._perVertexColoring(true);
     this._stroke = true;
 };
 
@@ -587,16 +654,13 @@ CanvasGL.prototype._applyColorToColorBuffer = function(color,buffer,mode)
 
         while(i < buffer.length)
         {
-            buffer[i] = color[i];
+            buffer[i]   = color[i];
             buffer[i+1] = color[i+1];
             buffer[i+2] = color[i+2];
             buffer[i+3] = color[i+3];
             i+=4;
         }
     }
-
-
-
     return buffer;
 };
 
@@ -608,6 +672,59 @@ CanvasGL.prototype._color1fArr = function(k,length)
     return a;
 };
 
+CanvasGL.prototype._perVertexColoring = function(b)
+{
+    this.gl.uniform1f(this._locationUniformUseVertexColor,b ? 1.0 : 0.0);
+    this._usePerVertexColoring = b;
+};
+
+CanvasGL.prototype._lerpedColor = function(col0,col1,steps)
+{
+    var a = new Array(steps*4);
+    var alen = a.length;
+    var i = 0,index,normlerp;
+
+    while(i< alen)
+    {
+        index = i;
+        normlerp = index*4 / alen;
+        a[index] =(col0[0]*(normlerp))+(col1[0]*(1-normlerp));
+
+        index = i+1;
+        normlerp = index*4 / alen;
+        a[index] =(col0[1]*(normlerp))+(col1[1]*(1-normlerp));
+
+        index = i+2;
+        normlerp = index*4 / alen;
+        a[index] =(col0[2]*(normlerp))+(col1[2]*(1-normlerp));
+
+        index = i+3;
+        normlerp = index*4 / alen;
+        a[index] =(col0[3]*(normlerp))+(col1[3]*(1-normlerp));
+
+        i+=4;
+    }
+
+    return a;
+
+};
+
+CanvasGL.prototype._fillBuffer = function(vertexArray,colorArray)
+{
+    var gl  = this.gl;
+    var glArrayBuffer = gl.ARRAY_BUFFER,
+        glDynamicDraw = gl.DYNAMIC_DRAW,
+        glFloat       = gl.FLOAT;
+
+    var vblen = vertexArray.byteLength,
+        cblen = colorArray.byteLength;
+
+    gl.bufferData(glArrayBuffer,vblen + cblen,glDynamicDraw);
+    gl.bufferSubData(glArrayBuffer,0,vertexArray);
+    gl.bufferSubData(glArrayBuffer,vblen,colorArray);
+    gl.vertexAttribPointer(this._locationAttribPosition,2,glFloat,false,0,0);
+    gl.vertexAttribPointer(this._locationAttribVertexColor,4,glFloat,false,0,vblen);
+};
 
 
 // Texture
@@ -715,11 +832,66 @@ CanvasGL.prototype.background = function()
     //Reset transformation matrix to identity matrix
     this._loadIdentity();
     this.setRectMode(CanvasGL.CORNER);
+    this._texture = false;
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Drawing primitives
 /*---------------------------------------------------------------------------------------------------------*/
+
+CanvasGL.prototype.textureTest = function(x,y,width,height)
+{
+    var gl = this.gl;
+
+    var v = this._tempBufferQuadVertices,
+        c = this._tempBufferQuadColors,
+        t = this._tempQuadTexCoords;
+
+    var vblen = v.byteLength,
+        cblen = c.byteLength,
+        tblen = t.byteLength,
+        tlen  = vblen + cblen + tblen;
+
+    var offSetV = 0,
+        offSetC = offSetV + vblen,
+        offSetT = vblen + cblen;
+
+    var xw = x+width,
+        yh = y+height;
+
+
+
+    v[ 0] = x;
+    v[ 1] = y;
+    v[ 2] = xw;
+    v[ 3] = y;
+    v[ 4] = x;
+    v[ 5] = yh;
+    v[ 6] = xw;
+    v[ 7] = yh;
+
+
+
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._vbo);
+    gl.bufferData(gl.ARRAY_BUFFER,tlen,gl.DYNAMIC_DRAW);
+
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,v);
+    gl.bufferSubData(gl.ARRAY_BUFFER,offSetC,c);
+    gl.bufferSubData(gl.ARRAY_BUFFER,offSetT,t);
+
+    gl.vertexAttribPointer(this._locationAttribPosition,    2,gl.FLOAT,false,0,offSetV);
+    gl.vertexAttribPointer(this._locationAttribVertexColor, 4,gl.FLOAT,false,0,offSetC);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord,2,gl.FLOAT,false,0,offSetT);
+
+    gl.uniform1f(this._locationUniformUseTexture,0.5);
+    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+    gl.uniform1f(this._locationUniformImage,0);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+
+    this._disableTexture();
+
+};
 
 CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
@@ -727,12 +899,12 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
     var gl = this.gl;
     var vbo = this._vbo;
-    var v = this._tempBufferQuadFillVertices;
+    var v = this._tempBufferQuadVertices;
     var glArrayBuffer = gl.ARRAY_BUFFER,
-        glDynamicDraw = gl.DYNAMIC_DRAW;
+        glDynamicDraw = gl.DYNAMIC_DRAW,
+        glFloat       = gl.FLOAT;
 
     this._setMatrixUniform();
-    gl.bindBuffer(glArrayBuffer,vbo);
 
     v[ 0] = x0;
     v[ 1] = y0;
@@ -740,88 +912,93 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
     v[ 3] = y1;
     v[ 4] = x3;
     v[ 5] = y3;
-    v[ 6] = x1;
-    v[ 7] = y1;
-    v[ 8] = x2;
-    v[ 9] = y2;
-    v[10] = x3;
-    v[11] = y3;
+    v[ 6] = x2;
+    v[ 7] = y2;
 
     var c;
-    var vblen = v.byteLength;
-    var cblen;
 
     if(this._fill && !this._texture)
     {
-        c = this._applyColorToColorBuffer(this._fillColor,this._tempBufferQuadFillColors,null);
-        cblen = c.byteLength;
-
-        gl.bufferData(glArrayBuffer,vblen + cblen,glDynamicDraw);
-        gl.bufferSubData(glArrayBuffer,0,v);
-        gl.bufferSubData(glArrayBuffer,vblen,c);
-        gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
-        gl.vertexAttribPointer(this._locationAttribVertexColor,4,gl.FLOAT,false,0,vblen);
-        gl.drawArrays(gl.TRIANGLES,0,6);
-
-        /*
-        gl.bufferData(glArrayBuffer,v,glDynamicDraw);
-        this._applyFill();
-        gl.drawArrays(gl.TRIANGLES,0,6);
-        */
-
+        c = this._applyColorToColorBuffer(this._fillColor,this._tempBufferQuadColors,null);
+        this._fillBuffer(v,c);
+        gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     }
 
     if(this._texture)
     {
-        var qtc   = this._tempQuadTexCoords;
-        var tblen = qtc.byteLength;
+        /*
+        v = this._tempBufferQuadVertices12;
+        v[ 0] = x0;
+        v[ 1] = y0;
+        v[ 2] = x1;
+        v[ 3] = y1;
+        v[ 4] = x3;
+        v[ 5] = y3;
+        v[ 6] = x1;
+        v[ 7] = y1;
+        v[ 8] = x2;
+        v[ 9] = y2;
+        v[10] = x3;
+        v[11] = y3;
+
+        c = this._tempBlankQuadColors6;
+        var t = this._tempQuadTexCoords6;
+
+        var vblen = v.byteLength,
+            cblen = c.byteLength,
+            tblen = t.byteLength;
 
         gl.bindBuffer(glArrayBuffer,vbo);
         gl.bufferData(glArrayBuffer,vblen + tblen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,v);
-        gl.bufferSubData(glArrayBuffer,vblen,qtc);
+        gl.bufferSubData(glArrayBuffer,vblen,t);
         gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
         gl.vertexAttribPointer(this._locationAttribTextureCoord,2,gl.FLOAT,false,0,vblen);
-
-
         this._applyTexture();
         gl.drawArrays(gl.TRIANGLES,0,6);
+        */
+
+        /*
+        gl.bindBuffer(glArrayBuffer,vbo);
+        gl.bufferData(glArrayBuffer,vblen + tblen + cblen,glDynamicDraw);
+
+        gl.bufferSubData(glArrayBuffer,0,          v);
+        gl.bufferSubData(glArrayBuffer,vblen      ,t);
+        //gl.bufferSubData(glArrayBuffer,vblen+tblen,c);
+
+        gl.vertexAttribPointer(this._locationAttribPosition,    2,glFloat,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribTextureCoord,2,glFloat,false,0,vblen);
+        //gl.vertexAttribPointer(this._locationAttribVertexColor, 4,glFloat,false,0,tblen);
+
+        gl.uniform1f(this._locationUniformUseTexture,1.0);
+        gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+        gl.uniform1f(this._locationUniformImage,0);
+        //gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+        gl.drawArrays(gl.TRIANGLES,0,6);
+        gl.uniform1f(this._locationUniformUseTexture,0.0);
+        */
     }
 
     if(this._stroke)
     {
-        c = this._applyColorToColorBuffer(this._strokeColor,this._tempBufferQuadStrokeColors,null);
-        v = this._tempBufferQuadStrokeVertices;
-        v[ 0] = x0; v[ 1] = y0;
-        v[ 2] = x1; v[ 3] = y1;
-        v[ 4] = x2; v[ 5] = y2;
-        v[ 6] = x3; v[ 7] = y3;
-
-        vblen = v.byteLength;
-        cblen = c.byteLength;
-
-        gl.bufferData(glArrayBuffer,vblen + cblen,glDynamicDraw);
-        gl.bufferSubData(glArrayBuffer,0,v);
-        gl.bufferSubData(glArrayBuffer,vblen,c);
-        gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
-        gl.vertexAttribPointer(this._locationAttribVertexColor,4,gl.FLOAT,false,0,vblen);
+        c = this._applyColorToColorBuffer(this._strokeColor,this._tempBufferQuadColors,null);
+        v[ 0] = x0;
+        v[ 1] = y0;
+        v[ 2] = x1;
+        v[ 3] = y1;
+        v[ 4] = x2;
+        v[ 5] = y2;
+        v[ 6] = x3;
+        v[ 7] = y3;
+        this._fillBuffer(v,c);
         gl.drawArrays(gl.LINE_LOOP,0,4);
-
-
-        /*
-        gl.bufferData(glArrayBuffer,v,glDynamicDraw);
-        this._applyStroke();
-        gl.drawArrays(gl.LINE_LOOP,0,4);
-        */
     }
 };
 
 CanvasGL.prototype.rect = function(x,y,width,height)
 {
-    var rm = this._rectMode;
     var xw = x+width,yh = y+height;
     this.quad(x,y,xw,y,xw,yh,x,yh);
-
 };
 
 CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
@@ -850,18 +1027,21 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
     }
 
     var gl  = this.gl;
-    gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
+    var cb = new Float32Array(d*4);
+    var c;
     this._setMatrixUniform();
 
     if(this._fill && !this._texture)
     {
-        this._applyFill();
+        c = this._applyColorToColorBuffer(this._fillColor,cb,null);
+        this._fillBuffer(v,c);
         gl.drawArrays(gl.TRIANGLE_FAN,0,d);
     }
 
     if(this._stroke)
     {
-        this._applyStroke();
+        c = this._applyColorToColorBuffer(this._strokeColor,cb,null);
+        this._fillBuffer(v,c);
         gl.drawArrays(gl.LINE_LOOP,0,d);
     }
 };
@@ -899,19 +1079,20 @@ CanvasGL.prototype.circle = function(x,y,radius)
     }
 
     var gl  = this.gl;
-
-    gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
+    var cb = new Float32Array(d*4);
     this._setMatrixUniform();
 
     if(this._fill && !this._texture)
     {
-        this._applyFill();
+        c = this._applyColorToColorBuffer(this._fillColor,cb,null);
+        this._fillBuffer(v,c);
         gl.drawArrays(gl.TRIANGLE_FAN,0,d);
     }
 
     if(this._stroke)
     {
-        this._applyStroke();
+        c = this._applyColorToColorBuffer(this._strokeColor,cb,null);
+        this._fillBuffer(v,c);
         gl.drawArrays(gl.LINE_LOOP,0,d);
     }
 };
@@ -975,14 +1156,21 @@ CanvasGL.prototype.line = function(x0,y0,x1,y1)
     if(!this._stroke)return;
 
     var gl  = this.gl;
-    var v   = this._tempBufferLineVertices;
+    var v   = this._tempBufferLineVertices,
+        c   = this._applyColorToColorBuffer(this._strokeColor,this._tempBufferLineColors,null);
+
+    var glArrayBuffer = gl.ARRAY_BUFFER,
+        glFloat       = gl.FLOAT,
+        glDynamicDraw = gl.DYNAMIC_DRAW;
+
+    var vblen = v.byteLength,
+        cblen = c.byteLength;
 
     v[0] = x0;v[1] = y0;
     v[2] = x1;v[3] = y1;
 
-    gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
-    this._applyStroke();
     this._setMatrixUniform();
+    this._fillBuffer(v,c);
     gl.drawArrays(gl.LINES,0,2);
 };
 
