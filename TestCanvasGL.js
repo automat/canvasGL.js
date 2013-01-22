@@ -72,6 +72,7 @@ TestCanvasGL.prototype.draw = function()
 
     c.background(10);
     c.noStroke();
+    /*
     c.strokeArr([1.0,1.0,1.0,1.0,
                  1.0,0.0,1.0,1.0,
                  1.0,1.0,1.0,1.0,
@@ -97,11 +98,13 @@ TestCanvasGL.prototype.draw = function()
     c.noStroke();
 
 
+
     c.fillArr([1.0,1.0,1.0,1.0,
                1.0,0.0,0.0,1.0,
                0.0,1.0,0.0,1.0,
                0.0,0.0,1.0,1.0]);
     c.rect(400,0,100,100);
+    c.noStroke();
 
 
 
@@ -111,8 +114,17 @@ TestCanvasGL.prototype.draw = function()
         0.0,0.0,1.0,1.0]);
 
     c.quad(520,20,580,20,580,80,520,80);
-    c.texture(this.img2);
-    c.textureTest(0,100,200,200);
+    */
+
+    c.fill(100);
+
+    c.setLineWidth(30);
+    c._opaquePolyLine([500,50,250,10,20,20]);
+
+    //c.point(50,150);
+
+    //c.texture(this.img2);
+    //c.textureTest(0,100,200,200);
     //c.rect(0,100,100,100);
 
 

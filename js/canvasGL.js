@@ -11,14 +11,17 @@ CGL = {};
 CGL.SIZE_OF_VERTEX = 2;
 
 _CGLConstants = {};
-_CGLConstants.WIDTH_DEFAULT  = 300;
-_CGLConstants.HEIGHT_DEFAULT = 300;
-_CGLConstants.BEZIER_DETAIL_DEFAULT = 30;
-_CGLConstants.BEZIER_DETAIL_MAX     = 50;
-_CGLConstants.ELLIPSE_DETAIL_DEFAULT= 10;
-_CGLConstants.ELLIPSE_DETAIL_MAX    = 50;
-_CGLConstants.SPLINE_DETAIL_DEFAULT = 10;
-_CGLConstants.SPLINE_DETAIL_MAX     = 50;
+_CGLConstants.WIDTH_DEFAULT             = 300;
+_CGLConstants.HEIGHT_DEFAULT            = 300;
+_CGLConstants.BEZIER_DETAIL_DEFAULT     = 30;
+_CGLConstants.BEZIER_DETAIL_MAX         = 50;
+_CGLConstants.ELLIPSE_DETAIL_DEFAULT    = 10;
+_CGLConstants.ELLIPSE_DETAIL_MAX        = 50;
+_CGLConstants.SPLINE_DETAIL_DEFAULT     = 10;
+_CGLConstants.SPLINE_DETAIL_MAX         = 50;
+_CGLConstants.LINE_WIDTH_DEFAULT        = 1;
+_CGLConstants.LINE_ROUND_CAP_DETAIL_MAX = 20;
+_CGLConstants.LINE_ROUND_CAP_DETAIL_MIN = 3;
 
 
 
@@ -94,9 +97,6 @@ function CanvasGL(parentDomElementId)
             "void main()" +
             "{" +
                 "vec4 texColor  = texture2D(u_image,v_texture_coord);" +
-                //"vec4 vertColor = u_color * (1.0 - u_use_texture);" +
-                //"gl_FragColor   = v_vertex_color*(1.0-u_use_texture)+texColor;" +
-                //"gl_FragColor   = v_vertex_color*(1.0-u_use_texture)+texColor;" +
                 "gl_FragColor = v_vertex_color * (1.0 - u_use_texture) + texColor * u_use_texture;"+
             "}",
 
@@ -231,7 +231,7 @@ function CanvasGL(parentDomElementId)
     this._tempBufferQuadColors            = new Float32Array(this._color1fArr(1.0,4*4));
     this._tempBufferTriangleColors        = new Float32Array(this._color1fArr(1.0,3*4));
     this._tempBufferLineColors            = new Float32Array(this._color1fArr(1.0,2*4));
-    this._tempBufferPointColor            = new Float32Array(this._color1fArr(1.0,4));
+    this._tempBufferPointColor            = new Float32Array(4);
     this._tempBufferCircleColors          = null;
 
     this._tempBlankQuadColors = new Float32Array([1.0,1.0,1.0,1.0,
@@ -264,6 +264,8 @@ function CanvasGL(parentDomElementId)
 
     this._currBlendSrc  = gl.SRC_ALPHA;
     this._currBlendDest = gl.ONE_MINUS_SRC_ALPHA;
+
+    this._currLineWidth = _CGLConstants.LINE_WIDTH_DEFAULT;
 
     // Immidiate mode wrapper (Insprired by Memo Akten)
 
@@ -345,6 +347,11 @@ CanvasGL.prototype.setSplineDetail = function(a)
     this._currSplineDetail = a  > md ? md : a;
 };
 
+CanvasGL.prototype.setLineWidth = function(a)
+{
+    this._currLineWidth = a;
+}
+
 CanvasGL.prototype.setTextureWrap = function(mode)
 {
     this._textureWrap = mode;
@@ -380,6 +387,8 @@ CanvasGL.prototype.getSplineDetail = function()
 {
     return this._currSplineDetail;
 };
+
+
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Shape fill/stroke/texture
@@ -481,7 +490,7 @@ CanvasGL.prototype.fill2f = function(k,a)
 
 CanvasGL.prototype.fill3f = function(r,g,b)
 {
-    var f = this._fillColor = this._tempFillColor4;;
+    var f = this._fillColor = this._tempFillColor4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
     this._perVertexColoring(false);
     this._fill = true;
@@ -489,7 +498,7 @@ CanvasGL.prototype.fill3f = function(r,g,b)
 
 CanvasGL.prototype.fill4f = function(r,g,b,a)
 {
-    var f = this._fillColor = this._tempFillColor4;;
+    var f = this._fillColor = this._tempFillColor4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = a;
     this._perVertexColoring(false);
     this._fill = true;
@@ -1423,12 +1432,16 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 CanvasGL.prototype.point = function(x,y)
 {
     if(!this._fill)return;
+
     var gl = this.gl;
-    var v  = this._tempBufferPointVertices;
+    var v  = this._tempBufferPointVertices,
+        c  = this._applyColorToColorBuffer(this._fillColor,this._tempBufferPointColor, null);
+
+
     v[0] = x;
     v[1] = y;
-    gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
-    this._applyFill();
+
+    this._fillBuffer(v,c);
     this._setMatrixUniform();
     gl.drawArrays(gl.POINTS,0,1);
 };
@@ -1447,11 +1460,253 @@ CanvasGL.prototype.points = function(vertices)
 {
     if(!this._fill)return;
     var gl  = this.gl;
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
-    this._applyFill();
+    //gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
     this._setMatrixUniform();
+    this._fillBuffer(new Float32Array(vertices),
+                     this._applyColorToColorBuffer(this._fillColor,new Float32Array(vertices.length*2),
+                     null));
     gl.drawArrays(gl.POINTS,0,vertices.length*0.5);
 };
+
+CanvasGL.prototype._opaquePolyLine = function(joints)
+{
+    var lineWidth = this._currLineWidth;
+
+    var jointLen       = joints.length,
+        jointCapResMax = _CGLConstants.LINE_ROUND_CAP_DETAIL_MAX,
+        jointCapResMin = _CGLConstants.LINE_ROUND_CAP_DETAIL_MIN,
+        jointCapRes    = 10 ,
+        jointRad       = lineWidth * 0.5,
+        jointNum       = jointLen * 0.5;
+
+
+    var d = Math.max(jointCapResMin,Math.min(jointCapRes,jointCapResMax));
+
+    var vbLen = 4,
+        cbLen = vbLen,
+        ibLen = (vbLen - 2) * 3;
+
+    var vjLen = d * 2,
+        cjLen = d * 4,
+        ijLen = (d-2) * 3;
+
+    var vertices = new Float32Array(vjLen*jointNum),
+        colors   = new Float32Array(cjLen*jointNum),
+        indices  = new Uint16Array(ijLen*jointNum);
+
+    var i = 0, j,hi,j3,oi3, k,hov;
+
+    var ov,oc,oi;
+
+    var theta = 2 * Math.PI / d;
+    var c = Math.cos(theta),
+        s = Math.sin(theta);
+    var t;
+
+    var x, y, cx, cy;
+
+    var id0,id1,id2;
+
+    this._setMatrixUniform();
+
+    while(i < jointLen)
+    {
+        hi = i * 0.5;
+
+        x = joints[i];
+        y = joints[i+1];
+
+        cx = jointRad*0.5;
+        cy = 0;
+
+        //setup circle cap
+
+        ov = vjLen * hi;
+        j = ov ;
+
+        while(j < ov + vjLen)
+        {
+            vertices[j  ] = cx + x;
+            vertices[j+1] = cy + y;
+            t = cx;
+            cx = c * cx - s * cy;
+            cy = s * t  + c * cy;
+            j+=2;
+        }
+
+        // apply color to cap vertices
+
+        oc = cjLen * hi;
+        j = oc;
+
+        while(j < oc + cjLen)
+        {
+            colors[j  ] = 1.0;
+            colors[j+1] = 1.0;
+            colors[j+2] = 1.0;
+            colors[j+3] = 1.0;
+            j+=4;
+        }
+
+        oi = hi*ijLen;
+        j = oi;
+
+        // order triangles
+
+        hov = ov * 0.5;
+
+        k = 1;
+
+        while(j < oi + ijLen)
+        {
+            indices[j ]  = hov;
+            indices[j+1] = hov + k;
+            indices[j+2] = hov + k + 1;
+
+            j+=3;
+            k++;
+        }
+
+        i+=2;
+    }
+
+    //TODO: Merge loops
+
+    var temp;
+
+    var nx,ny;
+    var v0x,v1x,v2x,v3x,v0y,v1y,v2y,v3y;
+    var slopex,slopey,slopelen;
+
+    i = 0;
+
+
+
+    while(i < jointLen - 2)
+    {
+        x  = joints[i];
+        y  = joints[i+1];
+        nx = joints[i+2];
+        ny = joints[i+3];
+
+        slopex = nx - x;
+        slopey = ny - y;
+
+        slopelen = Math.sqrt(slopex*slopex + slopey*slopey);
+
+
+        slopex /= slopelen;
+        slopey /= slopelen;
+
+        temp = slopex;
+        slopex = slopey;
+        slopey = -temp;
+
+        temp = jointRad * slopex;
+
+        v0x = x  + temp;
+        v1x = x  - temp;
+        v2x = nx + temp;
+        v3x = nx - temp;
+
+        temp = jointRad * slopey;
+
+        v0y = y  + temp;
+        v1y = y  - temp;
+        v2y = ny + temp;
+        v3y = ny - temp;
+
+
+
+        this.circle(v0x,v0y,2);
+        this.circle(v1x,v1y,2);
+        this.circle(v2x,v2y,2);
+        this.circle(v3x,v3y,2);
+
+
+
+
+        i+=2;
+    }
+
+
+
+    /*
+    while(i < indices.length)
+    {
+        oi = i;
+        j = oi;
+        console.log("-- " + i );
+        while(j < oi + iLen)
+        {
+            console.log(indices[j]);
+            ++j;
+        }
+
+        i+=iLen;
+    }
+    */
+
+
+    var gl = this.gl,
+        glArrayBuffer = gl.ARRAY_BUFFER,
+        glDynamicDraw = gl.DYNAMIC_DRAW;
+
+    var vblen = vertices.byteLength,
+        cblen = colors.byteLength,
+        tlen  = vblen + cblen;
+
+    gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
+    gl.bufferSubData(glArrayBuffer,0,    vertices);
+    gl.bufferSubData(glArrayBuffer,vblen,colors);
+    gl.vertexAttribPointer(this._locationAttribPosition,2,gl.FLOAT,false,0,0);
+    gl.vertexAttribPointer(this._locationAttribVertexColor,4,gl.FLOAT,false,0,vblen);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
+    gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
+
+
+
+
+
+
+
+
+
+
+    /*
+    var i = -1;
+
+
+    vertices = new Float32Array(vertices);
+    indices  = new Uint8Array(indices);
+    colors   = new Float32Array(colors);
+
+
+    this._setMatrixUniform();
+
+    var gl = this.gl,
+        glArrayBuffer = gl.ARRAY_BUFFER,
+        glDynamicDraw = gl.DYNAMIC_DRAW;
+
+    var vblen = vertices.byteLength,
+        cblen = colors.byteLength,
+        tlen  = vblen + cblen;
+
+    gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
+    gl.bufferSubData(glArrayBuffer,0,vertices);
+    gl.bufferSubData(glArrayBuffer,vertices.byteLength,colors);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
+    */
+
+
+
+
+};
+
+CanvasGL.prototype.beginShapeBatch = function(){};
+CanvasGL.prototype.beginLineBatch  = function(){};
+CanvasGL.prototype.beginPointBatch = function(){};
+CanvasGL.prototype.endBatch        = function(){};
 
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -1527,7 +1782,7 @@ CanvasGL.prototype.getImagePixel = function(img)
 {
     this._c2dSetImage(img);
     return this._c2dGetPixelData();
-}
+};
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Shader loading
@@ -1799,6 +2054,12 @@ CanvasGL.prototype._faceIndicesLinearCCW = function(vertices)
     }
 
     return a;
+};
+
+CanvasGL.prototype._faceIndicesTriangleFan = function(vertices,outIndices,offSet)
+{
+
+
 };
 
 CanvasGL.prototype._np2 = function(n)
