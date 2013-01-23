@@ -88,7 +88,6 @@ function CanvasGL(parentDomElementId)
             "precision mediump float;" +
             "uniform vec4      u_color;" +
             "uniform float     u_use_texture;" +
-            "uniform float     u_use_vertex_color;" +
             "uniform sampler2D u_image;" +
             "uniform float     u_alpha;" +
             "varying vec2      v_texture_coord;" +
@@ -122,7 +121,6 @@ function CanvasGL(parentDomElementId)
     this._locationUniformImage          = gl.getUniformLocation(this._program, "u_image");
     this._locationUniformAlpha          = gl.getUniformLocation(this._program, "u_alpha");
     this._locationUniformUseTexture     = gl.getUniformLocation(this._program, "u_use_texture");
-    this._locationUniformUseVertexColor = gl.getUniformLocation(this._program, "u_use_vertex_color");
 
 
     // Create Buffers
@@ -280,7 +278,7 @@ function CanvasGL(parentDomElementId)
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
-// Overall settings
+// Set size
 /*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.setSize = function(width,height)
@@ -396,12 +394,10 @@ CanvasGL.prototype.getSplineDetail = function()
 
 CanvasGL.prototype._applyFill = function()
 {
-
     var gl = this.gl;
     var cf = this._fillColor;
     gl.uniform4f(this._locationUniformColor,cf[0],cf[1],cf[2],cf[3]);
     gl.uniform1f(this._locationUniformAlpha,cf[3]);
-
 };
 
 CanvasGL.prototype.fill = function()
@@ -436,7 +432,6 @@ CanvasGL.prototype.fill = function()
             break;
     }
 
-    this._perVertexColoring(false);
     this._fill = true;
 };
 
@@ -444,7 +439,6 @@ CanvasGL.prototype.fill1i = function(k)
 {
     var f = this._fillColor = this._tempFillColor4;
     f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
-    this._perVertexColoring(false);
     this._fill = true;
 };
 
@@ -452,7 +446,6 @@ CanvasGL.prototype.fill2i = function(k,a)
 {
     var f = this._fillColor = this._tempFillColor4;
     f[0] = f[1] = f[2] = k/255;f[3] = a;
-    this._perVertexColoring(false);
     this._fill = true;
 };
 
@@ -460,7 +453,6 @@ CanvasGL.prototype.fill3i = function(r,g,b)
 {
     var f = this._fillColor = this._tempFillColor4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
-    this._perVertexColoring(false);
     this._fill = true;
 };
 
@@ -468,7 +460,6 @@ CanvasGL.prototype.fill4i = function(r,g,b,a)
 {
     var f = this._fillColor = this._tempFillColor4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = a;
-    this._perVertexColoring(false);
     this._fill = true;
 };
 
@@ -476,7 +467,6 @@ CanvasGL.prototype.fill1f = function(k)
 {
     var f = this._fillColor = this._tempFillColor4;
     f[0] = f[1] = f[2] = k;f[3] = 1.0;
-    this._perVertexColoring(false);
     this._fill = true;
 };
 
@@ -484,7 +474,6 @@ CanvasGL.prototype.fill2f = function(k,a)
 {
     var f = this._fillColor = this._tempFillColor4;
     f[0] = f[1] = f[2] = k;f[3] = a;
-    this._perVertexColoring(false);
     this._fill = true;
 };
 
@@ -492,7 +481,6 @@ CanvasGL.prototype.fill3f = function(r,g,b)
 {
     var f = this._fillColor = this._tempFillColor4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
-    this._perVertexColoring(false);
     this._fill = true;
 };
 
@@ -500,16 +488,36 @@ CanvasGL.prototype.fill4f = function(r,g,b,a)
 {
     var f = this._fillColor = this._tempFillColor4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = a;
-    this._perVertexColoring(false);
     this._fill = true;
 };
 
 CanvasGL.prototype.fillArr =  function(a)
 {
+    this.fillArrI(a);
+};
+
+CanvasGL.prototype.fillArrI = function(a)
+{
+    var i = 0;
+
+    while(i < a.length)
+    {
+        a[i  ] /= 255;
+        a[i+1] /= 255;
+        a[i+2] /= 255;
+
+        i+=4;
+    }
+
     this._fillColor = a;
-    this._perVertexColoring(true);
     this._fill = true;
 };
+
+CanvasGL.prototype.fillArrF = function(a)
+{
+    this._fillColor = a;
+    this._fill = true;
+}
 
 CanvasGL.prototype.noFill = function()
 {
@@ -558,7 +566,6 @@ CanvasGL.prototype.stroke = function()
             break;
     }
 
-    this._perVertexColoring(false);
     this._stroke = true;
 };
 
@@ -566,7 +573,6 @@ CanvasGL.prototype.stroke1i = function(k)
 {
     var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
-    this._perVertexColoring(false);
     this._stroke = true;
 };
 
@@ -574,7 +580,6 @@ CanvasGL.prototype.stroke2i = function(k,a)
 {
     var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = f[1] = f[2] = k/255;f[3] = a;
-    this._perVertexColoring(false);
     this._stroke = true;
 };
 
@@ -582,7 +587,6 @@ CanvasGL.prototype.stroke3i = function(r,g,b)
 {
     var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
-    this._perVertexColoring(false);
     this._stroke = true;
 };
 
@@ -590,7 +594,6 @@ CanvasGL.prototype.stroke4i = function(r,g,b,a)
 {
     var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = a;
-    this._perVertexColoring(false);
     this._stroke = true;
 };
 
@@ -598,7 +601,6 @@ CanvasGL.prototype.stroke1f = function(k)
 {
     var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = f[1] = f[2] = k;f[3] = 1.0;
-    this._perVertexColoring(false);
     this._stroke = true;
 };
 
@@ -606,7 +608,6 @@ CanvasGL.prototype.stroke2f = function(k,a)
 {
     var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = f[1] = f[2] = k;f[3] = a;
-    this._perVertexColoring(false);
     this._stroke = true;
 };
 
@@ -614,7 +615,6 @@ CanvasGL.prototype.stroke3f = function(r,g,b)
 {
     var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
-    this._perVertexColoring(false);
     this._stroke = true;
 };
 
@@ -622,16 +622,37 @@ CanvasGL.prototype.stroke4f = function(r,g,b,a)
 {
     var f = this._strokeColor = this._tempStrokeColor4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = a;
-    this._perVertexColoring(false);
     this._stroke = true;
 };
 
 CanvasGL.prototype.strokeArr = function(a)
 {
     this._strokeColor = a;
-    this._perVertexColoring(true);
     this._stroke = true;
 };
+
+CanvasGL.prototype.strokeArrI = function(a)
+{
+    var  i = 0;
+
+    while(i< a.length)
+    {
+        a[i  ]/=255;
+        a[i+1]/=255;
+        a[i+2]/=255;
+
+        i+=4;
+    }
+
+    this._strokeColor = a;
+    this._stroke = true;
+}
+
+CanvasGL.prototype.strokeArrF = function(a)
+{
+    this._strokeColor = a;
+    this._stroke = true;
+}
 
 CanvasGL.prototype.noStroke = function()
 {
@@ -680,61 +701,6 @@ CanvasGL.prototype._color1fArr = function(k,length)
     while(++i < length){a[i]=k;}
     return a;
 };
-
-CanvasGL.prototype._perVertexColoring = function(b)
-{
-    this.gl.uniform1f(this._locationUniformUseVertexColor,b ? 1.0 : 0.0);
-    this._usePerVertexColoring = b;
-};
-
-CanvasGL.prototype._lerpedColor = function(col0,col1,steps)
-{
-    var a = new Array(steps*4);
-    var alen = a.length;
-    var i = 0,index,normlerp;
-
-    while(i< alen)
-    {
-        index = i;
-        normlerp = index*4 / alen;
-        a[index] =(col0[0]*(normlerp))+(col1[0]*(1-normlerp));
-
-        index = i+1;
-        normlerp = index*4 / alen;
-        a[index] =(col0[1]*(normlerp))+(col1[1]*(1-normlerp));
-
-        index = i+2;
-        normlerp = index*4 / alen;
-        a[index] =(col0[2]*(normlerp))+(col1[2]*(1-normlerp));
-
-        index = i+3;
-        normlerp = index*4 / alen;
-        a[index] =(col0[3]*(normlerp))+(col1[3]*(1-normlerp));
-
-        i+=4;
-    }
-
-    return a;
-
-};
-
-CanvasGL.prototype._fillBuffer = function(vertexArray,colorArray)
-{
-    var gl  = this.gl;
-    var glArrayBuffer = gl.ARRAY_BUFFER,
-        glDynamicDraw = gl.DYNAMIC_DRAW,
-        glFloat       = gl.FLOAT;
-
-    var vblen = vertexArray.byteLength,
-        cblen = colorArray.byteLength;
-
-    gl.bufferData(glArrayBuffer,vblen + cblen,glDynamicDraw);
-    gl.bufferSubData(glArrayBuffer,0,vertexArray);
-    gl.bufferSubData(glArrayBuffer,vblen,colorArray);
-    gl.vertexAttribPointer(this._locationAttribPosition,2,glFloat,false,0,0);
-    gl.vertexAttribPointer(this._locationAttribVertexColor,4,glFloat,false,0,vblen);
-};
-
 
 // Texture
 
@@ -835,13 +801,19 @@ CanvasGL.prototype.background = function()
 {
     var gl = this.gl;
     var c  = colori.apply(this,arguments);
+
+    this.noFill();
+    this.noStroke();
+    this.setLineWidth(_CGLConstants.LINE_WIDTH_DEFAULT);
+    this.setRectMode(CanvasGL.CORNER);
+    this.setEllipseMode(CanvasGL.CENTER);
+    this._texture = false;
+
     gl.clearColor(c[0],c[1],c[2],c[3]);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     //Reset transformation matrix to identity matrix
     this._loadIdentity();
-    this.setRectMode(CanvasGL.CORNER);
-    this._texture = false;
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -954,6 +926,8 @@ CanvasGL.prototype.textureTest = function(x,y,width,height)
 
 };
 
+//TODO: Merge fill and polyline draw
+
 CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
     if(!this._fill && !this._stroke && !this._texture)return;
@@ -981,7 +955,7 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
     if(this._fill && !this._texture)
     {
         c = this._applyColorToColorBuffer(this._fillColor,this._tempBufferQuadColors,null);
-        this._fillBuffer(v,c);
+        this.__fillBuffer(v,c);
         gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     }
 
@@ -1042,7 +1016,6 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
     if(this._stroke)
     {
-        c = this._applyColorToColorBuffer(this._strokeColor,this._tempBufferQuadColors,null);
         v[ 0] = x0;
         v[ 1] = y0;
         v[ 2] = x1;
@@ -1051,16 +1024,38 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
         v[ 5] = y2;
         v[ 6] = x3;
         v[ 7] = y3;
-        this._fillBuffer(v,c);
-        gl.drawArrays(gl.LINE_LOOP,0,4);
+        this._polyline(v, v.length, true);
     }
 };
 
 CanvasGL.prototype.rect = function(x,y,width,height)
 {
-    var xw = x+width,yh = y+height;
-    this.quad(x,y,xw,y,xw,yh,x,yh);
+    var cm = this._rectMode == CanvasGL.CENTER,
+        rx,ry,rw,rh;
+
+    if(cm)
+    {
+        var w2 = width  * 0.5,
+            h2 = height * 0.5;
+
+        rx = x - w2;
+        ry = y - h2;
+        rw = x + w2;
+        rh = y + h2;
+    }
+    else
+    {
+        rx = x;
+        ry = y;
+        rw = width;
+        rh = height;
+
+    }
+
+    this.quad(rx,ry,rw,rx,rw,rh,ry,rh);
 };
+
+//TODO: Merge fill and polyline draw
 
 CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 {
@@ -1095,17 +1090,17 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
     if(this._fill && !this._texture)
     {
         c = this._applyColorToColorBuffer(this._fillColor,cb,null);
-        this._fillBuffer(v,c);
+        this.__fillBuffer(v,c);
         gl.drawArrays(gl.TRIANGLE_FAN,0,d);
     }
 
     if(this._stroke)
     {
-        c = this._applyColorToColorBuffer(this._strokeColor,cb,null);
-        this._fillBuffer(v,c);
-        gl.drawArrays(gl.LINE_LOOP,0,d);
+        this._polyline(v,d*2,true);
     }
 };
+
+//TODO: Merge fill and polyline draw
 
 //http://slabode.exofire.net/circle_draw.shtml
 
@@ -1146,15 +1141,13 @@ CanvasGL.prototype.circle = function(x,y,radius)
     if(this._fill && !this._texture)
     {
         c = this._applyColorToColorBuffer(this._fillColor,cb,null);
-        this._fillBuffer(v,c);
+        this.__fillBuffer(v,c);
         gl.drawArrays(gl.TRIANGLE_FAN,0,d);
     }
 
     if(this._stroke)
     {
-        c = this._applyColorToColorBuffer(this._strokeColor,cb,null);
-        this._fillBuffer(v,c);
-        gl.drawArrays(gl.LINE_LOOP,0,d);
+        this._polyline(v,d*2,true);
     }
 };
 
@@ -1216,23 +1209,17 @@ CanvasGL.prototype.line = function(x0,y0,x1,y1)
 {
     if(!this._stroke)return;
 
-    var gl  = this.gl;
-    var v   = this._tempBufferLineVertices,
-        c   = this._applyColorToColorBuffer(this._strokeColor,this._tempBufferLineColors,null);
-
-    var glArrayBuffer = gl.ARRAY_BUFFER,
-        glFloat       = gl.FLOAT,
-        glDynamicDraw = gl.DYNAMIC_DRAW;
-
-    var vblen = v.byteLength,
-        cblen = c.byteLength;
-
+    var v   = this._tempBufferLineVertices;
     v[0] = x0;v[1] = y0;
     v[2] = x1;v[3] = y1;
 
-    this._setMatrixUniform();
-    this._fillBuffer(v,c);
-    gl.drawArrays(gl.LINES,0,2);
+    this._polyline(v);
+};
+
+CanvasGL.prototype.lines = function(vertices)
+{
+    if(!this._stroke)return;
+    this._polyline(vertices);
 };
 
 CanvasGL.prototype.beginShape = function(){};
@@ -1271,12 +1258,7 @@ CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
         i+=2;
     }
 
-    var gl = this.gl;
-
-    gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.DYNAMIC_DRAW);
-    this._applyStroke();
-    this._setMatrixUniform();
-    gl.drawArrays(gl.LINE_STRIP,0,d*0.5);
+    this._polyline(vertices);
 };
 
 CanvasGL.prototype.bezierPoint = function(d)
@@ -1384,21 +1366,24 @@ CanvasGL.prototype._catmullrom = function(x0,x1,x2,x3,u)
 
 };
 
-CanvasGL.prototype.mesh = function(vertices,faceIndices)
+CanvasGL.prototype.drawElements = function(vertices,faceIndices,vertexColors)
 {
     if(!this._fill)return;
 
-    var gl = this.gl;
-    var ind = new Uint16Array(faceIndices || this._faceIndicesLinearCW(vertices));
+    var v = new Float32Array(vertices),
+        i = new Uint16Array(faceIndices || this.__faceIndicesLinearCW(vertices)),
+        c = null;
 
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,ind,gl.DYNAMIC_DRAW);
+    var gl = this.gl;
+
+    gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,gl.DYNAMIC_DRAW);
 
     if(this._fill)
     {
         this._applyFill();
         this._setMatrixUniform();
-        gl.drawElements(gl.TRIANGLES,ind.length,gl.UNSIGNED_SHORT,0);
+        gl.drawElements(gl.TRIANGLES,i.length,gl.UNSIGNED_SHORT,0);
     }
 };
 
@@ -1441,20 +1426,11 @@ CanvasGL.prototype.point = function(x,y)
     v[0] = x;
     v[1] = y;
 
-    this._fillBuffer(v,c);
+    this.__fillBuffer(v,c);
     this._setMatrixUniform();
     gl.drawArrays(gl.POINTS,0,1);
 };
 
-CanvasGL.prototype.lines = function(vertices)
-{
-    if(!this._stroke)return;
-    var gl  = this.gl;
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
-    this._applyStroke();
-    this._setMatrixUniform();
-    gl.drawArrays(gl.LINE_STRIP,0,vertices.length*0.5);
-};
 
 CanvasGL.prototype.points = function(vertices)
 {
@@ -1462,7 +1438,7 @@ CanvasGL.prototype.points = function(vertices)
     var gl  = this.gl;
     //gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
     this._setMatrixUniform();
-    this._fillBuffer(new Float32Array(vertices),
+    this.__fillBuffer(new Float32Array(vertices),
                      this._applyColorToColorBuffer(this._fillColor,new Float32Array(vertices.length*2),
                      null));
     gl.drawArrays(gl.POINTS,0,vertices.length*0.5);
@@ -1470,9 +1446,10 @@ CanvasGL.prototype.points = function(vertices)
 
 //TODO: Optimize, add support for caps, alpha, overlapping
 
-CanvasGL.prototype._polyline = function(joints)
+CanvasGL.prototype._polyline = function(joints,length,loop)
 {
     if(!this._stroke)return;
+
 
     var color    = this._strokeColor,
         colorLen = color.length;
@@ -1483,17 +1460,22 @@ CanvasGL.prototype._polyline = function(joints)
         return;
     }
 
+    loop = Boolean(loop);
+
+    var calign = this._currLineAlign,
+        align  = (calign == CanvasGL.OUTSIDE) ? 1 : (calign == CanvasGL.INSIDE) ? -1 : 0;
 
     var pvcol = color.length != 4;
 
     var lineWidth = this._currLineWidth;
 
-    var jointLen       = joints.length,
+    var jointLen       = (length || joints.length) + (loop ? 2 : 0);
         jointCapResMax = _CGLConstants.LINE_ROUND_CAP_DETAIL_MAX,
         jointCapResMin = _CGLConstants.LINE_ROUND_CAP_DETAIL_MIN,
         jointCapRes    = lineWidth * 4 ,
         jointRad       = lineWidth * 0.5,
         jointNum       = jointLen  * 0.5;
+
 
     var d = Math.max(jointCapResMin,Math.min(jointCapRes,jointCapResMax));
 
@@ -1535,6 +1517,13 @@ CanvasGL.prototype._polyline = function(joints)
         x = joints[i];
         y = joints[i+1];
 
+
+        if(loop && (i == jointLen - 2))
+        {
+            x = joints[0];
+            y = joints[1];
+        }
+
         cx = jointRad;
         cy = 0;
 
@@ -1553,23 +1542,7 @@ CanvasGL.prototype._polyline = function(joints)
             j+=2;
         }
 
-        // apply color to cap vertices
-
-        /*
-        oc = cjLen * hi;
-        j  = oc;
-
-        while(j < oc + cjLen)
-        {
-            colors[j  ] = 1.0;
-            colors[j+1] = 1.0;
-            colors[j+2] = 1.0;
-            colors[j+3] = 1.0;
-            j+=4;
-        }
-        */
-
-        // order triangles
+        // order cap triangles
 
         oi  = hi*ijLen;
         j   = oi;
@@ -1590,7 +1563,7 @@ CanvasGL.prototype._polyline = function(joints)
         i+=2;
     }
 
-    //TODO: Merge loops
+    //TODO: Merge loops from cap,cap...,rect,rect... to cap,rect,cap,rect...
 
     var temp;
 
@@ -1607,6 +1580,12 @@ CanvasGL.prototype._polyline = function(joints)
         nx = joints[i+2];
         ny = joints[i+3];
 
+        if(loop && (i == jointLen - 4))
+        {
+            nx = joints[0];
+            ny = joints[1];
+        }
+
         slopex = nx - x;
         slopey = ny - y;
 
@@ -1619,14 +1598,14 @@ CanvasGL.prototype._polyline = function(joints)
         slopex = slopey;
         slopey = -temp;
 
-        temp = jointRad * slopex;
+        temp = (jointRad) * slopex;
 
         v0x = x  + temp;
         v1x = x  - temp;
         v2x = nx + temp;
         v3x = nx - temp;
 
-        temp = jointRad * slopey;
+        temp = (jointRad) * slopey;
 
         v0y = y  + temp;
         v1y = y  - temp;
@@ -1637,6 +1616,8 @@ CanvasGL.prototype._polyline = function(joints)
         ov = verticesJLen + (vbLen * hi);
         j = ov;
 
+        //setup rect vertices
+
         vertices[j  ] = v0x;
         vertices[j+1] = v0y;
         vertices[j+2] = v1x;
@@ -1646,25 +1627,12 @@ CanvasGL.prototype._polyline = function(joints)
         vertices[j+6] = v3x;
         vertices[j+7] = v3y;
 
-        /*
-        oc = colorsJLen + (cbLen * hi);
-        j = oc;
-
-        while(j < oc + cbLen)
-        {
-            colors[j  ] = 1.0;
-            colors[j+1] = 1.0;
-            colors[j+2] = 1.0;
-            colors[j+3] = 1.0;
-
-            j+=4;
-        }
-        */
-
         oi = indicesJLen + (ibLen * hi);
         j = oi;
 
         hov = ov * 0.5;
+
+        //order rect triangles
 
         indices[j  ] = hov;
         indices[j+1] = hov + 1;
@@ -1681,7 +1649,6 @@ CanvasGL.prototype._polyline = function(joints)
         var colIArr = new Array(jointNum*4);
 
         i = 0;
-
 
         while(i < colIArr.length)
         {
@@ -1718,44 +1685,20 @@ CanvasGL.prototype._polyline = function(joints)
 
         while(i < colorsJLen + colorsBLen)
         {
-            j = i;
-            k = (i-colorsJLen)/(16) * 4;
+            k = (i-colorsJLen)/cbLen * 4;
 
+            colors[i   ] = colors[i+4 ] = colIArr[k  ];
+            colors[i+1 ] = colors[i+5 ] = colIArr[k+1];
+            colors[i+2 ] = colors[i+6 ] = colIArr[k+2];
+            colors[i+3 ] = colors[i+7 ] = colIArr[k+3];
 
+            colors[i+8 ] = colors[i+12] = colIArr[k+4];
+            colors[i+9 ] = colors[i+13] = colIArr[k+5];
+            colors[i+10] = colors[i+14] = colIArr[k+6];
+            colors[i+11] = colors[i+15] = colIArr[k+7];
 
-
-            /*
-            while(j < i + cbLen)
-            {
-            */
-            colors[j   ] = colIArr[k  ];
-            colors[j+1 ] = colIArr[k+1];
-            colors[j+2 ] = colIArr[k+2];
-            colors[j+3 ] = colIArr[k+3];
-            colors[j+4 ] = colIArr[k  ];
-            colors[j+5 ] = colIArr[k+1];
-            colors[j+6 ] = colIArr[k+2];
-            colors[j+7 ] = colIArr[k+3];
-            colors[j+8 ] = colIArr[k+4];
-            colors[j+9 ] = colIArr[k+5];
-            colors[j+10] = colIArr[k+6];
-            colors[j+11] = colIArr[k+7];
-            colors[j+12] = colIArr[k+4];;
-            colors[j+13] = colIArr[k+5];;
-            colors[j+14] = colIArr[k+6];;
-            colors[j+15] = colIArr[k+7];;
-
-
-
-
-            k+=4;
-            i+=16;
-
+            i+=cbLen;
         }
-
-
-
-
     }
     else
     {
@@ -1971,10 +1914,6 @@ CanvasGL.prototype.rotate = function(a)
     this._transMatrix = this.__mat33MultPost(this._transMatrix,this.__makeMat33Rotation(a));
 };
 
-/*---------------------------------------------------------------------------------------------------------*/
-// Drawing matrix stack manipulation
-/*---------------------------------------------------------------------------------------------------------*/
-
 CanvasGL.prototype.pushMatrix = function()
 {
     this._transMatrixStack.push(this.__makeMat33Copy(this._transMatrix));
@@ -2000,8 +1939,6 @@ CanvasGL.prototype.popMatrix = function()
 /*---------------------------------------------------------------------------------------------------------*/
 
 // Internal Matrix 3x3 class for all transformations
-
-
 
 // SX  0  0   0  1  2
 //  0 SY  0   3  4  5
@@ -2109,7 +2046,7 @@ CanvasGL.prototype.__mat33MultPost = function(mat0,mat1)
 // Helper
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype._faceIndicesLinearCW = function(vertices)
+CanvasGL.prototype.__faceIndicesLinearCW = function(vertices)
 {
     var a = new Array((vertices.length/2-2)*3);
     var i = 0;
@@ -2123,7 +2060,7 @@ CanvasGL.prototype._faceIndicesLinearCW = function(vertices)
     return a;
 };
 
-CanvasGL.prototype._faceIndicesLinearCCW = function(vertices)
+CanvasGL.prototype.__faceIndicesLinearCCW = function(vertices)
 {
     var a = new Array((vertices.length/2-2)*3);
     var i = 0;
@@ -2137,7 +2074,7 @@ CanvasGL.prototype._faceIndicesLinearCCW = function(vertices)
     return a;
 };
 
-CanvasGL.prototype._np2 = function(n)
+CanvasGL.prototype.__np2 = function(n)
 {
     n--;
     n |= n>>1;
@@ -2149,19 +2086,37 @@ CanvasGL.prototype._np2 = function(n)
     return n;
 };
 
-CanvasGL.prototype._pp2 = function(n)
+CanvasGL.prototype.__pp2 = function(n)
 {
     var n2 = n>>1;
-    return n2>0 ? this._np2(n2) : this._np2(n);
+    return n2>0 ? this.__np2(n2) : this.__np2(n);
 };
 
-CanvasGL.prototype._nnp2 = function(n)
+CanvasGL.prototype.__nnp2 = function(n)
 {
     if((n&(n-1))==0)return n;
-    var nn = this._np2(n);
-    var pn = this._pp2(n);
+    var nn = this.__np2(n);
+    var pn = this.__pp2(n);
     return (nn-n)>Math.abs(n-pn) ? pn : nn;
 };
+
+CanvasGL.prototype.__fillBuffer = function(vertexArray,colorArray)
+{
+    var gl  = this.gl;
+    var glArrayBuffer = gl.ARRAY_BUFFER,
+        glDynamicDraw = gl.DYNAMIC_DRAW,
+        glFloat       = gl.FLOAT;
+
+    var vblen = vertexArray.byteLength,
+        cblen = colorArray.byteLength;
+
+    gl.bufferData(glArrayBuffer,vblen + cblen,glDynamicDraw);
+    gl.bufferSubData(glArrayBuffer,0,vertexArray);
+    gl.bufferSubData(glArrayBuffer,vblen,colorArray);
+    gl.vertexAttribPointer(this._locationAttribPosition,2,glFloat,false,0,0);
+    gl.vertexAttribPointer(this._locationAttribVertexColor,4,glFloat,false,0,vblen);
+};
+
 
 /*---------------------------------------------------------------------------------------------------------*/
 
@@ -2247,8 +2202,8 @@ CanvasGL.prototype.text = function(string,x,y)
     var tw = Math.floor(mt.width+mt.width*0.5),
         th = Math.floor(this._fontProperties.size)-1;
 
-    var cw = this._np2(tw),
-        ch = this._np2(th);
+    var cw = this.__np2(tw),
+        ch = this.__np2(th);
 
     this._c2dSetSize(cw,ch);
 
