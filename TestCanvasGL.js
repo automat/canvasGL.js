@@ -116,10 +116,12 @@ TestCanvasGL.prototype.draw = function()
     c.quad(520,20,580,20,580,80,520,80);
     */
 
-    c.fill(100);
+    c.strokeArr([0.0,1.0,1.0,1.0,
+                 0.0,0.0,1.0,1.0]);
 
-    c.setLineWidth(30);
-    c._opaquePolyLine([500,50,250,10,20,20]);
+    c.setLineWidth(20);
+
+    c._polyline([100,100,200,200,300,200,250,210]);
 
     //c.point(50,150);
 
