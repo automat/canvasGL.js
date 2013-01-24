@@ -802,8 +802,8 @@ CanvasGL.prototype.texture = function(img,offsetX,offsetY,width,height)
             glRepeat    = gl.REPEAT;
 
         offsetY = offsetY || 0;
-        width  = 1/width  || (1);
-        height = 1/height || (1);
+        width  = 1/width  || 1;
+        height = 1/height || 1;
 
         tc[0]+=offsetX;
         tc[1]+=offsetY;
@@ -1456,6 +1456,244 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
 
     var lineWidth = this._currLineWidth;
 
+    var jointSize      = 2,
+        jointLen       = (length || joints.length) + (loop ? jointSize : 0),
+        jointCapResMax = _CGLC.LINE_ROUND_CAP_DETAIL_MAX,
+        jointCapResMin = _CGLC.LINE_ROUND_CAP_DETAIL_MIN,
+        jointCapRes    = lineWidth*4 ,
+        jointRad       = lineWidth * 0.5,
+        jointNum       = jointLen  * 0.5;
+
+
+    var d = Math.max(jointCapResMin,Math.min(jointCapRes,jointCapResMax));
+
+    var vbLen = 8,
+        cbLen = vbLen * 2,
+        ibLen = (vbLen - 2) * 3;
+
+    var verticesBLen = vbLen * (jointNum-1),
+        colorsBLen   = cbLen * (jointNum-1),
+        indicesBLen  = ibLen * (jointNum-1);
+
+    var vjLen = d * 2,
+        cjLen = d * 4,
+        ijLen = (d-2) * 3;
+
+    var verticesJLen = vjLen * jointNum,
+        colorsJLen   = cjLen * jointNum,
+        indicesJLen  = ijLen * jointNum;
+
+    var vtLen = vbLen + vjLen,
+        ctLen = cbLen + cjLen,
+        itLen = ibLen + ijLen;
+
+    var verticesTLen = verticesBLen + verticesJLen,
+        colorsTLen   = colorsBLen   + colorsJLen,
+        indicesTLen  = indicesBLen  + indicesJLen;
+
+
+    var vertices = new Float32Array(verticesTLen),
+        colors   = new Float32Array(colorsTLen),
+        indices  = new Uint16Array( indicesTLen);
+
+    var i = 0, j,jointIndex,j3,oi3, k,faceIndex;
+
+    var offsetV,
+        offsetC,
+        offsetI;
+
+    var theta = 2 * Math.PI / d,
+        c     = Math.cos(theta),
+        s     = Math.sin(theta),
+        t;
+
+    var x, y, cx, cy, nx, ny;
+
+    var slopex,slopey,slopelen,temp;
+
+    while(i < jointLen)
+    {
+        jointIndex = i / jointSize;
+
+        x = joints[i];
+        y = joints[i+1];
+
+        if(loop && (i == jointLen - jointSize))
+        {
+            x = joints[0];
+            y = joints[1];
+        }
+
+        //setup circle cap
+
+        cx = jointRad;
+        cy = 0;
+
+        offsetV = j = vtLen * jointIndex;
+
+        while(j < offsetV + vjLen)
+        {
+            vertices[j  ] = cx + x;
+            vertices[j+1] = cy + y;
+
+            t  = cx;
+            cx = c * cx - s * cy;
+            cy = s * t  + c * cy;
+
+            j+=2;
+        }
+
+        offsetI = j = itLen * jointIndex;
+        faceIndex =  offsetV / jointSize;
+
+        k = 1;
+
+        while(j < offsetI + ijLen)
+        {
+            indices[j ]  = faceIndex;
+            indices[j+1] = faceIndex + k;
+            indices[j+2] = faceIndex + k + 1;
+
+            j+=3;
+            k++;
+        }
+
+        if(i < jointLen - jointSize)
+        {
+            nx = joints[i+2];
+            ny = joints[i+3];
+
+            if(loop && (i == (jointLen - jointSize*2)))
+            {
+                nx = joints[0];
+                ny = joints[1];
+            }
+
+            slopex = nx - x;
+            slopey = ny - y;
+
+            slopelen = 1/Math.sqrt(slopex*slopex + slopey*slopey);
+
+            slopex *= slopelen;
+            slopey *= slopelen;
+
+            temp   = slopex;
+            slopex = slopey;
+            slopey = -temp;
+
+            temp = (jointRad) * slopex;
+
+            offsetV = j = vtLen * jointIndex + vjLen;
+
+            vertices[j  ] = x  + temp;
+            vertices[j+2] = x  - temp;
+            vertices[j+4] = nx + temp;
+            vertices[j+6] = nx - temp;
+
+            temp = (jointRad) * slopey;
+
+            vertices[j+1] = y  + temp;
+            vertices[j+3] = y  - temp;
+            vertices[j+5] = ny + temp;
+            vertices[j+7] = ny - temp;
+
+            faceIndex =  offsetV / jointSize;
+
+            offsetI = offsetI + ijLen;
+            j = offsetI;
+
+            indices[j  ] = faceIndex;
+            indices[j+1] = faceIndex + 1;
+            indices[j+2] = faceIndex + 2;
+            indices[j+3] = indices[j+1];
+            indices[j+4] = indices[j+2];
+            indices[j+5] = faceIndex + 3;
+
+
+        }
+
+        i+=2;
+    }
+
+    if(pvcol)
+    {
+        var colIArr = this._colorArrLerped(color,new Array(jointNum*4));
+
+        i = 0;
+
+        while(i <  colorsTLen)
+        {
+            j = i;
+            k = i/ctLen * 4;
+
+            while(j < i + cjLen)
+            {
+                colors[j  ] = colIArr[k  ];
+                colors[j+1] = colIArr[k+1];
+                colors[j+2] = colIArr[k+2];
+                colors[j+3] = colIArr[k+3];
+                j+=4;
+            }
+
+            colors[j   ] = colors[j+4 ] = colIArr[k  ];
+            colors[j+1 ] = colors[j+5 ] = colIArr[k+1];
+            colors[j+2 ] = colors[j+6 ] = colIArr[k+2];
+            colors[j+3 ] = colors[j+7 ] = colIArr[k+3];
+
+            colors[j+8 ] = colors[j+12] = colIArr[k+4];
+            colors[j+9 ] = colors[j+13] = colIArr[k+5];
+            colors[j+10] = colors[j+14] = colIArr[k+6];
+            colors[j+11] = colors[j+15] = colIArr[k+7];
+
+            i+=ctLen;
+        }
+    }
+    else
+    {
+        this._applyColorToColorBuffer(this._bufferColorStroke,colors,null);
+    }
+
+    this._setMatrixUniform();
+
+    var gl = this.gl,
+        glArrayBuffer = gl.ARRAY_BUFFER,
+        glDynamicDraw = gl.DYNAMIC_DRAW,
+        glFloat       = gl.FLOAT;
+
+    var vblen = vertices.byteLength,
+        cblen = colors.byteLength,
+        tlen  = vblen + cblen;
+
+
+    gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
+    gl.bufferSubData(glArrayBuffer,0,    vertices);
+    gl.bufferSubData(glArrayBuffer,vblen,colors);
+    gl.vertexAttribPointer(this._locationAttribPosition,2,glFloat,false,0,0);
+    gl.vertexAttribPointer(this._locationAttribVertexColor,4,glFloat,false,0,vblen);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
+    gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
+
+};
+/*
+CanvasGL.prototype._polyline = function(joints,length,loop)
+{
+    if(!this._stroke)return;
+
+
+    var color    = this._bufferColorStroke,
+        colorLen = color.length;
+
+    if(colorLen!= 4 && colorLen!=8)
+    {
+        throw ("Color array length not valid.");
+    }
+
+    loop = Boolean(loop);
+
+    var pvcol = color.length != 4;
+
+    var lineWidth = this._currLineWidth;
+
     var jointLen       = (length || joints.length) + (loop ? 2 : 0),
         jointCapResMax = _CGLC.LINE_ROUND_CAP_DETAIL_MAX,
         jointCapResMin = _CGLC.LINE_ROUND_CAP_DETAIL_MIN,
@@ -1636,21 +1874,21 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
         var colIArr = this._colorArrLerped(color,new Array(jointNum*4));
 
         /*
-        i = 0;
+         i = 0;
 
-        while(i < colIArr.length)
-        {
-            j = (i/4/jointNum);
+         while(i < colIArr.length)
+         {
+         j = (i/4/jointNum);
 
-            colIArr[i  ] = color[0] * (1-j) + color[4] * j;
-            colIArr[i+1] = color[1] * (1-j) + color[5] * j;
-            colIArr[i+2] = color[2] * (1-j) + color[6] * j;
-            colIArr[i+3] = color[3] * (1-j) + color[7] * j;
+         colIArr[i  ] = color[0] * (1-j) + color[4] * j;
+         colIArr[i+1] = color[1] * (1-j) + color[5] * j;
+         colIArr[i+2] = color[2] * (1-j) + color[6] * j;
+         colIArr[i+3] = color[3] * (1-j) + color[7] * j;
 
-            i+=4;
-        }
-        */
-
+         i+=4;
+         }
+         */
+/*
         i = 0;
 
         while(i < colorsJLen)
@@ -1713,6 +1951,7 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
     gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
 };
+*/
 
 CanvasGL.prototype.beginShapeBatch = function(){};
 CanvasGL.prototype.beginLineBatch  = function(){};

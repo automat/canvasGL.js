@@ -72,23 +72,18 @@ TestCanvasGL.prototype.draw = function()
 
     c.background(10);
     c.noStroke();
-    /*
-    c.strokeArr([1.0,1.0,1.0,1.0,
-                 1.0,0.0,1.0,1.0,
-                 1.0,1.0,1.0,1.0,
-                 1.0,1.0,1.0,0.0]);
-    c.fill(100,0,0);
-    c.rect(0,0,100,100);
-    c.noFill();
 
-    c.rect(100,0,100,100);
+    c.setLineWidth(30);
 
     c.strokeArr([1.0,1.0,1.0,1.0,
                  1.0,0.0,1.0,1.0]);
 
-    c.line(120,20,180,80);
 
 
+
+
+
+/*
     c.setEllipseDetail(3+floor(abs(sin(t*0.25)*27)));
     c.noStroke();
     c.strokeArr(c._lerpedColor(colori(0),colori(255), c.getEllipseDetail()));
@@ -114,22 +109,9 @@ TestCanvasGL.prototype.draw = function()
         0.0,0.0,1.0,1.0]);
 
     c.quad(520,20,580,20,580,80,520,80);
-    */
 
+*/
 
-
-
-
-
-
-
-
-
-    //c.point(50,150);
-
-    //c.texture(this.img2);
-    //c.textureTest(0,100,200,200);
-    //c.rect(0,100,100,100);
 
 
 
@@ -137,6 +119,7 @@ TestCanvasGL.prototype.draw = function()
 
 
     //12
+
     var i,j;
     var rs = c.width/16,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
     var pa,ps;
@@ -312,6 +295,7 @@ TestCanvasGL.prototype.draw = function()
 
     }
     c.popMatrix();
+
 
     /*
     function t01(x,y)
