@@ -1491,7 +1491,6 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
         colorsTLen   = colorsBLen   + colorsJLen,
         indicesTLen  = indicesBLen  + indicesJLen;
 
-
     var vertices = new Float32Array(verticesTLen),
         colors   = new Float32Array(colorsTLen),
         indices  = new Uint16Array( indicesTLen);
