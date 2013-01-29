@@ -71,7 +71,9 @@ var _CGLC =
     TEXT_DEFAULT_LINE_HEIGHT:'1',
     TEXT_DEFAULT_SPACING:'1',
 
-    BUFFER_DEFAULT_RESERVE_AMOUNT : 50
+    BUFFER_DEFAULT_RESERVE_AMOUNT : 50,
+
+    CLEAR_BACKGROUND : true
 };
 
 
@@ -106,7 +108,7 @@ function CanvasGL(parentDomElementId)
     {
         try
         {
-            this.gl = this._glCanvas.getContext(names[i],{ antialias: true});
+            this.gl = this._glCanvas.getContext(names[i],{ antialias: true,alpha:true});
         }
         catch (e)
         {
@@ -315,9 +317,11 @@ function CanvasGL(parentDomElementId)
 
     this._batchActive             = false;
     this._batchOffsetVertices     = 0;
+
     this._batchBufferVertices     = [];
     this._batchBufferVertexColors = [];
     this._batchBufferIndices      = [];
+    this._batchBufferTexCoords    = [];
 
     // canvas text
 
@@ -328,6 +332,8 @@ function CanvasGL(parentDomElementId)
     this.setTextLineHeight(_CGLC.TEXT_DEFAULT_LINE_HEIGHT);
 
     // Attach canvas to parent DOM element
+
+    this._clearBackground = _CGLC.CLEAR_BACKGROUND;
 
     this.parent.appendChild(this._glCanvas);
 }
@@ -444,7 +450,20 @@ CanvasGL.prototype.getSplineDetail = function()
     return this._currDetailSpline;
 };
 
+CanvasGL.prototype.setClearBackground = function(b)
+{
+    this._clearBackground = b;
+};
 
+CanvasGL.prototype.enableBlend = function()
+{
+    this.gl.enable(this.gl.BLEND);
+};
+
+CanvasGL.prototype.disableBlend = function()
+{
+    this.gl.disable(this.gl.BLEND);
+};
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Shape fill/stroke/texture
@@ -929,8 +948,9 @@ CanvasGL.prototype.background = function()
     this.resetUVQuad();
 
     var gl = this.gl;
-    gl.clearColor(c[0],c[1],c[2],c[3]);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.clearColor(c[0],c[1],c[2],1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT );
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     this._loadIdentity();
@@ -966,7 +986,7 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
         if(this._batchActive)
         {
-            this._batchPush(v,this.__faceIndicesLinearCW(v),c);
+            this._batchPush(v,this.__faceIndicesLinearCW(v),c,null);
         }
         else
         {
@@ -1104,7 +1124,9 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
         {
             this._batchPush(this._bufferVerticesEllipse,
                             this.__faceIndicesFan(this._bufferVerticesEllipse,l),
-                            c,l);
+                            c,
+                            null,
+                            l);
         }
         else
         {
@@ -1167,7 +1189,9 @@ CanvasGL.prototype.circle = function(x,y,radius)
         {
             this._batchPush(this._bufferVerticesEllipse,
                             this.__faceIndicesFan(this._bufferVerticesEllipse,l),
-                            c,l);
+                            c,
+                            null,
+                            l);
         }
         else
         {
@@ -1222,7 +1246,7 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
 
         if(this._batchActive)
         {
-            this._batchPush(v,this.__faceIndicesLinearCW(v,l), c,l);
+            this._batchPush(v,this.__faceIndicesLinearCW(v,l), c,null,l);
         }
         else
         {
@@ -1434,7 +1458,7 @@ CanvasGL.prototype.drawElements = function(vertices,indices,colors)
 
     if(this._batchActive)
     {
-        this._batchPush(v,i,c);
+        this._batchPush(v,i,c,null);
     }
     else
     {
@@ -1470,7 +1494,7 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 
         if(this._batchActive)
         {
-            this._batchPush(this._bufferVerticesTriangle,[0,1,2],c);
+            this._batchPush(this._bufferVerticesTriangle,[0,1,2],c,null);
         }
         else
         {
@@ -1485,7 +1509,7 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
     }
 };
 
-//TODO: Fix
+//TODO: Fix (Works in Firefox)
 
 CanvasGL.prototype.point = function(x,y)
 {
@@ -1502,7 +1526,7 @@ CanvasGL.prototype.point = function(x,y)
     this.gl.drawArrays(this.gl.POINTS,0,1);
 };
 
-//TODO: Fix
+//TODO: Fix (Works in Firefox)
 
 CanvasGL.prototype.points = function(vertices)
 {
@@ -1738,7 +1762,7 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
 
     if(this._batchActive)
     {
-        this._batchPush(vertices,indices,colors);
+        this._batchPush(vertices,indices,colors,null);
     }
     else
     {
@@ -1755,15 +1779,18 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
 CanvasGL.prototype.beginBatch = function()
 {
     this._batchActive = true;
-    this._batchBufferVertices = [];
-    this._batchBufferIndices = [];
+
+    this._batchBufferVertices     = [];
+    this._batchBufferIndices      = [];
     this._batchBufferVertexColors = [];
+    this._batchBufferTexCoords    = [];
+
     this._batchOffsetVertices = 0;
 };
 
-CanvasGL.prototype._batchPush = function(vertices,indices,colors,limit)
+CanvasGL.prototype._batchPush = function(vertices,indices,colors,texCoords,limit)
 {
-    var vlen,ilen,clen;
+    var vlen,ilen,clen,tlen;
 
     if(limit)
     {
@@ -1777,6 +1804,8 @@ CanvasGL.prototype._batchPush = function(vertices,indices,colors,limit)
         ilen = indices.length;
         clen = colors.length;
     }
+
+    tlen = texCoords ? vlen : 0;
 
     var i = -1;
     while(++i<vlen)
@@ -1796,6 +1825,12 @@ CanvasGL.prototype._batchPush = function(vertices,indices,colors,limit)
         this._batchBufferVertexColors.push(colors[i]);
     }
 
+    i = -1;
+    while(++i<tlen)
+    {
+        this._batchBufferTexCoords.push(texCoords[i]);
+    }
+
     this._batchOffsetVertices+=vlen*0.5;
 };
 
@@ -1806,7 +1841,7 @@ CanvasGL.prototype.drawBatch = function()
         glDynamicDraw = gl.DYNAMIC_DRAW,
         glFloat       = gl.FLOAT;
 
-    var v,c,i;
+    var v,c,i,t;
 
     switch (arguments.length)
     {
@@ -1814,6 +1849,7 @@ CanvasGL.prototype.drawBatch = function()
             v = new Float32Array(this._batchBufferVertices);
             c = new Float32Array(this._batchBufferVertexColors);
             i = new Uint16Array(this._batchBufferIndices);
+            t = new Float32Array(this._batchBufferTexCoords);
             break;
         case 1:
             var a = arguments[0];
@@ -1821,22 +1857,42 @@ CanvasGL.prototype.drawBatch = function()
             v = new Float32Array(a[0]);
             c = new Float32Array(a[1]);
             i = new Uint16Array(a[2]);
+            t = new Float32Array(a[3]);
             break;
     }
 
     var vblen = v.byteLength,
         cblen = c.byteLength,
-        tlen  = vblen + cblen;
+        tblen = t.byteLength,
+        tlen  = vblen + cblen + tblen;
+
+    var textured = t.length != 0;
 
     this._setMatrixUniform();
 
     gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
     gl.bufferSubData(glArrayBuffer,0,    v);
     gl.bufferSubData(glArrayBuffer,vblen,c);
-    gl.vertexAttribPointer(this._locationAttribPosition,   2,glFloat,false,0,0);
-    gl.vertexAttribPointer(this._locationAttribVertexColor,4,glFloat,false,0,vblen);
+    gl.bufferSubData(glArrayBuffer,tblen,t);
+    gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,0);
+    gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,vblen);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,vblen + tblen);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
-    gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
+
+    if(textured)
+    {
+        gl.uniform1f(this._locationUniformUseTexture,this._currTint);
+        gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+        gl.uniform1f(this._locationUniformImage,0);
+        gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
+        this._disableTexture();
+    }
+    else
+    {
+        gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
+    }
+
+
 };
 
 CanvasGL.prototype.endBatch = function()

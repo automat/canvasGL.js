@@ -52,8 +52,6 @@ TestCanvasGL.prototype.animationLoop = function()
 
 };
 
-function TestCanvasGLDemo(){}
-
 TestCanvasGL.prototype.draw = function()
 {
 
@@ -64,7 +62,7 @@ TestCanvasGL.prototype.draw = function()
     c.background(10);
 
     var i,j;
-    var rs = c.width/16,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
+    var rs = c.width/20,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
     var pa,ps;
     var pp0,pp1,pp2,pp3,pp4,pp5,pp6,pp7,pp8,pp9,pp10,pp11,pp12,pp13;
     var sint = sin(t),sint05 = sin(t*0.5),sint025 = sin(t*0.25);
@@ -137,6 +135,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
+
             c.translate(rs2*3+10,10);
 
             pp8 = rs2;
@@ -575,6 +574,7 @@ TestCanvasGL.prototype.draw = function()
 
             i = 0;
 
+            c.beginBatch();
             while(i<pp2.length)
             {
                 pp4 = stepSmooth(1-abs((-pp1*0.5 + i)/pp1));
@@ -586,6 +586,8 @@ TestCanvasGL.prototype.draw = function()
                 c.circle(i*pp0,pp6,pp7);
                 i++;
             }
+            c.drawBatch();
+            c.endBatch();
 
 
 
@@ -596,8 +598,10 @@ TestCanvasGL.prototype.draw = function()
         c.popMatrix();
 
 
+
         c.pushMatrix();
         {
+            /*
             c.translate(rs2*5,rs2);
             c.noStroke();
             c.fill(100,0,0);
@@ -616,8 +620,10 @@ TestCanvasGL.prototype.draw = function()
                     c.circle(i*pp0+pp0*0.5,j*pp0+pp0*0.5,pp0*0.5*pp1);
                 }
             }
+            */
         }
         c.popMatrix();
+
 
         c.pushMatrix();
         {
@@ -676,6 +682,7 @@ TestCanvasGL.prototype.draw = function()
         }
         c.popMatrix();
 
+
         c.pushMatrix();
         {
             c.translate(0,rs2*2);
@@ -685,6 +692,8 @@ TestCanvasGL.prototype.draw = function()
 
         }
         c.popMatrix();
+
+
 
 
         /*
