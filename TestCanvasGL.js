@@ -172,7 +172,6 @@ TestCanvasGL.prototype.draw = function()
                         0.0,0.0,1.0,1.0,
                         1.0,0.0,1.0,1.0]);
 
-
             c.rect(0,0,rs,rs);
             c.setRectMode(CanvasGL.CORNER);
             c.setLineWidth(1);
@@ -189,6 +188,7 @@ TestCanvasGL.prototype.draw = function()
             c.strokeArrF([1.0,0.0,0.0,1.0,
                           0.0,0.0,1.0,1.0]);
             c.arc(rs,rs,rs-20,rs-20,0,PI-(PI-QUARTER_PI)*asint025,20-10*asint025,20-10*asint025);
+
         }
         c.popMatrix();
 
@@ -294,8 +294,6 @@ TestCanvasGL.prototype.draw = function()
             c.beginBatch();
             c.line(anchor0[0],anchor0[1],cntrl0[0],cntrl0[1]);
             c.line(anchor1[0],anchor1[1],cntrl1[0],cntrl1[1]);
-            c.drawBatch();
-            c.endBatch();
             c.noStroke();
             c.fill(80);
             c.setEllipseDetail(10);
@@ -321,6 +319,7 @@ TestCanvasGL.prototype.draw = function()
             pp0 = c.bezierPoint(1);
             c.circle(pp0[0],pp0[1],3);
 
+
             pp1 = floor(10*abs(sin(t*0.025)));
 
             i = 0;
@@ -331,6 +330,8 @@ TestCanvasGL.prototype.draw = function()
                 c.circle(pp0[0],pp0[1],2);
 
             }
+            c.drawBatch();
+            c.endBatch();
         }
         c.popMatrix();
 
@@ -630,6 +631,7 @@ TestCanvasGL.prototype.draw = function()
             pp2 = new Array(pp1);
 
             i = 0;
+
             while(i<pp2.length)
             {
                 pp4 = stepSmooth(1-abs((-pp1*0.5 + i)/pp1));
@@ -639,10 +641,9 @@ TestCanvasGL.prototype.draw = function()
                 c.circle(i*pp0+1,pp6+1,pp7+1);
                 c.fill(255*pp4,0,255-255*pp4);
                 c.circle(i*pp0,pp6,pp7);
-
-
                 i++;
             }
+
 
 
 
@@ -729,11 +730,43 @@ TestCanvasGL.prototype.draw = function()
             }
 
             c.drawElements(pp0,pp5,pp9);
+        }
+        c.popMatrix();
 
+        c.pushMatrix();
+        {
+            c.translate(0,rs2*2);
+
+            c.fill(255,255,255);
+            c.point(rs+10*cos(t),rs+10*sin(t));
+
+        }
+        c.popMatrix();
+
+
+        /*
+        c.pushMatrix();
+        {
+            c.translate(0,rs2*2);
+            c.fill(asint025*255,0,255-255*asint025);
+            c.noStroke();
+            c.setFontSize(30+10*abs(sin(t*5)));
+            c.setFontWeight(CanvasGL.BOLD);
+            c.setTextAlign("bottom");
+            pp0 = "CAN";
+            pp1 = c.textWidth(pp0);
+            c.translate(rs,rs);
+            c.text(pp0, -pp1*0.5, -c.textHeight()*0.5);
+            c.text(pp0, -pp1*0.5, -c.textHeight()*0.5+30);
+            c.fill(255-asint025*255,0,255*asint025);
+            pp0 = "VAS";
+            pp1 = c.textWidth(pp0);
+            c.text(pp0, -pp1*0.5-4, -c.textHeight()*0.5-4);
 
 
         }
         c.popMatrix();
+        */
    }
     c.popMatrix();
 };

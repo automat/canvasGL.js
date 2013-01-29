@@ -1,18 +1,34 @@
 /**
- * User: Henryk Wollik
- * Date: 27.12.12
- * Time: 09:37
+ *
+ * canvasGL.js is available under the terms of the MIT license.  The full text of the
+ * MIT license is included below.
+ *
+ * MIT License
+ * ===========
+ *
+ * Copyright (c) 2012-2013 Henryk Wollik. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 
-
-
-
-CGL =
-{
-    SIZE_OF_VERTEX:2
-};
-
-_CGLC =
+var _CGLC =
 {
     WIDTH_DEFAULT:300,
     HEIGHT_DEFAULT:300,
@@ -44,20 +60,19 @@ _CGLC =
     SIZE_OF_POINT:2,
     SIZE_OF_COLOR:4,
     SIZE_OF_T_COORD:2,
+    SIZE_OF_FACE:3,
 
     TEXT_DEFAULT_STYLE:'',
     TEXT_DEFAULT_WEIGHT:'normal',
     TEXT_DEFAULT_SIZE:8,
     TEXT_DEFAULT_FAMILY:'Arial',
-    TEXT_DEFAULT_BASELINE:'bottom',
+    TEXT_DEFAULT_BASELINE:'top',
     TEXT_DEFAULT_ALIGN:'left',
     TEXT_DEFAULT_LINE_HEIGHT:'1',
-    TEXT_DEFAULT_SPACING:'1'
+    TEXT_DEFAULT_SPACING:'1',
+
+    BUFFER_DEFAULT_RESERVE_AMOUNT : 50
 };
-
-
-
-
 
 
 /** ------------------------------------------------------------------------------------------------------------------
@@ -139,8 +154,8 @@ function CanvasGL(parentDomElementId)
 
             "void main()" +
             "{" +
-                "vec4 texColor  = texture2D(u_image,v_texture_coord);" +
-                "gl_FragColor = v_vertex_color * (1.0 - u_use_texture) + texColor * u_use_texture;"+
+                "vec4 texColor = texture2D(u_image,v_texture_coord);" +
+                "gl_FragColor  = v_vertex_color * (1.0 - u_use_texture) + texColor * u_use_texture;"+
             "}",
 
         this.gl.FRAGMENT_SHADER);
@@ -226,7 +241,7 @@ function CanvasGL(parentDomElementId)
 
     this._texture     = false;
     this._textureCurr = null;
-    this._c2dTexture  = this._c2dPrepareTexture();
+    this._context2DTexture  = this._context2DPrepareTexture();
 
     this._fontProperties =
     {
@@ -298,16 +313,19 @@ function CanvasGL(parentDomElementId)
 
     // batch
 
-    //TODO: Replace with Pool
-
     this._batchActive             = false;
     this._batchOffsetVertices     = 0;
-    this._batchOffsetVertexColors = 0;
-    this._batchOffsetIndioes      = 0;
     this._batchBufferVertices     = [];
     this._batchBufferVertexColors = [];
     this._batchBufferIndices      = [];
 
+    // canvas text
+
+    this.setFontSize(_CGLC.TEXT_DEFAULT_SIZE);
+    this.setFontFamily(_CGLC.TEXT_DEFAULT_FAMILY);
+    this.setTextAlign(_CGLC.TEXT_DEFAULT_ALIGN);
+    this.setTextBaseLine(_CGLC.TEXT_DEFAULT_BASELINE);
+    this.setTextLineHeight(_CGLC.TEXT_DEFAULT_LINE_HEIGHT);
 
     // Attach canvas to parent DOM element
 
@@ -353,6 +371,15 @@ CanvasGL.SRC_ALPHA           = 770;
 CanvasGL.ONE_MINUS_SRC_ALPHA = 771;
 CanvasGL.SRC_COLOR = 768;
 CanvasGL.ONE_MINUS_SRC_COLOR = 769;
+
+
+CanvasGL.TOP    = "top";
+CanvasGL.MIDDLE = "middle";
+CanvasGL.BOTTOM = "bottom";
+
+CanvasGL.THIN   = "thin";
+CanvasGL.REGULAR= "normal";
+CanvasGL.BOLD   = "bold";
 
 CanvasGL.prototype.setEllipseMode = function(mode)
 {
@@ -750,9 +777,6 @@ CanvasGL.prototype.noTint = function()
 };
 
 
-
-
-
 // Texture
 
 CanvasGL.prototype._applyTexture = function()
@@ -909,7 +933,6 @@ CanvasGL.prototype.background = function()
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    //Reset transformation matrix to identity matrix
     this._loadIdentity();
 };
 
@@ -939,13 +962,14 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
     if(this._fill && !this._texture)
     {
+        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorQuad);
+
         if(this._batchActive)
         {
-
+            this._batchPush(v,this.__faceIndicesLinearCW(v),c);
         }
         else
         {
-            c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorQuad);
             this.__fillBuffer(v,c);
             gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
         }
@@ -1114,7 +1138,6 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
 
 };
 
-//TODO: Merge fill and polyline draw
 
 CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 {
@@ -1146,24 +1169,27 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 
     if(this._fill && !this._texture)
     {
+        var c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
+
         if(this._batchActive)
         {
-
+            this._batchPush(this._bufferVerticesEllipse,
+                            this.__faceIndicesFan(this._bufferVerticesEllipse,l),
+                            c,l);
         }
         else
         {
-            this.__fillBuffer(v,this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse));
-            this.gl.drawArrays(this.gl.TRIANGLE_FAN,0,d);
+            var gl = this.gl;
+            this.__fillBuffer(v,c);
+            gl.drawArrays(gl.TRIANGLE_FAN,0,d);
         }
     }
 
     if(this._stroke)
     {
-        this._polyline(v,d*2,true);
+        this._polyline(v,l,true);
     }
 };
-
-//TODO: Merge fill and polyline draw
 
 //http://slabode.exofire.net/circle_draw.shtml
 
@@ -1204,24 +1230,26 @@ CanvasGL.prototype.circle = function(x,y,radius)
 
     this._setMatrixUniform();
 
-    //TODO: Implement
-
     if(this._fill)
     {
+        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
+
         if(this._batchActive)
         {
-
+            this._batchPush(this._bufferVerticesEllipse,
+                            this.__faceIndicesFan(this._bufferVerticesEllipse,l),
+                            c,l);
         }
         else
         {
             var gl = this.gl;
-            this.__fillBuffer(v,this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse));
+            this.__fillBuffer(v,c);
             gl.drawArrays(gl.TRIANGLE_FAN,0,d);
         }
     }
     if(this._stroke)
     {
-        this._polyline(v,d*2,true);
+        this._polyline(v,l,true);
     }
 };
 
@@ -1261,14 +1289,16 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
 
     if(this._fill)
     {
+        var c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorArc);
+
         if(this._batchActive)
         {
-
+            this._batchPush(v,this.__faceIndicesLinearCW(v,l), c,l);
         }
         else
         {
             var gl = this.gl;
-            this.__fillBuffer(v,this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorArc));
+            this.__fillBuffer(v,c);
             gl.drawArrays(gl.TRIANGLE_STRIP,0,l*0.5);
         }
     }
@@ -1312,7 +1342,6 @@ CanvasGL.prototype.line = function()
     }
 };
 
-//TODO: Implement
 
 CanvasGL.prototype.lines = function(lines)
 {
@@ -1324,13 +1353,8 @@ CanvasGL.prototype.lines = function(lines)
         this.line(lines[i]);
     }
     this.drawBatch();
+    this.endBatch();
 };
-
-CanvasGL.prototype.beginShape = function(){};
-
-CanvasGL.prototype.endShape = function(){};
-
-CanvasGL.prototype.vertex = function(x,y){};
 
 CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
@@ -1430,12 +1454,6 @@ CanvasGL.prototype.curve = function(points)
     this._polyline(vertices);
 };
 
-//TODO: Implement
-
-CanvasGL.prototype.curvePoint = function(d)
-{
-
-};
 
 CanvasGL.prototype._catmullrom = function(a,b,c,d,i)
 {
@@ -1459,7 +1477,6 @@ CanvasGL.prototype.curveVertex = function(x,y)
 {
     this._tempCurveVertices.push(x,y)
 };
-
 
 
 //TODO: Implement
@@ -1488,7 +1505,7 @@ CanvasGL.prototype.drawElements = function(vertices,indices,colors)
 
     if(this._batchActive)
     {
-
+        this._batchPush(v,i,c);
     }
     else
     {
@@ -1520,14 +1537,22 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
     this._setMatrixUniform();
     if(this._fill)
     {
-        this._applyFill();
-        gl.drawArrays(gl.TRIANGLES,0,3);
+        var c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorTriangle);
+
+        if(this._batchActive)
+        {
+            this._batchPush(this._bufferVerticesTriangle,[0,1,2],c);
+        }
+        else
+        {
+            this.__fillBuffer(v,c);
+            gl.drawArrays(gl.TRIANGLES,0,3);
+        }
     }
 
     if(this._stroke)
     {
-        this._applyStroke();
-        gl.drawArrays(gl.LINE_LOOP,0,3);
+        this._polyline(v, v.length,true);
     }
 };
 
@@ -1537,34 +1562,15 @@ CanvasGL.prototype.point = function(x,y)
 {
     if(!this._fill)return;
 
-    var gl = this.gl,
-        glArrayBuffer = gl.ARRAY_BUFFER,
-        glDynamicDraw = gl.DYNAMIC_DRAW,
-        glFloat       = gl.FLOAT;
-
     var v  = this._bufferVerticesPoint,
-        c  = this._bufferColorPoint,
-        f  = this._bufferColorFill4;
-
-    var vlen = v.byteLength,
-        clen = c.byteLength;
+        c  = this._applyColorToColorBuffer(this._bufferColorFill4,this._bufferColorPoint);
 
     v[0] = x;
     v[1] = y;
 
-    c[0] = f[0];
-    c[1] = f[0];
-    c[2] = f[0];
-    c[3] = f[0];
-
     this._setMatrixUniform();
-
-    gl.bufferData(glArrayBuffer,vlen+clen,glDynamicDraw);
-    gl.bufferSubData(glArrayBuffer,0,v);
-    gl.bufferSubData(glArrayBuffer,2,c);
-    gl.vertexAttribPointer(this._locationAttribPosition,2,glFloat,false,0,0);
-    gl.vertexAttribPointer(this._locationAttribVertexColor,4,glFloat,false,0,vlen);
-    gl.drawArrays(gl.POINTS,0,1);
+    this.__fillBuffer(v,c);
+    this.gl.drawArrays(gl.POINTS,0,1);
 };
 
 //TODO: Fix
@@ -1573,19 +1579,12 @@ CanvasGL.prototype.points = function(vertices)
 {
     if(!this._fill)return;
     var gl  = this.gl;
-    //gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.DYNAMIC_DRAW);
     this._setMatrixUniform();
     this.__fillBuffer(new Float32Array(vertices),
                      this._applyColorToColorBuffer(this._bufferColorFill,new Float32Array(vertices.length*2)));
     gl.drawArrays(gl.POINTS,0,vertices.length*0.5);
 };
 
-//TODO: Implement
-
-CanvasGL.prototype._polylines = function(polylines)
-{
-
-};
 
 //TODO: Optimize, add support for caps, alpha, overlapping
 
@@ -1810,9 +1809,7 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
 
     if(this._batchActive)
     {
-        this._batchPush(Array.prototype.slice.call(vertices),
-                        Array.prototype.slice.call(indices),
-                        Array.prototype.slice.call(colors));
+        this._batchPush(vertices,indices,colors);
     }
     else
     {
@@ -1829,36 +1826,48 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
 CanvasGL.prototype.beginBatch = function()
 {
     this._batchActive = true;
-
-    this._batchBufferVertices     = [];
+    this._batchBufferVertices = [];
+    this._batchBufferIndices = [];
     this._batchBufferVertexColors = [];
-    this._batchBufferIndices      = [];
-
     this._batchOffsetVertices = 0;
 };
 
-CanvasGL.prototype._batchPush = function(vertices,indices,colors)
+CanvasGL.prototype._batchPush = function(vertices,indices,colors,limit)
 {
+    var vlen,ilen,clen;
+
+    if(limit)
+    {
+        vlen = limit;
+        ilen = (vlen/2-2)*3;
+        clen = vlen*2;
+    }
+    else
+    {
+        vlen = vertices.length;
+        ilen = indices.length;
+        clen = colors.length;
+    }
+
     var i = -1;
-    while(++i<vertices.length)
+    while(++i<vlen)
     {
         this._batchBufferVertices.push(vertices[i]);
     }
 
     i = -1;
-    while(++i<indices.length)
+    while(++i<ilen)
     {
         this._batchBufferIndices.push(indices[i] + this._batchOffsetVertices);
     }
 
     i = -1;
-    while(++i<colors.length)
+    while(++i<clen)
     {
         this._batchBufferVertexColors.push(colors[i]);
     }
 
-    this._batchOffsetVertices+=vertices.length*0.5;
-
+    this._batchOffsetVertices+=vlen*0.5;
 };
 
 CanvasGL.prototype.drawBatch = function()
@@ -1898,7 +1907,7 @@ CanvasGL.prototype.drawBatch = function()
     gl.vertexAttribPointer(this._locationAttribPosition,   2,glFloat,false,0,0);
     gl.vertexAttribPointer(this._locationAttribVertexColor,4,glFloat,false,0,vblen);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
-    gl.drawElements(gl.TRIANGLES,i.length,gl.UNSIGNED_SHORT,0);
+    gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
 };
 
 CanvasGL.prototype.endBatch = function()
@@ -1988,8 +1997,8 @@ CanvasGL.prototype.image = function(image, x, y, width, height)
 
 CanvasGL.prototype.getImagePixel = function(img)
 {
-    this._c2dSetImage(img);
-    return this._c2dGetPixelData();
+    this._context2DSetImage(img);
+    return this._context2DGetPixelData();
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -2232,24 +2241,37 @@ CanvasGL.prototype.__mat33MultPost = function(mat0,mat1)
 // Helper
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype.__faceIndicesFan = function(vertices)
+CanvasGL.prototype.__faceIndicesFan = function(vertices,limit)
 {
-    var a = new Array((vertices.length/2-2)*3);
-    var i = 0;
-    while(i < vertices.length)
+    var l  = limit || vertices.length,
+        a  = new Array((l/2-2)*3),
+        al = a.length;
+
+    var i = 0,j;
+
+    while(i < al)
     {
-       i+=2;
+        j = i/3;
+
+        a[i]   = 0;
+        a[i+1] = j+1;
+        a[i+2] = j+2;
+
+        i+=3;
     }
 
     return a;
 
 };
 
-CanvasGL.prototype.__faceIndicesLinearCW = function(vertices)
+CanvasGL.prototype.__faceIndicesLinearCW = function(vertices,limit)
 {
-    var a = new Array((vertices.length/2-2)*3);
+    var l  = limit || vertices.length,
+        a  = new Array((l/2-2)*3),
+        al = a.length;
+
     var i = 0;
-    while(i < a.length)
+    while(i < al)
     {
         if(i%2==0){a[i]=i/3;a[i+1]=i/3+2;a[i+2]=i/3+1;}
         else{a[i]=a[i-2];a[i+1]=a[i-2]+1;a[i+2]=a[i-1];}
@@ -2335,47 +2357,41 @@ CanvasGL.prototype.saveToPNG = function()
 // Text
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.FontRenderer = {DOM:"DOM",Canvas:"Canvas"};
-
-CanvasGL.prototype.setFontRenderer = function(renderer)
-{
-
-};
 
 CanvasGL.prototype.setFontWeight = function(weight)
 {
     this._fontProperties.weight = weight;
-    this._c2dApplyFontStyle();
+    this._context2DApplyFontStyle();
 };
 
 CanvasGL.prototype.setFontSize = function(size)
 {
     this._fontProperties.size = size;
-    this._c2dApplyFontStyle();
+    this._context2DApplyFontStyle();
 };
 
 CanvasGL.prototype.setFontFamily = function(family)
 {
     this._fontProperties.family = family;
-    this._c2dApplyFontStyle();
+    this._context2DApplyFontStyle();
 };
 
 CanvasGL.prototype.setTextBaseLine = function (textBaseLine)
 {
     this._fontProperties.baseLine = textBaseLine;
-    this._c2dApplyFontStyle();
+    this._context2DApplyFontStyle();
 };
 
 CanvasGL.prototype.setTextAlign = function (textAlign)
 {
     this._fontProperties.textAlign = textAlign;
-    this._c2dApplyFontStyle();
+    this._context2DApplyFontStyle();
 };
 
 CanvasGL.prototype.setTextLineHeight = function(lineHeight)
 {
     this._fontProperties.lineHeight = lineHeight;
-    this._c2dApplyFontStyle();
+    this._context2DApplyFontStyle();
 };
 
 CanvasGL.prototype.textWidth = function(string)
@@ -2388,44 +2404,199 @@ CanvasGL.prototype.textHeight = function()
     return this._fontProperties.size;
 };
 
+//TODO: Fix
 
-CanvasGL.prototype.text = function(string,x,y)
+CanvasGL.prototype.text = function(string,x,y,width,height)
 {
+    if(!this._fill && !this._stroke)return;
 
+    var c = this.context2d;
 
-    var gl  = this.gl;
-    var c2d = this.context2d;
-    var fc  = this._bufferColorFill;
+    var tw,th,cw,ch;
 
-    var mt = c2d.measureText(string);
-    var tw = Math.floor(mt.width+mt.width*0.5),
-        th = Math.floor(this._fontProperties.size)-1;
+    if(width)
+    {
+        var lines   = this._context2DWrapText(string,width- c.measureText('A').width),
+            size    = this._fontProperties.size,
+            lHeight = this._fontProperties.lineHeight;
 
-    var cw = this.__np2(tw),
+        var cHeight = 0,
+            rHeight = 0;
+
+        tw = Math.floor(width);
+        th = Math.floor(height);
+
+        cw = this.__np2(tw);
         ch = this.__np2(th);
 
-    this._c2dSetSize(cw,ch);
+        this._context2DSetSize(cw,ch);
 
+        c.save();
+        c.setTransform(1,0,0,1,0,0);
+        this._context2DApplyFontStyle();
 
-    c2d.save();
-    c2d.setTransform(1,0,0,1,0,0);
-
-    c2d.clearRect(0,0,this.canvas.width,this.canvas.height);
-    c2d.fillStyle = "rgba("+Math.floor(fc[0]*255)+","+Math.floor(fc[1]*255)+","+Math.floor(fc[2]*255)+","+fc[3]+")";
-    c2d.strokeStyle='rgba(0,0,0,1)';
-    this._c2dApplyFontStyle();
-    c2d.textBaseline = 'top';
-    c2d.fillText(string,0,-th*0.18);
-    //c2d.strokeText(string,0,-th*0.18);
-    //c2d.fillRect(0,0,this._gl2dCanvas.width,this._gl2dCanvas.height);
-    c2d.restore();
+        var fill    = this._fill,
+            stroke  = this._stroke,
+            fillC   = this._context2DColor(this._bufferColorFill4),
+            strokeC = this._context2DColor(this._bufferColorStroke4);
 
 
 
 
-    this._setCurrTexture(this._c2dGetTexture());
-    this.rect(x,y,cw,ch);
+        lines.forEach(function(line,i)
+                      {
+                          cHeight=i*size*lHeight;
+                          rHeight+=cHeight;
+                          if(fill)
+                          {
+                              c.fillStyle = fillC;
+                              c.fillText(line,x,y+cHeight);
+                          }
 
+                          if(stroke)
+                          {
+                              c.strokeStyle = strokeC;
+                              c.strokeText(line,x,y+cHeight);
+                          }
+
+                          }
+        );
+
+
+
+        c.restore();
+
+
+    }
+    else
+    {
+        var mt = c.measureText(string);
+
+        tw = Math.floor(mt.width + mt.width*0.5);
+        th = Math.floor(this._fontProperties.size)-1;
+
+        var fc  = this._bufferColorFill4;
+
+        cw = this.__np2(tw);
+        ch = this.__np2(th);
+
+        var xo = 0,
+            yo = 0;
+
+        this._context2DSetSize(cw,ch);
+
+        c.save();
+        c.setTransform(1,0,0,1,0,0);
+        this._context2DApplyFontStyle();
+
+        if(this._fill)
+        {
+            c.fillStyle = this._context2DColor(this._bufferColorFill4);
+            c.fillText(string,xo,yo);
+        }
+
+        if(this._stroke)
+        {
+            c.strokeStyle = this._context2DColor(this._bufferColorStroke4);
+            c.strokeText(string,xo,yo);
+        }
+
+        c.restore();
+
+    }
+
+
+
+    this._setCurrTexture(this._context2DGetTexture());
+
+    var gl = this.gl;
+
+    var v = this._bufferVerticesQuad;
+
+    this._setMatrixUniform();
+
+    v[ 0] = v[ 4] = x;
+    v[ 1] = v[ 3] = y;
+    v[ 2] = v[ 6] = x+ cw;
+    v[ 5] = v[ 7] = y + ch;
+
+    var glArrayBuffer = gl.ARRAY_BUFFER,
+        glFloat = gl.FLOAT;
+
+    c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorQuad);
+
+    var t = this._bufferTexCoordsQuad;
+
+    var vblen = v.byteLength,
+        cblen = c.byteLength,
+        tblen = t.byteLength,
+        tlen  = vblen + cblen + tblen;
+
+    var offSetV = 0,
+        offSetC = offSetV + vblen,
+        offSetT = vblen + cblen;
+
+    gl.bindBuffer(glArrayBuffer,this._vbo);
+    gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
+
+    gl.bufferSubData(glArrayBuffer,0,v);
+    gl.bufferSubData(glArrayBuffer,offSetC,c);
+    gl.bufferSubData(glArrayBuffer,offSetT,t);
+
+    gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
+    gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
+
+    gl.uniform1f(this._locationUniformUseTexture,this._currTint);
+    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+    gl.uniform1f(this._locationUniformImage,0);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+
+    this._disableTexture();
+
+};
+
+CanvasGL.prototype._context2DWrapText = function(text,width)
+{
+    var c = this.context2d;
+
+    var words = text.split(' '),
+        tWord,
+        lines = [],
+        line  = "";
+
+    if (c.measureText(text).width < width)
+    {
+        return [text];
+    }
+
+    while (words.length > 0)
+    {
+        while (c.measureText(words[0]).width >= width)
+        {
+            tWord = words[0];
+            words[0] = tWord.slice(0, -1);
+            if (words.length > 1) {
+                words[1] = tWord.slice(-1) + words[1];
+            } else {
+                words.push(tWord.slice(-1));
+            }
+        }
+        if (c.measureText(line + words[0]).width < width)
+        {
+            line += words.shift() + " ";
+        }
+        else
+        {
+            lines.push(line);
+            line = "";
+        }
+        if (words.length === 0)
+        {
+            lines.push(line);
+        }
+    }
+    return lines;
 
 
 };
@@ -2434,76 +2605,78 @@ CanvasGL.prototype.text = function(string,x,y)
 // Canvas2d for textures
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype._c2dSetFontProperties = function (fontProperties)
+CanvasGL.prototype._context2DColor = function(color)
+{
+    return "rgba("+Math.floor(color[0]*255)+","+Math.floor(color[1]*255)+","+Math.floor(color[2]*255)+","+color[3]+")";
+};
+
+CanvasGL.prototype._context2DSetFontProperties = function (fontProperties)
 {
     for (var p in fontProperties)
     {
         this._fontProperties[p] = fontProperties[p];
     }
 
-    this._c2dApplyFontStyle();
+    this._context2DApplyFontStyle();
 };
 
-CanvasGL.prototype._c2dApplyFontStyle = function()
+CanvasGL.prototype._context2DApplyFontStyle = function()
 {
-    var gl2d = this.context2d;
-    var fprp = this._fontProperties;
+    var c = this.context2d;
+    var p = this._fontProperties;
 
-    gl2d.textBaseline = fprp.baseLine;
-    gl2d.textAlign    = fprp.textAlign;
-    gl2d.lineHeight   = fprp.lineHeight;
+    c.textBaseline = p.baseLine;
+    c.textAlign    = p.textAlign;
+    c.lineHeight   = p.lineHeight;
 
     this.context2d.font = this._fontProperties.weight + " " +
-                      this._fontProperties.size + "px " +
-                      this._fontProperties.family;
+                          this._fontProperties.size + "px " +
+                          this._fontProperties.family;
 
 };
 
-CanvasGL.prototype._c2dGetPixelData = function(x,y,width,height)
+CanvasGL.prototype._context2DGetPixelData = function(x,y,width,height)
 {
-    var gl2dC = this.canvas;
+    var c = this.canvas;
 
     x      = x || 0;
     y      = y || 0;
-    width  = width  || gl2dC.width;
-    height = height || gl2dC.height;
+    width  = width  || c.width;
+    height = height || c.height;
 
     return this.context2d.getImageData(x,y,width,height).data;
 };
 
-CanvasGL.prototype._c2dSetImage = function(img)
+CanvasGL.prototype._context2DSetImage = function(img)
 {
-    var c2d = this.context2d;
-    this._c2dSetSize(img.width,img.height);
-    c2d.save();
-    c2d.setTransform(1,0,0,1,0,0);
-    c2d.clearRect(0,0,this.canvas.width,this.canvas.height);
-    c2d.drawImage(img._t.image,0,0);
-    c2d.restore();
-
+    var c = this.context2d;
+    this._context2DSetSize(img.width,img.height);
+    c.save();
+    c.setTransform(1,0,0,1,0,0);
+    c.clearRect(0,0,c.width,c.height);
+    c.drawImage(img._t.image,0,0);
+    c.restore();
 };
 
-
-
-CanvasGL.prototype._c2dGetTexture = function()
+CanvasGL.prototype._context2DGetTexture = function()
 {
     var gl  = this.gl;
 
-    gl.bindTexture(gl.TEXTURE_2D,this._c2dTexture);
+    gl.bindTexture(gl.TEXTURE_2D,this._context2DTexture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvas);
 
-    return this._c2dTexture;
+    return this._context2DTexture;
 };
 
-CanvasGL.prototype._c2dPrepareTexture = function()
+CanvasGL.prototype._context2DPrepareTexture = function()
 {
     var gl  = this.gl;
     var c2d = this.context2d;
-    this._c2dSetSize(2,2);
+    this._context2DSetSize(2,2);
 
     var tex = this.gl.createTexture();
     tex.image = this.canvas;
@@ -2516,52 +2689,14 @@ CanvasGL.prototype._c2dPrepareTexture = function()
     return tex;
 };
 
-CanvasGL.prototype._c2dSetSize = function(width,height)
+CanvasGL.prototype._context2DSetSize = function(width,height)
 {
-    var gl2dC = this.canvas;
-    gl2dC.style.width  = width + 'px';
-    gl2dC.style.height = height + 'px';
-    gl2dC.width  = parseInt(gl2dC.style.width) ;
-    gl2dC.height = parseInt(gl2dC.style.height) ;
+    var c = this.canvas;
+    c.style.width  = width + 'px';
+    c.style.height = height + 'px';
+    c.width  = parseInt(c.style.width) ;
+    c.height = parseInt(c.style.height) ;
 };
-
-CanvasGL.prototype._c2dBackground = function()
-{
-    var gl2d = this.context2d;
-    this._c2dNoStroke();
-    this.context2d.fillStyle = "rgba(255,255,255,1)";
-    this._c2dRect(0,0,this.canvas.width,this.canvas.height);
-    this._c2dApplyFill();
-};
-
-CanvasGL.prototype._c2dRect = function(x,y,width,height)
-{
-    var gl2d = this.context2d;
-    gl2d.fillRect(Math.round(x) - 0.5, Math.round(y) - 0.5, width, height);
-    gl2d.strokeRect(Math.round(x), Math.round(y), width, height);
-};
-
-CanvasGL.prototype._c2dNoFill = function()
-{
-    this.context2d.fillStyle ='rgba(0,0,0,0)';
-};
-
-CanvasGL.prototype._c2dNoStroke = function()
-{
-    this.context2d.strokeStyle='rgba(0,0,0,0)';
-};
-
-CanvasGL.prototype._c2dFill = function()
-{
-    this.context2d.fillStyle = colori(arguments);
-};
-
-CanvasGL.prototype._c2dApplyFill = function()
-{
-    this.context2d.fill();
-};
-
-
 
 /*---------------------------------------------------------------------------------------------------------*/
 
