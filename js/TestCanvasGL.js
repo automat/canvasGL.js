@@ -1,3 +1,4 @@
+
 function TestCanvasGL(parentDomElementId)
 {
     //CanvasGLOptions.doLog = false;
@@ -22,8 +23,6 @@ function TestCanvasGL(parentDomElementId)
     c.loadImage("images/l512.jpg",this.img0,this,"onImageLoaded");
     c.loadImage("images/m512.jpg",this.img1,this,"onImageLoaded");
     c.loadImage("images/c512.jpg",this.img2,this,"onImageLoaded");
-
-
 }
 
 
@@ -63,54 +62,6 @@ TestCanvasGL.prototype.draw = function()
         c = this.cgl;
 
     c.background(10);
-    c.noStroke();
-
-    c.setLineWidth(30);
-
-    c.strokeArr([1.0,1.0,1.0,1.0,
-                 1.0,0.0,1.0,1.0]);
-
-
-
-
-
-
-/*
-    c.setEllipseDetail(3+floor(abs(sin(t*0.25)*27)));
-    c.noStroke();
-    c.strokeArr(c._lerpedColor(colori(0),colori(255), c.getEllipseDetail()));
-    c.fillArr(c._lerpedColor(colori(255),colori(0), c.getEllipseDetail()));
-    c.circle(250,50,50);
-    c.ellipse(350,50,50,25);
-    c.noStroke();
-
-
-
-    c.fillArr([1.0,1.0,1.0,1.0,
-               1.0,0.0,0.0,1.0,
-               0.0,1.0,0.0,1.0,
-               0.0,0.0,1.0,1.0]);
-    c.rect(400,0,100,100);
-    c.noStroke();
-
-
-
-    c.fillArr([1.0,1.0,1.0,1.0,
-               1.0,0.0,0.0,1.0,
-        1.0,1.0,0.0,1.0,
-        0.0,0.0,1.0,1.0]);
-
-    c.quad(520,20,580,20,580,80,520,80);
-
-*/
-
-
-
-
-
-
-
-    //12
 
     var i,j;
     var rs = c.width/16,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;

@@ -1,10 +1,10 @@
-//
-//
-//  math.js
-//
-//  Created by henryk Wollik on 05.11.12.
-//
-//
+/*
+ *
+ * math.js
+ *
+ * Created by henryk Wollik on 05.11.12.
+ *
+ */
 
 
 var PI         = Math.PI,
