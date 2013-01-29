@@ -1,11 +1,3 @@
-/**
- * Created with JetBrains WebStorm.
- * User: DEEV
- * Date: 27.12.12
- * Time: 09:49
- * To change this template use File | Settings | File Templates.
- */
-
 function TestCanvasGL(parentDomElementId)
 {
     //CanvasGLOptions.doLog = false;
@@ -27,9 +19,9 @@ function TestCanvasGL(parentDomElementId)
 
     window.addEventListener("resize", this.onWindowResize.bind(this), false);
 
-    c.loadImage("l512.jpg",this.img0,this,"onImageLoaded");
-    c.loadImage("m512.jpg",this.img1,this,"onImageLoaded");
-    c.loadImage("c512.jpg",this.img2,this,"onImageLoaded");
+    c.loadImage("images/l512.jpg",this.img0,this,"onImageLoaded");
+    c.loadImage("images/m512.jpg",this.img1,this,"onImageLoaded");
+    c.loadImage("images/c512.jpg",this.img2,this,"onImageLoaded");
 
 
 }
@@ -737,7 +729,7 @@ TestCanvasGL.prototype.draw = function()
         {
             c.translate(0,rs2*2);
 
-            c.fill(255,255,255);
+            c.fill(255);
             c.point(rs+10*cos(t),rs+10*sin(t));
 
         }

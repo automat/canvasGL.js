@@ -1065,77 +1065,6 @@ CanvasGL.prototype.rect = function(x,y,width,height)
 CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
 {
     if(!this.fill && !this.stroke)return;
-
-
-    /*
-    var xwc = x+width-cornerRadius,
-        yhc = y+height-cornerRadius,
-        xc  = x+cornerRadius,
-        yc  = y+cornerRadius;
-
-    var cs = [xwc,yhc,xc,yhc,xc,yc,xwc,xc],
-        csLen = cs.length;
-
-    var cx,cy;
-
-    var d = 8,
-        v = new Array(d*2),
-        l = d * 2,
-        l_4 = l / 4;
-
-    var i = 0, j,oj;
-
-    var qpi = Math.PI * 0.25,
-        as  = Math.PI / (d*0.5);
-
-
-
-
-
-
-    while(i < csLen)
-    {
-        cx = cs[i];
-        cy = cs[i+1];
-
-        oj = j = (i)*l_4;
-
-
-        while(j < oj+l_4)
-        {
-            v[j  ] = ox + cx;
-            v[j+1] = oy + cy;
-
-
-
-            j+=2;
-
-        }
-
-        i+=2;
-
-    }
-
-
-
-    this._setMatrixUniform();
-
-    i = 0;
-
-    while(i < v.length)
-    {
-        this.circle(v[i],
-            v[i+1],
-                    1);
-
-
-
-        i+=2;
-    }
-
-*/
-
-
 };
 
 
@@ -1570,7 +1499,7 @@ CanvasGL.prototype.point = function(x,y)
 
     this._setMatrixUniform();
     this.__fillBuffer(v,c);
-    this.gl.drawArrays(gl.POINTS,0,1);
+    this.gl.drawArrays(this.gl.POINTS,0,1);
 };
 
 //TODO: Fix
