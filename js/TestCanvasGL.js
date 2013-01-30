@@ -139,7 +139,7 @@ TestCanvasGL.prototype.draw = function()
             c.translate(rs2*3+10,10);
 
             pp8 = rs2;
-            pp0 = 30;
+            pp0 = 25;
             pp1 = (pp8-20) / pp0;
             pp2 = new Array(pp0*2);
             pp4 = floor(1+abs(sin(t*0.25)*19));
@@ -601,7 +601,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            /*
+
             c.translate(rs2*5,rs2);
             c.noStroke();
             c.fill(100,0,0);
@@ -620,7 +620,7 @@ TestCanvasGL.prototype.draw = function()
                     c.circle(i*pp0+pp0*0.5,j*pp0+pp0*0.5,pp0*0.5*pp1);
                 }
             }
-            */
+
         }
         c.popMatrix();
 
@@ -685,10 +685,13 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(0,rs2*2);
+            c.translate(rs,rs2*2+rs);
 
             c.fill(255);
-            c.point(rs+10*cos(t),rs+10*sin(t));
+            c.setRectMode(CanvasGL.CENTER);
+            c.rotate(t);
+            c.stroke(255);
+            c.roundRect(0,0,rs2-20,rs2-20,asint025*(rs-10));
 
         }
         c.popMatrix();
