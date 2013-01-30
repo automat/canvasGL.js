@@ -59,7 +59,7 @@ TestCanvasGL.prototype.draw = function()
     var t = this.t,
         c = this.cgl;
 
-    c.background(10);
+    c.background(10,10,10,0.1);
 
     var i,j;
     var rs = c.width/20,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
@@ -82,6 +82,7 @@ TestCanvasGL.prototype.draw = function()
     {
         c.translate(0,0);
         c.scale(1,1);
+
         c.pushMatrix();
         {
             c.noStroke();
@@ -580,7 +581,7 @@ TestCanvasGL.prototype.draw = function()
                 pp4 = stepSmooth(1-abs((-pp1*0.5 + i)/pp1));
                 pp6 = rs+sin(t*4+i/pp1*PI)*(rs-pp5*0.5)*0.5;
                 pp7 = pp4 * pp5;
-                c.fill(0,1);
+                c.fill(0,0.5);
                 c.circle(i*pp0+1,pp6+1,pp7+1);
                 c.fill(255*pp4,0,255-255*pp4);
                 c.circle(i*pp0,pp6,pp7);
@@ -683,6 +684,7 @@ TestCanvasGL.prototype.draw = function()
         c.popMatrix();
 
 
+        /*
         c.pushMatrix();
         {
             c.translate(rs,rs2*2+rs);
@@ -695,6 +697,7 @@ TestCanvasGL.prototype.draw = function()
 
         }
         c.popMatrix();
+        */
 
 
 

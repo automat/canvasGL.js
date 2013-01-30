@@ -108,7 +108,9 @@ function CanvasGL(parentDomElementId)
     {
         try
         {
-            this.gl = this._glCanvas.getContext(names[i],{ antialias: true,alpha:true});
+            this.gl = this._glCanvas.getContext(names[i],{ antialias: true,
+                                                           alpha:true,
+                                                           preserveDrawingBuffer:true});
         }
         catch (e)
         {
@@ -459,11 +461,6 @@ CanvasGL.prototype.getBezierDetail = function()
 CanvasGL.prototype.getSplineDetail = function()
 {
     return this._currDetailSpline;
-};
-
-CanvasGL.prototype.setClearBackground = function(b)
-{
-    this._clearBackground = b;
 };
 
 CanvasGL.prototype.enableBlend = function()
@@ -924,32 +921,37 @@ CanvasGL.prototype.background = function()
             c[0] = c[1] = c[2]  = 0.0;
             break;
         case 1:
-            c[0] = c[1] = c[2]  = arguments[0]/255;
+            c[0] = c[1] = c[2]  = arguments[0];
             break;
         case 2:
-            c[0] = c[1] = c[2]  = arguments[0]/255;
+            c[0] = c[1] = c[2]  = arguments[0];
             c[3] = arguments[1];
             break;
         case 3:
-            c[0] = arguments[0]/255;
-            c[1] = arguments[1]/255;
-            c[2] = arguments[2]/255;
+            c[0] = arguments[0];
+            c[1] = arguments[1];
+            c[2] = arguments[2];
             break;
         case 4:
-            c[0] = arguments[0]/255;
-            c[1] = arguments[1]/255;
-            c[2] = arguments[2]/255;
+            c[0] = arguments[0];
+            c[1] = arguments[1];
+            c[2] = arguments[2];
             c[3] = arguments[3];
             break;
     }
 
+    this._clearBackground = c[3] == 1.0;
+
+
+    this._loadIdentity();
     this._stroke  = false;
-    this._fill    = false;
     this._texture = false;
+    this._fill    = false;
 
     this._currLineWidth = _CGLC.LINE_WIDTH_DEFAULT;
     this._modeEllipse   = _CGLC.ELLIPSE_MODE_DEFAULT;
     this._modeRect      = _CGLC.RECT_MODE_DEFAULT;
+
 
     this.resetUVQuad();
 
@@ -957,17 +959,21 @@ CanvasGL.prototype.background = function()
 
     if(this._clearBackground)
     {
-        gl.clearColor(c[0],c[1],c[2],1.0);
+        gl.clearColor(c[0]/255,c[1]/255,c[2]/255,1.0);
         gl.clear(gl.COLOR_BUFFER_BIT );
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     }
     else
     {
-        //TODO: Fix
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        this._glCanvas.style.backgroundColor = this.__rgbToHex(c[0],c[1],c[2]);
+        this.fill(c[0],c[1],c[2],c[3]);
+        this.rect(0,0,this.width,this.height);
+        this.noFill();
     }
 
 
-    this._loadIdentity();
+
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -2581,6 +2587,12 @@ CanvasGL.prototype.__fillBuffer = function(vertexArray,colorArray)
     gl.bufferSubData(glArrayBuffer,vblen,colorArray);
     gl.vertexAttribPointer(this._locationAttribPosition,   _CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
     gl.vertexAttribPointer(this._locationAttribVertexColor,_CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
+};
+
+CanvasGL.prototype.__rgbToHex = function(r,g,b)
+{
+    var h = (r << 16 | g << 8 | b).toString(16);
+    return "#"+new Array(7-h.length).join("0")+h;
 };
 
 
