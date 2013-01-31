@@ -3,7 +3,7 @@ function TestCanvasGL(parentDomElementId)
 {
     //CanvasGLOptions.doLog = false;
     this.cgl = new CanvasGL(parentDomElementId);
-    this.cgl.setSize(window.innerWidth*0.5,window.innerHeight);
+    this.cgl.setSize(1024,768);
     this.t = 0.0;
 
     this.numImages = 3;
@@ -28,8 +28,8 @@ function TestCanvasGL(parentDomElementId)
 
 TestCanvasGL.prototype.onWindowResize = function()
 {
-    var w = window.innerWidth < 1280 ? 1280 : window.innerWidth;
-    this.cgl.setSize(w*0.5,window.innerHeight);
+    //var w = window.innerWidth < 1280 ? 1280 : window.innerWidth;
+    this.cgl.setSize(window.innerWidth,window.innerHeight);
 };
 
 TestCanvasGL.prototype.onImageLoaded = function()
@@ -59,7 +59,7 @@ TestCanvasGL.prototype.draw = function()
     var t = this.t,
         c = this.cgl;
 
-    c.background(10,10,10,0.1);
+    c.background(150,0.1);//0.01);
 
     var i,j;
     var rs = c.width/20,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
@@ -77,6 +77,36 @@ TestCanvasGL.prototype.draw = function()
 
     var numSamples  = 8,
         sampleStep  = PI / numSamples;
+
+
+    pp0 = 10;
+    pp1 = new Array(pp0*2);
+    i = 0;
+
+
+    c.strokeArrF([1.0,0.0,0.0,1.0,
+        0.0,0.0,1.0,1.0]);
+    c.setLineWidth(5);
+    c.fill(255);
+    c.setRectMode(CanvasGL.CENTER);
+    c.translate(floor(c.width*0.5),floor(c.height*0.5));
+    c.rotate(sin(t*0.25)*PI);
+    c.fillArrF([1.0,0.0,0.0,1.0,
+    0.0,0.0,1.0,1.0,
+    0.0,0.0,1.0,1.0,
+    1.0,0.0,1.0,1.0]);
+    c.texture(img2);
+    c.tint(0.4);
+    c.noStroke();
+    c.rect(0,0,10+190*abs(sin(t*0.5)),10+190*abs(sin(t*0.5)));
+    c.noStroke();
+    c.noTexture();
+
+
+
+
+
+    /*
 
     c.pushMatrix();
     {
@@ -560,8 +590,14 @@ TestCanvasGL.prototype.draw = function()
 
         }
         c.popMatrix();
+        */
 
 
+
+
+
+
+        /*
         c.pushMatrix();
         {
             pp5 = 20+10*(sin(t));
@@ -597,9 +633,11 @@ TestCanvasGL.prototype.draw = function()
         }
 
         c.popMatrix();
+        */
 
 
 
+    /*
         c.pushMatrix();
         {
 
@@ -684,49 +722,11 @@ TestCanvasGL.prototype.draw = function()
         c.popMatrix();
 
 
-        /*
-        c.pushMatrix();
-        {
-            c.translate(rs,rs2*2+rs);
-
-            c.fill(255);
-            c.setRectMode(CanvasGL.CENTER);
-            c.rotate(t);
-            c.stroke(255);
-            c.roundRect(0,0,rs2-20,rs2-20,asint025*(rs-10));
-
-        }
-        c.popMatrix();
-        */
-
-
-
-
-        /*
-        c.pushMatrix();
-        {
-            c.translate(0,rs2*2);
-            c.fill(asint025*255,0,255-255*asint025);
-            c.noStroke();
-            c.setFontSize(30+10*abs(sin(t*5)));
-            c.setFontWeight(CanvasGL.BOLD);
-            c.setTextAlign("bottom");
-            pp0 = "CAN";
-            pp1 = c.textWidth(pp0);
-            c.translate(rs,rs);
-            c.text(pp0, -pp1*0.5, -c.textHeight()*0.5);
-            c.text(pp0, -pp1*0.5, -c.textHeight()*0.5+30);
-            c.fill(255-asint025*255,0,255*asint025);
-            pp0 = "VAS";
-            pp1 = c.textWidth(pp0);
-            c.text(pp0, -pp1*0.5-4, -c.textHeight()*0.5-4);
-
-
-        }
-        c.popMatrix();
-        */
    }
     c.popMatrix();
+    */
+
+
 };
 
 
