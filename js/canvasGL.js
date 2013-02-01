@@ -71,6 +71,8 @@ var _CGLC =
     TEXT_DEFAULT_LINE_HEIGHT:'1',
     TEXT_DEFAULT_SPACING:'1',
 
+    SSAA_FACTOR : 2,
+
     BUFFER_DEFAULT_RESERVE_AMOUNT : 50,
 
     CLEAR_BACKGROUND : true
@@ -223,12 +225,13 @@ function CanvasGL(parentDomElementId)
     this._fboRTT    = gl.createFramebuffer();
     this._fboCanvas = null;
 
-    this.width       = _CGLC.WIDTH_DEFAULT;
-    this.height      = _CGLC.HEIGHT_DEFAULT;
+    this._width      = this.width  = _CGLC.WIDTH_DEFAULT;
+    this._height     = this.height = _CGLC.HEIGHT_DEFAULT;
     this._widthRRT2  = 0;
     this._heightRRT2 = 0;
+    this._ssaaf      = _CGLC.SSAA_FACTOR;
 
-    this.setSize(this.width,this.height);
+    this.setSize(this._width,this._height);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER,this._fboRTT);
     gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,this._screenTex,0);
@@ -429,15 +432,19 @@ CanvasGL.prototype.setSize = function(width,height)
 {
     var glc = this._glCanvas,
         gl  = this.gl,
+        s   = this._ssaaf,
         c   = this._bufferColorBg;
 
-    this.width  = width;
-    this.height = height;
+
+    this.width   = width;
+    this.height  = height;
+    this._width  = width *s;
+    this._height = height*s;
 
     glc.style.width  = width  + 'px';
     glc.style.height = height + 'px';
-    glc.width        = parseInt(this._glCanvas.style.width);
-    glc.height       = parseInt(this._glCanvas.style.height);
+    glc.width        = parseInt(this._glCanvas.style.width )*s;
+    glc.height       = parseInt(this._glCanvas.style.height)*s;
 
     this._updateRTTTexture();
 
@@ -445,7 +452,7 @@ CanvasGL.prototype.setSize = function(width,height)
     gl.uniform2f(this._locationPostUniformResolution,width,height);
     gl.useProgram(this._program);
     gl.uniform2f(this._locationUniformResolution,width,height);
-    gl.viewport(0,0,width*"",height);
+    gl.viewport(0,0,width,height);
 
     var c0 = c[0]/255,
         c1 = c[1]/255,
@@ -455,7 +462,7 @@ CanvasGL.prototype.setSize = function(width,height)
     gl.clearColor(c0,c1,c2,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT );
 
-    this._setFrameBuffer(this._fboCanvas);
+    this._setFrameBuffer(this._fboRTT);
     gl.clearColor(c0,c1,c2,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT );
 
@@ -1074,6 +1081,8 @@ CanvasGL.prototype.background = function()
 
     this._applyFBOTexToQuad();
     this.clearColorBuffer();
+
+    this.scale(this._ssaaf,this._ssaaf);
 };
 
 
@@ -1295,7 +1304,7 @@ CanvasGL.prototype.clearColorBuffer = function()
             gl.clearColor(c0,c1,c2,1.0);
             gl.clear(gl.COLOR_BUFFER_BIT );
 
-            this._setFrameBuffer(this._fboCanvas);
+            this._setFrameBuffer(this._fboRTT);
             gl.clearColor(c0,c1,c2,1.0);
             gl.clear(gl.COLOR_BUFFER_BIT );
 
@@ -1306,7 +1315,7 @@ CanvasGL.prototype.clearColorBuffer = function()
         }
 
         this.fill(c[0],c[1],c[2],c[3]);
-        this.rect(0,0,this.width,this.height);
+        this.rect(0,0,this._width,this._height);
         this.noFill();
     }
 };
@@ -1314,8 +1323,8 @@ CanvasGL.prototype.clearColorBuffer = function()
 CanvasGL.prototype._setFrameBuffer = function(fbo)
 {
     var gl = this.gl,
-        w  = this.width,
-        h  = this.height;
+        w  = this._width,
+        h  = this._height;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
     gl.uniform2f(this._locationUniformResolution,w,h);
@@ -1327,8 +1336,8 @@ CanvasGL.prototype._updateRTTTexture = function()
     var gl = this.gl,
         glTexture2d = gl.TEXTURE_2D;
 
-    this._widthRRT2  = this.__np2(this.width);
-    this._heightRRT2 = this.__np2(this.height);
+    this._widthRRT2  = this.__np2(this._width);
+    this._heightRRT2 = this.__np2(this._height);
 
     gl.bindTexture(gl.TEXTURE_2D,this._screenTex);
     // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -2600,7 +2609,7 @@ CanvasGL.prototype.loadImage = function(path,target,obj,callbackString)
 CanvasGL.prototype.image = function(image, x, y, width, height)
 {
     var rm = this._modeRect;
-    var w = width || image.width, h = height || image.height;
+    var w = width || image._width, h = height || image.height;
     var xx = x || 0 + (rm == 1 ? 0.0 : - w*0.5), yy = y || 0 + (rm == 1 ? 0.0 : - h*0.5);
     var xw = xx+w,yh = yy+h;
 

@@ -58,10 +58,11 @@ TestCanvasGL.prototype.draw = function()
     var t = this.t,
         c = this.cgl;
 
-    c.background(240,1.0);//0.01);
+    c.background(240,0.0);//0.01);
+
 
     var i,j;
-    var rs = c.width/20,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
+    var rs = c.width/16,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
     var pa,ps;
     var pp0,pp1,pp2,pp3,pp4,pp5,pp6,pp7,pp8,pp9,pp10,pp11,pp12,pp13;
     var sint = sin(t),sint05 = sin(t*0.5),sint025 = sin(t*0.25);
@@ -85,6 +86,7 @@ TestCanvasGL.prototype.draw = function()
 
 
 
+
     c.strokeArrF([1.0,0.0,0.0,1.0,
         0.0,0.0,1.0,1.0]);
     c.setLineWidth(asint05*100);
@@ -96,13 +98,16 @@ TestCanvasGL.prototype.draw = function()
     c.tint(0.6);
     c.setRectMode(CanvasGL.CENTER);
     c.translate(floor(c.width*0.5),floor(c.height*0.5));
-    c.rotate(t*0.05);
-    pp2 = 100+abs(sin(t*0.05)*500);
+    c.scale(abs(sin(t*0.0035))*2,abs(sin(t*0.0035))*2);
+    c.rotate(t*0.025);
+    c.noStroke();
+    pp2 = abs(sin(t*0.05)*500);
     c.texture(img2);
     c.rect(0,0,300,300);
 
 
-    /*
+
+
     c.fillArrF([1.0,0.0,0.0,1.0,
     0.0,0.0,1.0,1.0,
     0.0,0.0,1.0,1.0,
@@ -110,7 +115,7 @@ TestCanvasGL.prototype.draw = function()
     c.texture(img2);
     c.tint(0.0);
     c.noStroke();
-    */
+
     //c.rect(0,0,10+190*abs(sin(t*0.5)),10+190*abs(sin(t*0.5)));
 
 
@@ -120,7 +125,7 @@ TestCanvasGL.prototype.draw = function()
 
 
 
-    /*
+
 
     c.pushMatrix();
     {
@@ -604,7 +609,7 @@ TestCanvasGL.prototype.draw = function()
 
         }
         c.popMatrix();
-        */
+
 
 
 
@@ -651,7 +656,7 @@ TestCanvasGL.prototype.draw = function()
 
 
 
-    /*
+
         c.pushMatrix();
         {
 
@@ -738,7 +743,7 @@ TestCanvasGL.prototype.draw = function()
 
    }
     c.popMatrix();
-    */
+
 
 
 };
