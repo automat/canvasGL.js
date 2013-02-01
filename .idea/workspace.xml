@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/js/TestCanvasGL.js" line="576" />
+    <bookmark url="file://$PROJECT_DIR$/js/TestCanvasGL.js" line="590" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a1eef6d4-cc02-4844-a9f2-3d0258764f91" name="Default" comment="" />
@@ -22,31 +22,40 @@
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.5234375">
+    <splitter split-orientation="horizontal" split-proportion="0.3734719">
       <split-first>
         <leaf>
-          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="false">
+          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="1060" column="2" selection-start="28684" selection-end="28684" vertical-scroll-proportion="0.0">
+                <state line="90" column="23" selection-start="2702" selection-end="2702" vertical-scroll-proportion="0.4409222">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name=".gitignore" pinned="false" current="true" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/.gitignore">
+          <file leaf-file-name="math.js" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/js/math.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="164" column="5" selection-start="1976" selection-end="1976" vertical-scroll-proportion="0.8796034">
+                <state line="218" column="24" selection-start="3351" selection-end="3364" vertical-scroll-proportion="-17.08">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name=".gitattributes" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/.gitattributes">
+          <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/js/TestCanvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+                <state line="105" column="32" selection-start="2661" selection-end="2661" vertical-scroll-proportion="4.08">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="index.html" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/index.html">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="36" column="0" selection-start="613" selection-end="613" vertical-scroll-proportion="-22.692308">
                   <folding />
                 </state>
               </provider>
@@ -56,10 +65,10 @@
       </split-first>
       <split-second>
         <leaf>
-          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="true">
+          <file leaf-file-name="canvasGL.js" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="15" column="18" selection-start="638" selection-end="638" vertical-scroll-proportion="0.36796537">
+                <state line="439" column="60" selection-start="15264" selection-end="15264" vertical-scroll-proportion="0.5859492">
                   <folding />
                 </state>
               </provider>
@@ -81,7 +90,6 @@
     <option name="changedFiles">
       <list>
         <option value="$PROJECT_DIR$/canvasGL.js" />
-        <option value="$PROJECT_DIR$/js/TestCanvasGL.js" />
         <option value="$PROJECT_DIR$/resources/webgl-utils.js" />
         <option value="$PROJECT_DIR$/resources/webfl-tutorial.css" />
         <option value="$PROJECT_DIR$/test.html" />
@@ -92,10 +100,11 @@
         <option value="$PROJECT_DIR$/js/canvasGL__4.js" />
         <option value="$PROJECT_DIR$/js/perlin-noise-simplex.js" />
         <option value="$PROJECT_DIR$/index.html" />
-        <option value="$PROJECT_DIR$/js/canvasGL.js" />
         <option value="$PROJECT_DIR$/imports.js" />
         <option value="$PROJECT_DIR$/TestCanvasGL.js" />
         <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/js/TestCanvasGL.js" />
+        <option value="$PROJECT_DIR$/js/canvasGL.js" />
       </list>
     </option>
   </component>
@@ -174,6 +183,20 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="canvasGL.js" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="canvasGL.js" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="js" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
         </subPane>
       </pane>
       <pane id="Scope" />
@@ -182,13 +205,13 @@
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="options.lastSelected" value="Errors" />
     <property name="recentsLimit" value="5" />
-    <property name="restartRequiresConfirmation" value="true" />
+    <property name="options.lastSelected" value="JavaScript.Libraries" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../marchingSquares" />
+    <property name="restartRequiresConfirmation" value="true" />
     <property name="DefaultHtmlFileTemplate" value="Html5" />
-    <property name="options.searchVisible" value="true" />
     <property name="options.splitter.details.proportions" value="0.2" />
+    <property name="options.searchVisible" value="true" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -289,18 +312,18 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="false" />
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
+    <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3286334" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.11122826" sideWeight="0.52603036" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.14791666" sideWeight="0.7719113" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.2280887" sideWeight="0.993125" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.14791666" sideWeight="0.7729673" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22703274" sideWeight="0.993125" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="9" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -365,22 +388,21 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="1060" column="2" selection-start="29497" selection-end="29497" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="164" column="5" selection-start="1976" selection-end="1976" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/images/l512.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/images/j512.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/images/k512.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/images/d512.jpg">
       <provider selected="true" editor-type-id="images">
         <state />
       </provider>
@@ -395,61 +417,52 @@
         <state line="170" column="22" selection-start="7268" selection-end="7268" vertical-scroll-proportion="4.2814813" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/js/matrix.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="131" column="4" selection-start="3088" selection-end="5837" vertical-scroll-proportion="0.02514793" />
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/Downloads/VaseR-draft1_2/VaseR-draft1_2/include/vase_renderer_draft1_2.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state line="84" column="20" selection-start="2666" selection-end="2666" vertical-scroll-proportion="-1.9544469" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/js/math.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="129" column="1" selection-start="2270" selection-end="2270" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/.gitattributes">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/imports.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="4" column="28" selection-start="345" selection-end="429" vertical-scroll-proportion="0.096317284">
-          <folding />
-        </state>
+        <state line="4" column="28" selection-start="345" selection-end="429" vertical-scroll-proportion="0.096317284" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/js/TestCanvasGL.js">
+    <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+        <state line="164" column="5" selection-start="1976" selection-end="1976" vertical-scroll-proportion="0.87093276">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/index.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="11" column="18" selection-start="192" selection-end="192" vertical-scroll-proportion="0.275">
+        <state line="36" column="0" selection-start="613" selection-end="613" vertical-scroll-proportion="-22.692308">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/js/math.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="218" column="24" selection-start="3351" selection-end="3364" vertical-scroll-proportion="-17.08">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/js/TestCanvasGL.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="105" column="32" selection-start="2661" selection-end="2661" vertical-scroll-proportion="4.08">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="1060" column="2" selection-start="28684" selection-end="28684" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="164" column="5" selection-start="1976" selection-end="1976" vertical-scroll-proportion="0.8796034">
+        <state line="439" column="60" selection-start="15264" selection-end="15264" vertical-scroll-proportion="0.5859492">
           <folding />
         </state>
       </provider>

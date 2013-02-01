@@ -1,9 +1,8 @@
 
 function TestCanvasGL(parentDomElementId)
 {
-    //CanvasGLOptions.doLog = false;
     this.cgl = new CanvasGL(parentDomElementId);
-    this.cgl.setSize(1024,768);
+    this.cgl.setSize(window.innerWidth,window.innerHeight);
     this.t = 0.0;
 
     this.numImages = 3;
@@ -59,7 +58,7 @@ TestCanvasGL.prototype.draw = function()
     var t = this.t,
         c = this.cgl;
 
-    c.background(150,0.1);//0.01);
+    c.background(240,1.0);//0.01);
 
     var i,j;
     var rs = c.width/20,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
@@ -84,23 +83,38 @@ TestCanvasGL.prototype.draw = function()
     i = 0;
 
 
+
+
     c.strokeArrF([1.0,0.0,0.0,1.0,
         0.0,0.0,1.0,1.0]);
-    c.setLineWidth(5);
-    c.fill(255);
+    c.setLineWidth(asint05*100);
+    c.fillArrF([(1-abs(sin(t))),0.0,0.0,0.0,
+                (1-abs(sin(t+PI))),0.0,1.0,1.0,
+                (1-abs(sin(t+PI*2))),0.0,1.0,1.0,
+                (1-abs(sin(t+PI*3))),0.0,0.0,1.0]);
+    c.texture(img2);
+    c.tint(0.6);
     c.setRectMode(CanvasGL.CENTER);
     c.translate(floor(c.width*0.5),floor(c.height*0.5));
-    c.rotate(sin(t*0.25)*PI);
+    c.rotate(t*0.05);
+    pp2 = 100+abs(sin(t*0.05)*500);
+    c.texture(img2);
+    c.rect(0,0,300,300);
+
+
+    /*
     c.fillArrF([1.0,0.0,0.0,1.0,
     0.0,0.0,1.0,1.0,
     0.0,0.0,1.0,1.0,
     1.0,0.0,1.0,1.0]);
     c.texture(img2);
-    c.tint(0.4);
+    c.tint(0.0);
     c.noStroke();
-    c.rect(0,0,10+190*abs(sin(t*0.5)),10+190*abs(sin(t*0.5)));
-    c.noStroke();
-    c.noTexture();
+    */
+    //c.rect(0,0,10+190*abs(sin(t*0.5)),10+190*abs(sin(t*0.5)));
+
+
+
 
 
 
