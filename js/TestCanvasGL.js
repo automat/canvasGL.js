@@ -1,8 +1,7 @@
 
 function TestCanvasGL(parentDomElementId)
 {
-    this.cgl = new CanvasGL(parentDomElementId);
-    this.cgl.setSize(window.innerWidth,window.innerHeight);
+    this.cgl = new CanvasGL(parentDomElementId,window.innerWidth,window.innerHeight);
     this.t = 0.0;
 
     this.numImages = 3;
@@ -58,11 +57,11 @@ TestCanvasGL.prototype.draw = function()
     var t = this.t,
         c = this.cgl;
 
-    c.background(240,0.0);//0.01);
+    c.background(200,0.5);//0.01);
 
 
     var i,j;
-    var rs = c.width/16,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
+    var rs = c.width/32,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
     var pa,ps;
     var pp0,pp1,pp2,pp3,pp4,pp5,pp6,pp7,pp8,pp9,pp10,pp11,pp12,pp13;
     var sint = sin(t),sint05 = sin(t*0.5),sint025 = sin(t*0.25);
@@ -84,6 +83,12 @@ TestCanvasGL.prototype.draw = function()
     i = 0;
 
 
+/*
+
+    pp0 = new Array(100*2);
+
+
+
 
 
 
@@ -100,6 +105,8 @@ TestCanvasGL.prototype.draw = function()
     c.translate(floor(c.width*0.5),floor(c.height*0.5));
     c.scale(abs(sin(t*0.0035))*2,abs(sin(t*0.0035))*2);
     c.rotate(t*0.025);
+
+
     c.noStroke();
     pp2 = abs(sin(t*0.05)*500);
     c.texture(img2);
@@ -115,9 +122,9 @@ TestCanvasGL.prototype.draw = function()
     c.texture(img2);
     c.tint(0.0);
     c.noStroke();
+    */
 
     //c.rect(0,0,10+190*abs(sin(t*0.5)),10+190*abs(sin(t*0.5)));
-
 
 
 
@@ -657,6 +664,7 @@ TestCanvasGL.prototype.draw = function()
 
 
 
+
         c.pushMatrix();
         {
 
@@ -737,6 +745,41 @@ TestCanvasGL.prototype.draw = function()
             }
 
             c.drawElements(pp0,pp5,pp9);
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+            c.translate(rs,rs2*2+rs);
+            c.rotate(TWO_PI*sin(t*0.1));
+
+            c.setEllipseDetail(3+(floor(abs(sin(t*0.05))*7)));
+            c.noStroke();
+            c.stroke(255);
+            c.texture(img2);
+            c.tint(0.8);
+            c.circle(0,0,rs);
+            c.noTexture();
+
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+            c.translate(rs2+rs,rs2*2+rs);
+            c.rotate(TWO_PI*sin(t*0.1));
+
+            c.setEllipseDetail(3+(floor(abs(sin(t*0.05))*7)));
+            c.noStroke();
+
+            c.fill(255*abs(sin(t*0.5)));
+            c.setLineWidth(1);
+            c.stroke(255);
+            c.texture(img0);
+            c.tint(0.8);
+            c.ellipse(0,0,rs,rs*abs(sin(t)));
+            c.noTexture();
+
         }
         c.popMatrix();
 

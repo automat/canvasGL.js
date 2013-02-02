@@ -85,7 +85,7 @@ var _CGLC =
  *
  * ---------------------------------------------------------------------------------------------------------------- */
 
-function CanvasGL(parentDomElementId)
+function CanvasGL(parentDomElementId,width,height)
 {
     this.parent = document.getElementById(parentDomElementId);
 
@@ -171,7 +171,7 @@ function CanvasGL(parentDomElementId)
 
         this.gl.FRAGMENT_SHADER);
 
-    this._vertexShaderPost = this._loadShader(
+    this._vertexShaderRender = this._loadShader(
 
             "attribute vec2  a_position; " +
             "attribute vec2  a_texture_coord;" +
@@ -187,7 +187,7 @@ function CanvasGL(parentDomElementId)
 
         this.gl.VERTEX_SHADER);
 
-    this._fragmentShaderPost = this._loadShader(
+    this._fragmentShaderRender = this._loadShader(
 
             "precision mediump float;" +
             "uniform sampler2D u_screen_tex;" +
@@ -195,9 +195,6 @@ function CanvasGL(parentDomElementId)
 
             "void main()" +
             "{" +
-                "float FXAA_REDUCE_MIN = 1.0 / 128.0;" +
-                "float FXAA_REDUCE_MUL = 1.0 / 8.0;" +
-                "float FXAA_SPAN_MAX   = 8.0;" +
                 "gl_FragColor =  texture2D(u_screen_tex,v_texture_coord);"+
             "}",
 
@@ -207,8 +204,8 @@ function CanvasGL(parentDomElementId)
 
     // Load and init program & set size to default
 
-    this._program        = this._loadProgram(this._vertexShader,    this._fragmentShader);
-    this._programPost    = this._loadProgram(this._vertexShaderPost,this._fragmentShaderPost);
+    this._program        = this._loadProgram(this._vertexShader,      this._fragmentShader);
+    this._programRender  = this._loadProgram(this._vertexShaderRender,this._fragmentShaderRender);
 
     var gl          = this.gl,
         glTexture2d = gl.TEXTURE_2D,
@@ -225,13 +222,11 @@ function CanvasGL(parentDomElementId)
     this._fboRTT    = gl.createFramebuffer();
     this._fboCanvas = null;
 
-    this._width      = this.width  = _CGLC.WIDTH_DEFAULT;
-    this._height     = this.height = _CGLC.HEIGHT_DEFAULT;
-    this._widthRRT2  = 0;
-    this._heightRRT2 = 0;
+    this._iwidth      = this._twidth  = this.width  = width  || _CGLC.WIDTH_DEFAULT;
+    this._iheight     = this._theight = this.height = height || _CGLC.HEIGHT_DEFAULT;
     this._ssaaf      = _CGLC.SSAA_FACTOR;
 
-    this.setSize(this._width,this._height);
+    this.setSize(this.width,this.height);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER,this._fboRTT);
     gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,this._screenTex,0);
@@ -256,10 +251,10 @@ function CanvasGL(parentDomElementId)
     // Post-Shader
     // attribute and uniform locations
 
-    this._locationPostAttribPoition      = gl.getAttribLocation( this._programPost, "a_position");
-    this._locationPostAttribTextureCoord = gl.getAttribLocation( this._programPost, "a_texture_coord");
-    this._locationPostUniformScreenTex   = gl.getUniformLocation(this._programPost, "u_screen_tex");
-    this._locationPostUniformResolution  = gl.getUniformLocation(this._programPost, "u_resolution");
+    this._locationPostAttribPoition      = gl.getAttribLocation( this._programRender, "a_position");
+    this._locationPostAttribTextureCoord = gl.getAttribLocation( this._programRender, "a_texture_coord");
+    this._locationPostUniformScreenTex   = gl.getUniformLocation(this._programRender, "u_screen_tex");
+    this._locationPostUniformResolution  = gl.getUniformLocation(this._programRender, "u_resolution");
 
 
     // Set default y flip
@@ -280,7 +275,6 @@ function CanvasGL(parentDomElementId)
     gl.texImage2D( glTexture2d, 0, glRGBA, 1, 1, 0, glRGBA, gl.UNSIGNED_BYTE, new Uint8Array([1,1,1,1]));
     gl.uniform1f(this._locationUniformUseTexture,0.0);
 
-
     // bind defaults
 
     gl.bindBuffer(gl.ARRAY_BUFFER,        this._vbo);
@@ -299,7 +293,7 @@ function CanvasGL(parentDomElementId)
     this._tempMatrix   = this.__makeMat33();
     this._transMatrixStack = [];
 
-    gl.uniformMatrix3fv(this._locationTransMatrix,false,new Float32Array(this._transMatrix));
+    gl.uniformMatrix3fv(this._locationTransMatrix,false,this._transMatrix);
 
 
     // Enable gl flags
@@ -313,14 +307,18 @@ function CanvasGL(parentDomElementId)
 
     // Set draw modes
 
-    this._isPixelPerfect = false;
-
     this._modeEllipse = CanvasGL.CENTER;
     this._modeRect    = CanvasGL.CORNER;
     this._textureWrap = CanvasGL.CLAMP;
 
     this._texture     = false;
     this._textureCurr = null;
+
+    this._textureOffset = false;
+
+    this._textureOffsetX = this._textureOffsetY = 0;
+    this._textureOffsetW = this._textureOffsetH = 1;
+
     this._context2DTexture  = this._context2DPrepareTexture();
 
     this._fontProperties =
@@ -354,9 +352,11 @@ function CanvasGL(parentDomElementId)
 
     this._bufferIndicesRoundRect  = new Float32Array((((this._bufferVerticesRoundRect.length + 4 ) / 2)) * _CGLC.SIZE_OF_FACE);
 
-    this._bufferTexCoordsQuadDefault = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,1.0]);
-    this._bufferTexCoordsQuadTemp    = new Float32Array(this._bufferTexCoordsQuadDefault);
-    this._bufferTexCoordsQuad        = new Float32Array(this._bufferTexCoordsQuadDefault);
+    this._bufferTexCoordsQuadDefault     = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,1.0]);
+    this._bufferTexCoordsQuad            = new Float32Array(this._bufferTexCoordsQuadDefault);
+    this._bufferTexCoordsTriangleDefault = new Float32Array([0.0,0.0,1.0,0.0,1.0,1.0]);
+    this._bufferTexCoordsTriangle        = new Float32Array(this._bufferTexCoordsTriangleDefault.length);
+    this._bufferTexCoordsEllipse         = new Float32Array(this._bufferVerticesEllipse.length);
 
     this._bufferColorVertex       = new Float32Array(_CGLC.SIZE_OF_COLOR);
     this._bufferColorQuad         = new Float32Array(_CGLC.SIZE_OF_COLOR*4);
@@ -368,8 +368,6 @@ function CanvasGL(parentDomElementId)
     this._bufferColorRoundRect    = new Float32Array(this._bufferVerticesRoundRect.length * 2);
 
     this._cachedPointsBezier      = new Array(_CGLC.SIZE_OF_POINT*4);
-
-
 
     this._indicesTriangle = [0,1,2];
     this._indicesQuad     = [0,1,2,1,2,3];
@@ -384,11 +382,7 @@ function CanvasGL(parentDomElementId)
     this._bufferColorStroke4 = [1.0,1.0,1.0,1.0];
     this._bufferColorStroke  = this._bufferColorStroke4;
 
-    this._tempColorArr = [];
-    this._tempBlankQuadColors = new Float32Array(this._color1fArr(1.0,16));
-
-
-    this._tempScreenCoords = new Array(2);
+    this._tempScreenCoords  = new Array(2);
     this._tempCurveVertices = [];
 
     this._currDetailEllipse = _CGLC.ELLIPSE_DETAIL_DEFAULT;
@@ -428,6 +422,8 @@ function CanvasGL(parentDomElementId)
 // Set size
 /*---------------------------------------------------------------------------------------------------------*/
 
+//TODO: FIX WebGL: INVALID_FRAMEBUFFER_OPERATION: clear: no attachments
+
 CanvasGL.prototype.setSize = function(width,height)
 {
     var glc = this._glCanvas,
@@ -435,20 +431,16 @@ CanvasGL.prototype.setSize = function(width,height)
         s   = this._ssaaf,
         c   = this._bufferColorBg;
 
-
-    this.width   = width;
-    this.height  = height;
-    this._width  = width *s;
-    this._height = height*s;
-
+    this.width       = width;
+    this.height      = height;
     glc.style.width  = width  + 'px';
     glc.style.height = height + 'px';
-    glc.width        = parseInt(this._glCanvas.style.width )*s;
-    glc.height       = parseInt(this._glCanvas.style.height)*s;
+    glc.width        = this._iwidth  = width  * s;
+    glc.height       = this._iheight = height * s;
 
     this._updateRTTTexture();
 
-    gl.useProgram(this._programPost);
+    gl.useProgram(this._programRender);
     gl.uniform2f(this._locationPostUniformResolution,width,height);
     gl.useProgram(this._program);
     gl.uniform2f(this._locationUniformResolution,width,height);
@@ -458,6 +450,7 @@ CanvasGL.prototype.setSize = function(width,height)
         c1 = c[1]/255,
         c2 = c[2]/255;
 
+    /*
     this._setFrameBuffer(this._fboCanvas);
     gl.clearColor(c0,c1,c2,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT );
@@ -465,6 +458,7 @@ CanvasGL.prototype.setSize = function(width,height)
     this._setFrameBuffer(this._fboRTT);
     gl.clearColor(c0,c1,c2,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT );
+    */
 
 };
 
@@ -542,16 +536,6 @@ CanvasGL.prototype.setLineWidth = function(a)
 CanvasGL.prototype.setTextureWrap = function(mode)
 {
     this._textureWrap = mode;
-};
-
-CanvasGL.prototype.setPixelPerfect = function(b)
-{
-    this._isPixelPerfect = b;
-};
-
-CanvasGL.prototype.getPixelPerfect = function()
-{
-    return this._isPixelPerfect;
 };
 
 CanvasGL.prototype.getEllipseDetail = function()
@@ -954,6 +938,25 @@ CanvasGL.prototype.resetUVQuad = function()
     this._bufferTexCoordsQuad[7] = this._bufferTexCoordsQuadDefault[7];
 };
 
+CanvasGL.prototype.setUVTriangle = function(u0,v0,u1,v1,u2,v2)
+{
+    this._bufferTexCoordsTriangle[0] = u0;
+    this._bufferTexCoordsTriangle[1] = v0;
+    this._bufferTexCoordsTriangle[2] = u1;
+    this._bufferTexCoordsTriangle[3] = v1;
+    this._bufferTexCoordsTriangle[4] = u2;
+    this._bufferTexCoordsTriangle[5] = v2;
+};
+
+CanvasGL.prototype.resetUVTriangle = function()
+{
+    this._bufferTexCoordsTriangle[0] = this._bufferTexCoordsTriangleDefault[0];
+    this._bufferTexCoordsTriangle[1] = this._bufferTexCoordsTriangleDefault[1];
+    this._bufferTexCoordsTriangle[2] = this._bufferTexCoordsTriangleDefault[2];
+    this._bufferTexCoordsTriangle[3] = this._bufferTexCoordsTriangleDefault[3];
+    this._bufferTexCoordsTriangle[4] = this._bufferTexCoordsTriangleDefault[4];
+    this._bufferTexCoordsTriangle[5] = this._bufferTexCoordsTriangleDefault[5];
+};
 
 CanvasGL.prototype.texture = function(img,offsetX,offsetY,width,height)
 {
@@ -968,17 +971,12 @@ CanvasGL.prototype.texture = function(img,offsetX,offsetY,width,height)
         width  = 1/width  || 1;
         height = 1/height || 1;
 
-        tc[0]+=offsetX;
-        tc[1]+=offsetY;
+        this._textureOffset = true;
 
-        tc[2]+=offsetX+width;
-        tc[3]+=offsetY;
-
-        tc[4]+=offsetX;
-        tc[5]+=offsetY+height;
-
-        tc[6]+=offsetX+width;
-        tc[7]+=offsetY+height;
+        this._textureOffsetX = offsetX;
+        this._textureOffsetY = offsetY;
+        this._textureOffsetW = width;
+        this._textureOffsetH = height;
 
         gl.bindTexture(  glTexture2d,img._t);
         gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_S, glRepeat);
@@ -1074,8 +1072,8 @@ CanvasGL.prototype.background = function()
 
     var lt = this._locationUniformUseTexture,
         lf = this._locationUniformFlipY,
-        w  = this._widthRRT2,
-        h  = this._heightRRT2;
+        w  = this._twidth,
+        h  = this._theight;
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -1156,8 +1154,8 @@ CanvasGL.prototype._applyFBOTexToQuad = function()
     var gl = this.gl,
         lt = this._locationUniformUseTexture,
         lf = this._locationUniformFlipY,
-        w  = this._widthRRT2 ,
-        h  = this._heightRRT2 ,
+        w  = this._twidth ,
+        h  = this._theight ,
         v  = this._bufferVerticesQuad,
         c  = this._bufferColorQuad,
         t  = this._bufferTexCoordsQuad;
@@ -1177,32 +1175,7 @@ CanvasGL.prototype._applyFBOTexToQuad = function()
     v[2] = v[6] = w;
     v[5] = v[7] = h;
 
-    var glArrayBuffer = gl.ARRAY_BUFFER,
-        glFloat = gl.FLOAT;
-
-    var vblen = v.byteLength,
-        cblen = c.byteLength,
-        tblen = t.byteLength,
-        tlen  = vblen + cblen + tblen;
-
-    var offSetV = 0,
-        offSetC = offSetV + vblen,
-        offSetT = vblen + cblen;
-
-    gl.bindBuffer(glArrayBuffer,this._vbo);
-    gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
-
-    gl.bufferSubData(glArrayBuffer,0,v);
-    gl.bufferSubData(glArrayBuffer,offSetC,c);
-    gl.bufferSubData(glArrayBuffer,offSetT,t);
-
-    gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-    gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-    gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
-
-    gl.uniform1f(this._locationUniformUseTexture,this._currTint);
-    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-    gl.uniform1f(this._locationUniformImage,0);
+    this.__fillBufferTexture(v,c,t);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
     gl.useProgram(this._program);
@@ -1315,7 +1288,7 @@ CanvasGL.prototype.clearColorBuffer = function()
         }
 
         this.fill(c[0],c[1],c[2],c[3]);
-        this.rect(0,0,this._width,this._height);
+        this.rect(0,0,this._iwidth,this._iheight);
         this.noFill();
     }
 };
@@ -1323,8 +1296,8 @@ CanvasGL.prototype.clearColorBuffer = function()
 CanvasGL.prototype._setFrameBuffer = function(fbo)
 {
     var gl = this.gl,
-        w  = this._width,
-        h  = this._height;
+        w  = this._iwidth,
+        h  = this._iheight;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
     gl.uniform2f(this._locationUniformResolution,w,h);
@@ -1336,15 +1309,15 @@ CanvasGL.prototype._updateRTTTexture = function()
     var gl = this.gl,
         glTexture2d = gl.TEXTURE_2D;
 
-    this._widthRRT2  = this.__np2(this._width);
-    this._heightRRT2 = this.__np2(this._height);
+    this._twidth  = this.__np2(this._iwidth);
+    this._theight = this.__np2(this._iheight);
 
     gl.bindTexture(gl.TEXTURE_2D,this._screenTex);
     // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,this._widthRRT2,this._heightRRT2,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,this._twidth,this._theight,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
     gl.bindTexture(gl.TEXTURE_2D,null);
 };
 
@@ -1394,40 +1367,37 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
         var t = this._bufferTexCoordsQuad;
 
+        if(this._textureOffset)
+        {
+            var tox = this._textureOffsetX,
+                toy = this._textureOffsetY,
+                tow = this._textureOffsetW,
+                toh = this._textureOffsetH;
+
+            t[0]+=tox;
+            t[1]+=toy;
+
+            t[2]+=tox+tow;
+            t[3]+=toy;
+
+            t[4]+=tox;
+            t[5]+=toy+toh;
+
+            t[6]+=tox+tow;
+            t[7]+=toy+toh;
+
+        }
+
+
+
         if(this._batchActive)
         {
             this._batchPush(v,this._indicesQuad,c,t);
         }
         else
         {
-            var glArrayBuffer = gl.ARRAY_BUFFER,
-                glFloat = gl.FLOAT;
-
-            var vblen = v.byteLength,
-                cblen = c.byteLength,
-                tblen = t.byteLength,
-                tlen  = vblen + cblen + tblen;
-
-            var offSetV = 0,
-                offSetC = offSetV + vblen,
-                offSetT = vblen + cblen;
-
-            gl.bindBuffer(glArrayBuffer,this._vbo);
-            gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
-
-            gl.bufferSubData(glArrayBuffer,0,v);
-            gl.bufferSubData(glArrayBuffer,offSetC,c);
-            gl.bufferSubData(glArrayBuffer,offSetT,t);
-
-            gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-            gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-            gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
-
-            gl.uniform1f(this._locationUniformUseTexture,this._currTint);
-            gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-            gl.uniform1f(this._locationUniformImage,0);
+            this.__fillBufferTexture(v,c,t);
             gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-
             this._disableTexture();
         }
     }
@@ -1613,9 +1583,13 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 
     this._setMatrixUniform();
 
+    var c;
+
+    var gl = this.gl;
+
     if(this._fill && !this._texture)
     {
-        var c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
+        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
 
         if(this._batchActive)
         {
@@ -1627,23 +1601,36 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
         }
         else
         {
-            var gl = this.gl;
             this.__fillBuffer(v,c);
             gl.drawArrays(gl.TRIANGLE_FAN,0,d);
         }
     }
 
-    //TODO: Implement
 
     if(this._texture)
     {
+        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
+
+        var t = this._bufferTexCoordsEllipse;
+
+        i = 0;
+        while(i < l)
+        {
+            s      = step * i;
+            t[i  ] = 0.5 + Math.cos(s) * 0.5;
+            t[i+1] = 0.5 + Math.sin(s) * 0.5;
+            i+=2;
+        }
+
         if(this._batchActive)
         {
-
+            //this._batchPush(v,this.__faceIndicesFan(v,d),c,d);
         }
         else
         {
-
+            this.__fillBufferTexture(v,c,t);
+            gl.drawArrays(gl.TRIANGLE_FAN,0,d);
+            this._disableTexture();
         }
     }
 
@@ -1660,6 +1647,8 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 CanvasGL.prototype.circle = function(x,y,radius)
 {
     if(!this._fill && !this._stroke)return;
+
+    var gl = this.gl;
 
     var cm = this._modeEllipse;
 
@@ -1694,37 +1683,59 @@ CanvasGL.prototype.circle = function(x,y,radius)
 
     this._setMatrixUniform();
 
+    var col;
+
     if(this._fill && !this._texture)
     {
-        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
+        col = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
 
         if(this._batchActive)
         {
             this._batchPush(this._bufferVerticesEllipse,
                             this.__faceIndicesFan(this._bufferVerticesEllipse,l),
-                            c,
+                            col,
                             null,
                             l);
         }
         else
         {
-            var gl = this.gl;
-            this.__fillBuffer(v,c);
+
+            this.__fillBuffer(v,col);
             gl.drawArrays(gl.TRIANGLE_FAN,0,d);
         }
     }
 
-    //TODO: Implement
-
     if(this._texture)
     {
+        col = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
+
+        var tc = this._bufferTexCoordsEllipse;
+
+        ox = radius;
+        oy = 0;
+
+        i = 0;
+        while(i<l)
+        {
+            tc[i]   = 0.5 + ox / radius * 0.5;
+            tc[i+1] = 0.5 + oy / radius * 0.5;
+
+            t  = ox;
+            ox = c * ox - s * oy;
+            oy = s * t  + c * oy;
+
+            i+=2;
+        }
+
         if(this._batchActive)
         {
-
+            //this._batchPush(v,this.__faceIndicesFan(v,d),col,d);
         }
         else
         {
-
+            this.__fillBufferTexture(v,col,tc);
+            gl.drawArrays(gl.TRIANGLE_FAN,0,d);
+            this._disableTexture();
         }
     }
 
@@ -2029,13 +2040,15 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 
     this._setMatrixUniform();
 
+    var c;
+
     if(this._fill && this._texture)
     {
-        var c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorTriangle);
+        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorTriangle);
 
         if(this._batchActive)
         {
-            this._batchPush(this._bufferVerticesTriangle,[0,1,2],c,null);
+            this._batchPush(this._bufferVerticesTriangle,this._indicesTriangle,c,null);
         }
         else
         {
@@ -2046,13 +2059,45 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 
     if(this._texture)
     {
+        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorTriangle);
+
+        var t = this._bufferTexCoordsTriangle;
+
         if(this._batchActive)
         {
-
+            this._batchPush(v,this._indicesTriangle,c,t);
         }
         else
         {
+            var glArrayBuffer = gl.ARRAY_BUFFER,
+                glFloat       = gl.FLOAT;
 
+            var vblen = v.byteLength,
+                cblen = c.byteLength,
+                tblen = t.byteLength,
+                tlen  = vblen + cblen + tblen;
+
+            var offSetV = 0,
+                offSetC = offSetV + vblen,
+                offSetT = vblen + cblen;
+
+            gl.bindBuffer(glArrayBuffer,this._vbo);
+            gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
+
+            gl.bufferSubData(glArrayBuffer,0,v);
+            gl.bufferSubData(glArrayBuffer,offSetC,c);
+            gl.bufferSubData(glArrayBuffer,offSetT,t);
+
+            gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
+            gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
+            gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
+
+            gl.uniform1f(this._locationUniformUseTexture,this._currTint);
+            gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+            gl.uniform1f(this._locationUniformImage,0);
+            gl.drawArrays(gl.TRIANGLES,0,1);
+
+            this._disableTexture();
         }
     }
 
@@ -2093,6 +2138,7 @@ CanvasGL.prototype.points = function(vertices)
 
 
 //TODO: Optimize, add support for caps, alpha, overlapping
+//TODO: FIX: while _ssaa > 1 no display of lines < 2
 
 CanvasGL.prototype._polyline = function(joints,length,loop)
 {
@@ -2397,6 +2443,8 @@ CanvasGL.prototype.drawElements = function(vertices,indices,colors)
     }
 };
 
+//TODO: FIX --> SLOOOOW!
+
 CanvasGL.prototype.beginBatch = function()
 {
     this._batchActive = true;
@@ -2609,7 +2657,7 @@ CanvasGL.prototype.loadImage = function(path,target,obj,callbackString)
 CanvasGL.prototype.image = function(image, x, y, width, height)
 {
     var rm = this._modeRect;
-    var w = width || image._width, h = height || image.height;
+    var w = width || image._iwidth, h = height || image.height;
     var xx = x || 0 + (rm == 1 ? 0.0 : - w*0.5), yy = y || 0 + (rm == 1 ? 0.0 : - h*0.5);
     var xw = xx+w,yh = yy+h;
 
@@ -2724,6 +2772,7 @@ CanvasGL.prototype._setMatrixUniform = function()
 CanvasGL.prototype._loadIdentity = function()
 {
     this.__mat33Identity(this._transMatrix);
+
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -2978,6 +3027,39 @@ CanvasGL.prototype.__fillBuffer = function(vertexArray,colorArray)
     gl.vertexAttribPointer(this._locationAttribPosition,   _CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
     gl.vertexAttribPointer(this._locationAttribVertexColor,_CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
 };
+
+CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordArray)
+{
+    var gl            = this.gl,
+        glArrayBuffer = gl.ARRAY_BUFFER,
+        glFloat       = gl.FLOAT;
+
+    var vblen = vertexArray.byteLength,
+        cblen = colorArray.byteLength,
+        tblen = coordArray.byteLength,
+        tlen  = vblen + cblen + tblen;
+
+    var offSetV = 0,
+        offSetC = offSetV + vblen,
+        offSetT = vblen + cblen;
+
+    gl.bindBuffer(glArrayBuffer,this._vbo);
+    gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
+
+    gl.bufferSubData(glArrayBuffer,offSetV,vertexArray);
+    gl.bufferSubData(glArrayBuffer,offSetC,colorArray);
+    gl.bufferSubData(glArrayBuffer,offSetT,coordArray);
+
+    gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
+    gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
+
+    gl.uniform1f(this._locationUniformUseTexture,this._currTint);
+    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+    gl.uniform1f(this._locationUniformImage,0);
+
+};
+
 
 CanvasGL.prototype.__rgbToHex = function(r,g,b)
 {
