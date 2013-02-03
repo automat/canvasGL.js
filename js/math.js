@@ -149,6 +149,29 @@ function cos(value)
     return Math.cos(value);
 }
 
+function saw(value)
+{
+
+    return 2 * (value  - Math.floor(0.5 + value ));
+}
+
+function tri(value)
+{
+    return 1-4*abs(0.5-frac(0.5*value+0.25));
+}
+
+
+function frac(value)
+{
+    return value - Math.floor(value);
+}
+
+function sgn(value)
+{
+    return value / abs(value);
+}
+
+
 function abs(x)
 {
     return Math.abs(x);

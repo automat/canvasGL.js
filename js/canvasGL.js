@@ -989,6 +989,51 @@ CanvasGL.prototype.texture = function(img,offsetX,offsetY,width,height)
      this._setCurrTexture(img._t);
 };
 
+CanvasGL.prototype.setTextureOffset = function(x,y,width,height)
+{
+    if(!this._texture)return;
+
+    if(x)
+    {
+        var tc = this._bufferTexCoordsQuad;
+        var gl          = this.gl,
+            glTexture2d = gl.TEXTURE_2D,
+            glRepeat    = gl.REPEAT;
+
+        this._textureOffset = true;
+
+        this._textureOffsetX = x;
+        this._textureOffsetY = y || 0;
+        this._textureOffsetW = 1/width  || 1;
+        this._textureOffsetH = 1/height || 1;
+
+        //gl.bindTexture(  glTexture2d,this._textureCurr);
+        //gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_S, glRepeat);
+        //gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_T, glRepeat);
+        gl.bindTexture(  glTexture2d,this._blankTexture);
+        this._setCurrTexture(this._textureCurr);
+
+    }
+};
+
+CanvasGL.prototype.resetTextureOffset = function()
+{
+    this._textureOffsetX = 0;
+    this._textureOffsetY = 0;
+    this._textureOffsetW = 1;
+    this._textureOffsetH = 1;
+
+    var gl          = this.gl,
+        glTexture2d = gl.TEXTURE_2D;
+
+    gl.bindTexture(  glTexture2d,this._textureCurr);
+
+    gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    this._textureOffset = false;
+};
+
 CanvasGL.prototype._setCurrTexture = function(tex)
 {
     this._textureCurr = tex;
@@ -1961,6 +2006,41 @@ CanvasGL.prototype.bezierPoint = function(d)
 
     return [nt3*x0+3*nt2*d*x1+3*nt*t2*x2+t3*x3,
             nt3*y0+3*nt2*d*y1+3*nt*t2*y2+t3*y3];
+
+};
+
+CanvasGL.prototype.bezierTangentAngle = function(d)
+{
+    var nt1  = 1 - d,
+        nt31 = nt1 * nt1 * nt1,
+        nt21 = nt1 * nt1,
+        t31  = d * d * d,
+        t21  = d * d,
+        d2   = (d >= 1.0) ? d : (d+0.1),
+        nt2  = 1 - d2,
+        nt32 = nt2 * nt2 * nt2,
+        nt22 = nt2 * nt2,
+        t32  = d2 * d2 * d2,
+        t22  = d2 * d2;
+
+    var p = this._cachedPointsBezier;
+
+    var x0 = p[0],
+        y0 = p[1],
+        x2 = p[2],
+        y2 = p[3],
+        x1 = p[4],
+        y1 = p[5],
+        x3 = p[6],
+        y3 = p[7];
+
+    var p0x = nt31*x0+3*nt21*d*x1+3*nt1*t21*x2+t31*x3,
+        p0y = nt31*y0+3*nt21*d*y1+3*nt1*t21*y2+t31*y3,
+        p1x = nt32*x0+3*nt22*d2*x1+3*nt2*t22*x2+t32*x3,
+        p1y = nt32*y0+3*nt22*d2*y1+3*nt2*t22*y2+t32*y3;
+
+    return atan2(p1y-p0y,p1x-p0x);
+
 
 };
 

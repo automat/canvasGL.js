@@ -57,7 +57,7 @@ TestCanvasGL.prototype.draw = function()
     var t = this.t,
         c = this.cgl;
 
-    c.background(200,0.5);//0.01);
+    c.background(10,0.6);//0.01);
 
 
     var i,j;
@@ -203,7 +203,7 @@ TestCanvasGL.prototype.draw = function()
             pp5 = (pp8-20)/(pp4+1);
 
             j = 0;
-            c.beginBatch();
+
             while(j<pp4)
             {
                 i = 0;
@@ -229,8 +229,7 @@ TestCanvasGL.prototype.draw = function()
                 ++j;
 
             }
-            c.drawBatch();
-            c.endBatch();
+
             c.noStroke();
 
 
@@ -623,7 +622,7 @@ TestCanvasGL.prototype.draw = function()
 
 
 
-        /*
+
         c.pushMatrix();
         {
             pp5 = 20+10*(sin(t));
@@ -637,7 +636,7 @@ TestCanvasGL.prototype.draw = function()
 
             i = 0;
 
-            c.beginBatch();
+            //c.beginBatch();
             while(i<pp2.length)
             {
                 pp4 = stepSmooth(1-abs((-pp1*0.5 + i)/pp1));
@@ -649,8 +648,8 @@ TestCanvasGL.prototype.draw = function()
                 c.circle(i*pp0,pp6,pp7);
                 i++;
             }
-            c.drawBatch();
-            c.endBatch();
+            //c.drawBatch();
+            //c.endBatch();
 
 
 
@@ -659,7 +658,7 @@ TestCanvasGL.prototype.draw = function()
         }
 
         c.popMatrix();
-        */
+
 
 
 
@@ -779,6 +778,102 @@ TestCanvasGL.prototype.draw = function()
             c.tint(0.8);
             c.ellipse(0,0,rs,rs*abs(sin(t)));
             c.noTexture();
+
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+
+
+
+
+            c.translate(rs2*2,rs2*2);
+
+            pp0 = 16;
+            pp1 = new Array(floor(pp0)*2);
+            pp4 = new Array(floor(pp0)*2);
+            pp5 =new Array(floor(pp0)*2);
+            pp2 = rs / (pp0-1);
+
+            i = 0;
+            while(i < pp1.length)
+            {
+                pp3 = i / pp0;
+                pp1[i] = pp2*i;
+                pp1[i+1] = rs*0.5-tri(t*0.5+pp3*8)*rs*0.5;
+                pp4[i] = pp2*i;
+                pp4[i+1] = rs2-rs*0.5-saw(t*0.5+pp3*2)*rs*0.5;
+
+                i+=2;
+            }
+
+            c.setLineWidth(2);
+            c.stroke(50);
+            c.line(pp1);
+            c.stroke(100);
+            c.line(pp4);
+
+
+
+
+
+            c.noStroke();
+
+
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+
+
+
+            c.translate(rs2*3,rs2*2);
+            c.setEllipseDetail(10);
+
+            c.strokeArrF([1.0,0.0,0.0,1.0,
+                0.0,0.0,1.0,1.0]);
+            c.setBezierDetail(40);
+
+            pp1 = (rs2-20)*abs(sin(t*0.025))+10;
+
+
+            c.bezier(pp1,rs2-20,20,-rs*0.5+20,rs2-20,-rs*0.5+20,10+(rs2-10)-pp1,rs2-20);
+
+            pp3 = 10;
+            //pp0 = new Array(pp3);
+
+            c.setRectMode(CanvasGL.CENTER);
+            i = 0;
+
+
+
+            while(i<pp3)
+            {
+                pp4 = i/(pp3-1);
+                pp5 = (0.5+saw(t*0.025+(0.5-pp4))*0.5);
+                pp6 = c.bezierPoint(pp5);
+
+                pp7 = c.bezierTangentAngle(pp5) + HALF_PI;
+                pp11=sin(t*0.5+pp4*8);
+                pp8 =10* pp11;
+                pp9 =pp6[0]+pp8*cos(pp7);
+                pp10=pp6[1]+pp8*sin(pp7);
+
+                c.stroke(255,0.125);
+                c.line(pp6[0],pp6[1],pp9,pp10);
+                c.noStroke();
+                c.fill(255);
+                c.circle(pp9,pp10,2);
+
+
+                i++;
+
+            }
+
+            c.noStroke();
+
 
         }
         c.popMatrix();
