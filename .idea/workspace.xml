@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/js/TestCanvasGL.js" line="601" />
+    <bookmark url="file://$PROJECT_DIR$/js/TestCanvasGL.js" line="557" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a1eef6d4-cc02-4844-a9f2-3d0258764f91" name="Default" comment="" />
@@ -22,13 +22,13 @@
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.46088016">
+    <splitter split-orientation="horizontal" split-proportion="0.5678484">
       <split-first>
         <leaf>
-          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="false">
+          <file leaf-file-name="canvasGL.js" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="1546" column="9" selection-start="42758" selection-end="42758" vertical-scroll-proportion="0.0">
+                <state line="107" column="0" selection-start="3039" selection-end="3039" vertical-scroll-proportion="0.4026946">
                   <folding />
                 </state>
               </provider>
@@ -37,16 +37,16 @@
           <file leaf-file-name="math.js" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/js/math.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="142" column="1" selection-start="2508" selection-end="2508" vertical-scroll-proportion="0.0">
+                <state line="163" column="9" selection-start="2757" selection-end="2757" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="TestCanvasGL.js" pinned="false" current="true" current-in-tab="true">
+          <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/js/TestCanvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="190" column="22" selection-start="4473" selection-end="4473" vertical-scroll-proportion="0.46754676">
+                <state line="85" column="20" selection-start="2165" selection-end="2165" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
@@ -55,7 +55,7 @@
           <file leaf-file-name="index.html" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/index.html">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="34" column="31" selection-start="602" selection-end="602" vertical-scroll-proportion="-21.384615">
+                <state line="29" column="0" selection-start="510" selection-end="510" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
@@ -68,7 +68,7 @@
           <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="997" column="43" selection-start="28855" selection-end="28855" vertical-scroll-proportion="0.74367434">
+                <state line="2947" column="0" selection-start="75500" selection-end="75500" vertical-scroll-proportion="15.160173">
                   <folding />
                 </state>
               </provider>
@@ -103,8 +103,8 @@
         <option value="$PROJECT_DIR$/TestCanvasGL.js" />
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/js/math.js" />
-        <option value="$PROJECT_DIR$/js/canvasGL.js" />
         <option value="$PROJECT_DIR$/js/TestCanvasGL.js" />
+        <option value="$PROJECT_DIR$/js/canvasGL.js" />
       </list>
     </option>
   </component>
@@ -165,6 +165,19 @@
       <sortByType />
     </navigator>
     <panes>
+      <pane id="Scope">
+        <subPane subId="Problems" />
+        <subPane subId="Tests" />
+        <subPane subId="Changed Files" />
+        <subPane subId="All">
+          <PATH>
+            <PATH_ELEMENT USER_OBJECT="Root">
+              <option name="myItemId" value="" />
+              <option name="myItemType" value="" />
+            </PATH_ELEMENT>
+          </PATH>
+        </subPane>
+      </pane>
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -199,19 +212,18 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="recentsLimit" value="5" />
     <property name="options.lastSelected" value="JavaScript.Libraries" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../marchingSquares" />
+    <property name="recentsLimit" value="5" />
     <property name="restartRequiresConfirmation" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../marchingSquares" />
     <property name="DefaultHtmlFileTemplate" value="Html5" />
-    <property name="options.splitter.details.proportions" value="0.2" />
     <property name="options.searchVisible" value="true" />
+    <property name="options.splitter.details.proportions" value="0.2" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -312,8 +324,8 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
-    <editor active="true" />
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="false" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3286334" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -451,35 +463,33 @@
     </entry>
     <entry file="jar://$APPLICATION_HOME_DIR$/plugins/JavaScriptLanguage/lib/JavascriptLanguage.jar!/com/intellij/lang/javascript/index/predefined/DHTML.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="987" column="0" selection-start="14696" selection-end="14720" vertical-scroll-proportion="0.33285302">
-          <folding />
-        </state>
+        <state line="987" column="0" selection-start="14696" selection-end="14720" vertical-scroll-proportion="0.33285302" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/index.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="34" column="31" selection-start="602" selection-end="602" vertical-scroll-proportion="-21.384615">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/js/math.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="142" column="1" selection-start="2508" selection-end="2508" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="1546" column="9" selection-start="42758" selection-end="42758" vertical-scroll-proportion="0.0">
+        <state line="29" column="0" selection-start="510" selection-end="510" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/js/TestCanvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="190" column="22" selection-start="4473" selection-end="4473" vertical-scroll-proportion="0.46754676">
+        <state line="85" column="20" selection-start="2165" selection-end="2165" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/js/math.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="163" column="9" selection-start="2757" selection-end="2757" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="107" column="0" selection-start="3039" selection-end="3039" vertical-scroll-proportion="0.4026946">
           <folding />
         </state>
       </provider>

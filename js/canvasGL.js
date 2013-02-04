@@ -309,7 +309,6 @@ function CanvasGL(parentDomElementId,width,height)
 
     this._modeEllipse = CanvasGL.CENTER;
     this._modeRect    = CanvasGL.CORNER;
-    this._textureWrap = CanvasGL.CLAMP;
 
     this._texture     = false;
     this._textureCurr = null;
@@ -317,7 +316,7 @@ function CanvasGL(parentDomElementId,width,height)
     this._textureOffset = false;
 
     this._textureOffsetX = this._textureOffsetY = 0;
-    this._textureOffsetW = this._textureOffsetH = 1;
+    this._textureOffsetW = this._textureOffsetH = 0;
 
     this._context2DTexture  = this._context2DPrepareTexture();
 
@@ -332,9 +331,6 @@ function CanvasGL(parentDomElementId,width,height)
         lineHeight:_CGLC.TEXT_DEFAULT_LINE_HEIGHT,
         spacing:   _CGLC.TEXT_DEFAULT_SPACING
     };
-
-
-    // Init temp values & arrays
 
 
     // Setup vertex buffers
@@ -357,6 +353,7 @@ function CanvasGL(parentDomElementId,width,height)
     this._bufferTexCoordsTriangleDefault = new Float32Array([0.0,0.0,1.0,0.0,1.0,1.0]);
     this._bufferTexCoordsTriangle        = new Float32Array(this._bufferTexCoordsTriangleDefault.length);
     this._bufferTexCoordsEllipse         = new Float32Array(this._bufferVerticesEllipse.length);
+    this._bufferTexCoodsArc              = new Float32Array(this._bufferVerticesArc.length);
 
     this._bufferColorVertex       = new Float32Array(_CGLC.SIZE_OF_COLOR);
     this._bufferColorQuad         = new Float32Array(_CGLC.SIZE_OF_COLOR*4);
@@ -372,7 +369,9 @@ function CanvasGL(parentDomElementId,width,height)
     this._indicesTriangle = [0,1,2];
     this._indicesQuad     = [0,1,2,1,2,3];
 
-    // Setup fill props & buffers
+
+
+    // Setup fill props, buffers and cached value
 
     this._fill               = true;
     this._bufferColorFill4   = [1.0,1.0,1.0,1.0];
@@ -385,9 +384,19 @@ function CanvasGL(parentDomElementId,width,height)
     this._tempScreenCoords  = new Array(2);
     this._tempCurveVertices = [];
 
-    this._currDetailEllipse = _CGLC.ELLIPSE_DETAIL_DEFAULT;
-    this._currDetailBezier  = _CGLC.BEZIER_DETAIL_DEFAULT;
-    this._currDetailSpline  = _CGLC.SPLINE_DETAIL_DEFAULT;
+    this._currDetailEllipse  = _CGLC.ELLIPSE_DETAIL_DEFAULT;
+    this._currRadiusXEllipse = 0;
+    this._currRadiusYEllipse = 0;
+    this._currRadiusCircle   = 0;
+    this._currDetailBezier   = _CGLC.BEZIER_DETAIL_DEFAULT;
+    this._currDetailSpline   = _CGLC.SPLINE_DETAIL_DEFAULT;
+
+    this._modeTexture = CanvasGL.CLAMP;
+
+    this._prevDetailEllipse  = 0;
+    this._prevRadiusXEllipse = 0;
+    this._prevRadiusYEllipse = 0;
+    this._prevRadiusCircle   = 0;
 
     this._currLineWidth = _CGLC.LINE_WIDTH_DEFAULT;
 
@@ -450,15 +459,17 @@ CanvasGL.prototype.setSize = function(width,height)
         c1 = c[1]/255,
         c2 = c[2]/255;
 
-    /*
+
     this._setFrameBuffer(this._fboCanvas);
     gl.clearColor(c0,c1,c2,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT );
 
+    /*
     this._setFrameBuffer(this._fboRTT);
     gl.clearColor(c0,c1,c2,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT );
     */
+
 
 };
 
@@ -470,6 +481,7 @@ CanvasGL.CENTER = 0;
 CanvasGL.CORNER = 1;
 CanvasGL.WRAP   = 2;
 CanvasGL.CLAMP  = 3;
+CanvasGL.REPEAT = 4;
 
 
 
@@ -482,7 +494,6 @@ CanvasGL.ONE = "";
 
 CanvasGL.SRC_ALPHA = 770;
 CanvasGL.SRC_COLOR = 768;
-
 
 
 CanvasGL.ONE_MINUS_SRC_ALPHA = 771;
@@ -513,6 +524,7 @@ CanvasGL.prototype.setRectMode = function(mode)
 CanvasGL.prototype.setEllipseDetail = function(a)
 {
     var md = _CGLC.BEZIER_DETAIL_MAX;
+    this._prevDetailEllipse = this._currDetailEllipse;
     this._currDetailEllipse = a > md ? md : a;
 };
 
@@ -535,7 +547,7 @@ CanvasGL.prototype.setLineWidth = function(a)
 
 CanvasGL.prototype.setTextureWrap = function(mode)
 {
-    this._textureWrap = mode;
+    this._modeTexture = mode;
 };
 
 CanvasGL.prototype.getEllipseDetail = function()
@@ -913,130 +925,87 @@ CanvasGL.prototype._disableTexture = function()
     this._texture = false;
 };
 
-
-CanvasGL.prototype.setUVQuad = function(u0,v0,u1,v1,u2,v2,u3,v3)
+CanvasGL.prototype.setUVOffset = function(offsetU,offsetV,textureWidth,textureHeight)
 {
-    this._bufferTexCoordsQuad[0] = u0;
-    this._bufferTexCoordsQuad[1] = v0;
-    this._bufferTexCoordsQuad[2] = u1;
-    this._bufferTexCoordsQuad[3] = v1;
-    this._bufferTexCoordsQuad[4] = u2;
-    this._bufferTexCoordsQuad[5] = v2;
-    this._bufferTexCoordsQuad[6] = u3;
-    this._bufferTexCoordsQuad[7] = v3;
+    this._textureOffsetX = offsetU;
+    this._textureOffsetY = offsetV;
+    this._textureOffsetW = textureWidth-1;
+    this._textureOffsetH = textureHeight-1;
+
+    this._textureOffset = true;
 };
 
-CanvasGL.prototype.resetUVQuad = function()
-{
-    this._bufferTexCoordsQuad[0] = this._bufferTexCoordsQuadDefault[0];
-    this._bufferTexCoordsQuad[1] = this._bufferTexCoordsQuadDefault[1];
-    this._bufferTexCoordsQuad[2] = this._bufferTexCoordsQuadDefault[2];
-    this._bufferTexCoordsQuad[3] = this._bufferTexCoordsQuadDefault[3];
-    this._bufferTexCoordsQuad[4] = this._bufferTexCoordsQuadDefault[4];
-    this._bufferTexCoordsQuad[5] = this._bufferTexCoordsQuadDefault[5];
-    this._bufferTexCoordsQuad[6] = this._bufferTexCoordsQuadDefault[6];
-    this._bufferTexCoordsQuad[7] = this._bufferTexCoordsQuadDefault[7];
-};
-
-CanvasGL.prototype.setUVTriangle = function(u0,v0,u1,v1,u2,v2)
-{
-    this._bufferTexCoordsTriangle[0] = u0;
-    this._bufferTexCoordsTriangle[1] = v0;
-    this._bufferTexCoordsTriangle[2] = u1;
-    this._bufferTexCoordsTriangle[3] = v1;
-    this._bufferTexCoordsTriangle[4] = u2;
-    this._bufferTexCoordsTriangle[5] = v2;
-};
-
-CanvasGL.prototype.resetUVTriangle = function()
-{
-    this._bufferTexCoordsTriangle[0] = this._bufferTexCoordsTriangleDefault[0];
-    this._bufferTexCoordsTriangle[1] = this._bufferTexCoordsTriangleDefault[1];
-    this._bufferTexCoordsTriangle[2] = this._bufferTexCoordsTriangleDefault[2];
-    this._bufferTexCoordsTriangle[3] = this._bufferTexCoordsTriangleDefault[3];
-    this._bufferTexCoordsTriangle[4] = this._bufferTexCoordsTriangleDefault[4];
-    this._bufferTexCoordsTriangle[5] = this._bufferTexCoordsTriangleDefault[5];
-};
-
-CanvasGL.prototype.texture = function(img,offsetX,offsetY,width,height)
-{
-    if(offsetX)
-    {
-        var tc = this._bufferTexCoordsQuad;
-        var gl          = this.gl,
-            glTexture2d = gl.TEXTURE_2D,
-            glRepeat    = gl.REPEAT;
-
-        offsetY = offsetY || 0;
-        width  = 1/width  || 1;
-        height = 1/height || 1;
-
-        this._textureOffset = true;
-
-        this._textureOffsetX = offsetX;
-        this._textureOffsetY = offsetY;
-        this._textureOffsetW = width;
-        this._textureOffsetH = height;
-
-        gl.bindTexture(  glTexture2d,img._t);
-        gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_S, glRepeat);
-        gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_T, glRepeat);
-        gl.bindTexture(  glTexture2d,this._blankTexture);
-        this._setCurrTexture(img._t);
-        return;
-    }
-
-     this._setCurrTexture(img._t);
-};
-
-CanvasGL.prototype.setTextureOffset = function(x,y,width,height)
-{
-    if(!this._texture)return;
-
-    if(x)
-    {
-        var tc = this._bufferTexCoordsQuad;
-        var gl          = this.gl,
-            glTexture2d = gl.TEXTURE_2D,
-            glRepeat    = gl.REPEAT;
-
-        this._textureOffset = true;
-
-        this._textureOffsetX = x;
-        this._textureOffsetY = y || 0;
-        this._textureOffsetW = 1/width  || 1;
-        this._textureOffsetH = 1/height || 1;
-
-        //gl.bindTexture(  glTexture2d,this._textureCurr);
-        //gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_S, glRepeat);
-        //gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_T, glRepeat);
-        gl.bindTexture(  glTexture2d,this._blankTexture);
-        this._setCurrTexture(this._textureCurr);
-
-    }
-};
-
-CanvasGL.prototype.resetTextureOffset = function()
+CanvasGL.prototype.resetUVOffset = function()
 {
     this._textureOffsetX = 0;
     this._textureOffsetY = 0;
     this._textureOffsetW = 1;
     this._textureOffsetH = 1;
 
-    var gl          = this.gl,
-        glTexture2d = gl.TEXTURE_2D;
-
-    gl.bindTexture(  glTexture2d,this._textureCurr);
-
-    gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
     this._textureOffset = false;
+};
+
+CanvasGL.prototype.setUVQuad = function(u0,v0,u1,v1,u2,v2,u3,v3)
+{
+    var t = this._bufferTexCoordsQuad;
+
+    t[0] = u0;
+    t[1] = v0;
+    t[2] = u1;
+    t[3] = v1;
+    t[4] = u2;
+    t[5] = v2;
+    t[6] = u3;
+    t[7] = v3;
+};
+
+CanvasGL.prototype.resetUVQuad = function()
+{
+    this.__setArr(this._bufferTexCoordsQuad,this._bufferTexCoordsQuadDefault);
+};
+
+CanvasGL.prototype.setUVTriangle = function(u0,v0,u1,v1,u2,v2)
+{
+    var t = this._bufferTexCoordsTriangle;
+
+    t[0] = u0;
+    t[1] = v0;
+    t[2] = u1;
+    t[3] = v1;
+    t[4] = u2;
+    t[5] = v2;
+};
+
+CanvasGL.prototype.resetUVTriangle = function()
+{
+    this.__setArr(this._bufferTexCoordsTriangle,this._bufferTexCoordsTriangleDefault);
+};
+
+CanvasGL.prototype.texture = function(img)
+{
+    this._setCurrTexture(img._t);
 };
 
 CanvasGL.prototype._setCurrTexture = function(tex)
 {
     this._textureCurr = tex;
+
+    var gl = this.gl,
+        m  = this._modeTexture;
+
+    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+    if(m == CanvasGL.REPEAT)
+    {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+
+    }
+    else if(m == CanvasGL.CLAMP)
+    {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    }
+
     this._texture = true;
 };
 
@@ -1113,86 +1082,17 @@ CanvasGL.prototype.background = function()
     this._modeEllipse   = _CGLC.ELLIPSE_MODE_DEFAULT;
     this._modeRect      = _CGLC.RECT_MODE_DEFAULT;
 
-    var gl = this.gl;
-
-    var lt = this._locationUniformUseTexture,
-        lf = this._locationUniformFlipY,
-        w  = this._twidth,
-        h  = this._theight;
-
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    this.resetBlend();
 
     this._applyFBOTexToQuad();
     this.clearColorBuffer();
 
+    this.resetUVOffset();
+    this.resetUVQuad();
+    this.resetUVTriangle();
+
     this.scale(this._ssaaf,this._ssaaf);
 };
-
-
-/*
-CanvasGL.prototype._applyFBOTexToQuad = function()
-{
-    var gl = this.gl,
-        lt = this._locationUniformUseTexture,
-        lf = this._locationUniformFlipY,
-        w  = this._widthRRT2,
-        h  = this._heightRRT2,
-        v  = this._bufferVerticesQuad,
-        c  = this._bufferColorQuad,
-        t  = this._bufferTexCoordsQuad;
-
-    this.resetUVQuad();
-
-
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER,this._fboCanvas);
-    gl.viewport(0,0,w,h);
-
-    gl.useProgram(this._programPost);
-
-    this._setCurrTexture(this._screenTex);
-
-    v[0] = v[1] = v[3] = v[4] = 0.0;
-    v[2] = v[6] = w;
-    v[5] = v[7] = h;
-
-    var glArrayBuffer = gl.ARRAY_BUFFER,
-        glFloat = gl.FLOAT;
-
-    var vblen = v.byteLength,
-        cblen = c.byteLength,
-        tblen = t.byteLength,
-        tlen  = vblen + cblen + tblen;
-
-    var offSetV = 0,
-        offSetC = offSetV + vblen,
-        offSetT = vblen + cblen;
-
-    gl.bindBuffer(glArrayBuffer,this._vbo);
-    gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
-
-    gl.bufferSubData(glArrayBuffer,0,v);
-    gl.bufferSubData(glArrayBuffer,offSetC,c);
-    gl.bufferSubData(glArrayBuffer,offSetT,t);
-
-    gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-    gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-    gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
-
-
-    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-    gl.uniform1f(this._locationPostUniformScreenTex,0);
-    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-
-    gl.useProgram(this._program);
-    gl.uniform1f(lt,0.0);
-    gl.uniform1f(lf,1.0);
-    this._setCurrTexture(this._blankTexture);
-    this._disableTexture();
-
-    this._setFrameBuffer(this._fboRTT);
-};
-*/
 
 CanvasGL.prototype._applyFBOTexToQuad = function()
 {
@@ -1231,72 +1131,6 @@ CanvasGL.prototype._applyFBOTexToQuad = function()
 
     this._setFrameBuffer(this._fboRTT);
 };
-
-/*
-CanvasGL.prototype._applyFBOTexToQuad = function()
-{
-    var gl = this.gl,
-        lt = this._locationUniformUseTexture,
-        lf = this._locationUniformFlipY,
-        w  = this._widthRRT2,
-        h  = this._heightRRT2,
-        v  = this._bufferVerticesQuad,
-        c  = this._bufferColorQuad,
-        t  = this._bufferTexCoordsQuad;
-
-    this._loadIdentity();
-    this._setMatrixUniform();
-    this.resetUVQuad();
-
-    gl.useProgram(this._program);
-    this._setFrameBuffer(this._fboCanvas);
-
-    gl.uniform1f(lt,1.0);
-    gl.uniform1f(lf,-1.0);
-    this._setCurrTexture(this._screenTex);
-
-    v[0] = v[1] = v[3] = v[4] =0;
-    v[2] = v[6] = w;
-    v[5] = v[7] = h;
-
-    var glArrayBuffer = gl.ARRAY_BUFFER,
-        glFloat = gl.FLOAT;
-
-    var vblen = v.byteLength,
-        cblen = c.byteLength,
-        tblen = t.byteLength,
-        tlen  = vblen + cblen + tblen;
-
-    var offSetV = 0,
-        offSetC = offSetV + vblen,
-        offSetT = vblen + cblen;
-
-    gl.bindBuffer(glArrayBuffer,this._vbo);
-    gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
-
-    gl.bufferSubData(glArrayBuffer,0,v);
-    gl.bufferSubData(glArrayBuffer,offSetC,c);
-    gl.bufferSubData(glArrayBuffer,offSetT,t);
-
-    gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-    gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-    gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
-
-    gl.uniform1f(this._locationUniformUseTexture,this._currTint);
-    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-    gl.uniform1f(this._locationUniformImage,0);
-    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-
-    gl.useProgram(this._program);
-    gl.uniform1f(lt,0.0);
-    gl.uniform1f(lf,1.0);
-    this._setCurrTexture(this._blankTexture);
-    this._disableTexture();
-
-    this._setFrameBuffer(this._fboRTT);
-};
-*/
-
 
 CanvasGL.prototype.clearColorBuffer = function()
 {
@@ -1352,18 +1186,17 @@ CanvasGL.prototype._setFrameBuffer = function(fbo)
 CanvasGL.prototype._updateRTTTexture = function()
 {
     var gl = this.gl,
-        glTexture2d = gl.TEXTURE_2D;
+        glTexture2d = gl.TEXTURE_2D,
+        glNearest   = gl.NEAREST;
 
     this._twidth  = this.__np2(this._iwidth);
     this._theight = this.__np2(this._iheight);
 
-    gl.bindTexture(gl.TEXTURE_2D,this._screenTex);
-    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,this._twidth,this._theight,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-    gl.bindTexture(gl.TEXTURE_2D,null);
+    gl.bindTexture(glTexture2d,this._screenTex);
+    gl.texParameteri(glTexture2d, gl.TEXTURE_MIN_FILTER, glNearest);
+    gl.texParameteri(glTexture2d, gl.TEXTURE_MAG_FILTER, glNearest);
+    gl.texImage2D(glTexture2d,0,gl.RGBA,this._twidth,this._theight,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+    gl.bindTexture(glTexture2d,null);
 };
 
 
@@ -1410,7 +1243,8 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
     {
         c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorQuad);
 
-        var t = this._bufferTexCoordsQuad;
+        var t  = this._bufferTexCoordsQuad,
+            td = this._bufferTexCoordsQuadDefault;
 
         if(this._textureOffset)
         {
@@ -1419,21 +1253,20 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
                 tow = this._textureOffsetW,
                 toh = this._textureOffsetH;
 
-            t[0]+=tox;
-            t[1]+=toy;
 
-            t[2]+=tox+tow;
-            t[3]+=toy;
+            t[0] = td[0] + tox;
+            t[1] = td[1] + toy;
 
-            t[4]+=tox;
-            t[5]+=toy+toh;
+            t[2] = td[2] + tox + tow;
+            t[3] = td[3] + toy;
 
-            t[6]+=tox+tow;
-            t[7]+=toy+toh;
+            t[4] = td[4] + tox;
+            t[5] = td[5] + toy + toh;
+
+            t[6] = td[6] + tox + tow;
+            t[7] = td[7] + toy + toh;
 
         }
-
-
 
         if(this._batchActive)
         {
@@ -1443,7 +1276,6 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
         {
             this.__fillBufferTexture(v,c,t);
             gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-            this._disableTexture();
         }
     }
 
@@ -1511,7 +1343,7 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
         i = this._bufferIndicesRoundRect,
         c = this._applyColorToColorBuffer(this._bufferColorFill4,this._bufferColorRoundRect);
 
-    var d  = 2,
+    var d  = floor(cornerRadius),
         d2 = d * _CGLC.SIZE_OF_VERTEX,
         l  = (d2+2) * 4,
         il = (l+4)/2*_CGLC.SIZE_OF_FACE;
@@ -1570,7 +1402,9 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
         cblen = c.byteLength,
         tlen  = vblen + cblen;
 
-    /*
+
+
+
     this._setMatrixUniform();
 
     gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
@@ -1579,21 +1413,24 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
     gl.vertexAttribPointer(this._locationAttribPosition,   _CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
     gl.vertexAttribPointer(this._locationAttribVertexColor,_CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
-    gl.drawElements(gl.TRIANGLES,3,gl.UNSIGNED_SHORT,0);
-    */
+    gl.drawElements(gl.TRIANGLES,il*0.5,gl.UNSIGNED_SHORT,0);
 
 
 
 
-    m = 0;
+
+
 
 /*
+ m = 0;
     while(m<l)
     {
         this.circle(v[m],v[m+1],2);
         m+=2;
     }
     */
+
+
 
     this._polyline(v,l,true);
 
@@ -1605,6 +1442,11 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
     if(!this._fill && !this._stroke)return;
 
     var cm = this._modeEllipse;
+
+    this._prevRadiusXEllipse = this._currRadiusXEllipse;
+    this._prevRadiusYEllipse = this._currRadiusYEllipse;
+    this._currRadiusXEllipse = radiusX;
+    this._currRadiusYEllipse = radiusY;
 
     var cx = cm == 0 ? x : x + radiusX,
         cy = cm == 0 ? y : y + radiusY;
@@ -1638,11 +1480,7 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 
         if(this._batchActive)
         {
-            this._batchPush(this._bufferVerticesEllipse,
-                            this.__faceIndicesFan(this._bufferVerticesEllipse,l),
-                            c,
-                            null,
-                            l);
+            this._batchPush(v,this.__faceIndicesFan(v,l),c,null,l);
         }
         else
         {
@@ -1651,31 +1489,50 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
         }
     }
 
-
     if(this._texture)
     {
         c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
 
         var t = this._bufferTexCoordsEllipse;
 
-        i = 0;
-        while(i < l)
+        var ox = 0.5,
+            oy = 0.5,
+            ow = 0.5,
+            oh = 0.5;
+
+        if(this._currDetailEllipse  != this._prevDetailEllipse &&
+           this._currRadiusXEllipse != this._prevRadiusXEllipse &&
+           this._currRadiusYEllipse != this._prevRadiusYEllipse  ||
+           this._textureOffset)
         {
-            s      = step * i;
-            t[i  ] = 0.5 + Math.cos(s) * 0.5;
-            t[i+1] = 0.5 + Math.sin(s) * 0.5;
-            i+=2;
+
+            if(this._textureOffset)
+            {
+                ox = this._textureOffsetX;
+                oy = this._textureOffsetY;
+                ow = (1+this._textureOffsetW) * 0.5;
+                oh = (1+this._textureOffsetH) * 0.5;
+            }
+
+            i = 0;
+            while(i < l)
+            {
+                s      = step * i;
+                s      = step * i;
+                t[i  ] = (ow + ox) + Math.cos(s) * ow;
+                t[i+1] = (oh + oy )+ Math.sin(s) * oh;
+                i+=2;
+            }
         }
 
         if(this._batchActive)
         {
-            //this._batchPush(v,this.__faceIndicesFan(v,d),c,d);
+            this._batchPush(v,this.__faceIndicesFan(v,l),c,t, l);
         }
         else
         {
             this.__fillBufferTexture(v,c,t);
             gl.drawArrays(gl.TRIANGLE_FAN,0,d);
-            this._disableTexture();
         }
     }
 
@@ -1696,6 +1553,9 @@ CanvasGL.prototype.circle = function(x,y,radius)
     var gl = this.gl;
 
     var cm = this._modeEllipse;
+
+    this._prevRadiusCircle = this._currRadiusCircle;
+    this._currRadiusCircle = radius;
 
     var cx = cm == 0 ? x : x + radius,
         cy = cm == 0 ? y : y + radius;
@@ -1756,31 +1616,42 @@ CanvasGL.prototype.circle = function(x,y,radius)
 
         var tc = this._bufferTexCoordsEllipse;
 
-        ox = radius;
-        oy = 0;
-
-        i = 0;
-        while(i<l)
+        if(this._currDetailEllipse != this._prevDetailEllipse &&
+           this._currRadiusCircle  != this._prevRadiusCircle ||
+           this._textureOffset)
         {
-            tc[i]   = 0.5 + ox / radius * 0.5;
-            tc[i+1] = 0.5 + oy / radius * 0.5;
 
-            t  = ox;
-            ox = c * ox - s * oy;
-            oy = s * t  + c * oy;
+            var oxx = this._textureOffsetX,
+                oyy = this._textureOffsetY,
+                ow  = (1+this._textureOffsetW) * 0.5 ,
+                oh  = (1+this._textureOffsetH) * 0.5 ;
 
-            i+=2;
+            ox = radius;
+            oy = 0;
+
+            i = 0;
+            while(i<l)
+            {
+                tc[i]   = (ow + oxx) + (ox / radius) * ow;
+                tc[i+1] = (oh + oyy) + (oy / radius) * oh;
+
+                t  = ox;
+                ox = c * ox - s * oy;
+                oy = s * t  + c * oy;
+
+                i+=2;
+            }
         }
+
 
         if(this._batchActive)
         {
-            //this._batchPush(v,this.__faceIndicesFan(v,d),col,d);
+            this._batchPush(v,this.__faceIndicesFan(v,l),col,tc,l);
         }
         else
         {
             this.__fillBufferTexture(v,col,tc);
             gl.drawArrays(gl.TRIANGLE_FAN,0,d);
-            this._disableTexture();
         }
     }
 
@@ -1790,15 +1661,11 @@ CanvasGL.prototype.circle = function(x,y,radius)
     }
 };
 
-//TODO: Optimize
-
 CanvasGL.prototype.circles = function(positions,radi,fillColors,strokeColors)
 {
-    var i = 0,i_2, f,s;
+    var i = 0,l = positions.length,i_2, f,s;
 
-    this.beginBatch();
-
-    while(i<positions.length)
+    while(i<l)
     {
         i_2 = i * 0.5;
         if(fillColors)
@@ -1815,8 +1682,6 @@ CanvasGL.prototype.circles = function(positions,radi,fillColors,strokeColors)
         i+=2;
     }
 
-    this.drawBatch();
-    this.endBatch();
 };
 
 CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,stopAngle,innerRadiusX,innerRadiusY)
@@ -1836,6 +1701,8 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
 
     var i = 0;
 
+    var c;
+
     while(i < l)
     {
         s    = startAngle + step * i;
@@ -1854,7 +1721,7 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
 
     if(this._fill && !this._texture)
     {
-        var c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorArc);
+        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorArc);
 
         if(this._batchActive)
         {
@@ -1871,13 +1738,20 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
 
     if(this._texture)
     {
+        var t = this.__texCoordsLinearCW(v);
+        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorArc);
+
+        console.log(t.length + "  " + v.length);
+
+
         if(this._batchActive)
         {
 
         }
         else
         {
-
+            //this.__fillBufferTexture(v,c,t);
+            //gl.drawArrays(gl.TRIANGLE_FAN,0,d)
         }
     }
 
@@ -1920,14 +1794,12 @@ CanvasGL.prototype.line = function()
     }
 };
 
-//TODO: Optimize
 
 CanvasGL.prototype.lines = function(lines,strokeColors,lineWidths)
 {
-    var i = -1, s,i_2;
+    var i = -1,l = lines.length, s,i_2;
 
-    this.beginBatch();
-    while(++i<lines.length)
+    while(++i<l)
     {
         i_2 = i * 0.5;
 
@@ -1944,8 +1816,7 @@ CanvasGL.prototype.lines = function(lines,strokeColors,lineWidths)
 
         this.line(lines[i]);
     }
-    this.drawBatch();
-    this.endBatch();
+
 };
 
 CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
@@ -2143,6 +2014,23 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 
         var t = this._bufferTexCoordsTriangle;
 
+        if(this._textureOffset)
+        {
+            var tox = this._textureOffsetX,
+                toy = this._textureOffsetY,
+                tow = this._textureOffsetW,
+                toh = this._textureOffsetH;
+
+            t[0]+=tox;
+            t[1]+=toy;
+
+            t[2]+=tox+tow;
+            t[3]+=toy;
+
+            t[4]+=tox;
+            t[5]+=toy+toh;
+        }
+
         if(this._batchActive)
         {
             this._batchPush(v,this._indicesTriangle,c,t);
@@ -2216,10 +2104,6 @@ CanvasGL.prototype.points = function(vertices)
     gl.drawArrays(gl.POINTS,0,vertices.length*0.5);
 };
 
-
-//TODO: Optimize, add support for caps, alpha, overlapping
-//TODO: FIX: while _ssaa > 1 no display of lines < 2
-
 CanvasGL.prototype._polyline = function(joints,length,loop)
 {
     if(!this._stroke)return;
@@ -2242,8 +2126,8 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
         jointLen       = (length || joints.length) + (loop ? jointSize : 0),
         jointCapResMax = _CGLC.LINE_ROUND_CAP_DETAIL_MAX,
         jointCapResMin = _CGLC.LINE_ROUND_CAP_DETAIL_MIN,
-        jointCapRes    = (lineWidth <= 2.0 ) ? 0 : lineWidth*4 ,
-        jointRad       = floor(lineWidth * 0.5),
+        jointCapRes    = (lineWidth <= 2.0 ) ? 0 : round(lineWidth)*4 ,
+        jointRad       = lineWidth * 0.5,
         jointNum       = jointLen  * 0.5,
         jointNum_1     = jointNum - 1,
         jointNum_2     = jointNum - 2;
@@ -2546,7 +2430,7 @@ CanvasGL.prototype._batchPush = function(vertices,indices,colors,texCoords,limit
     if(this._batchLimit != 0)
     {
         vlen = limit;
-        ilen = (vlen/2-2)*3;
+        ilen = (vlen*0.5-2)*3;
         clen = vlen*2;
     }
     else
@@ -2590,7 +2474,6 @@ CanvasGL.prototype._batchPush = function(vertices,indices,colors,texCoords,limit
     this._batchOffsetVertices+=vlen*0.5;
 };
 
-//TODO: Fix texture
 
 CanvasGL.prototype.drawBatch = function()
 {
@@ -2628,34 +2511,31 @@ CanvasGL.prototype.drawBatch = function()
 
     this._setMatrixUniform();
 
-    gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
-    gl.bufferSubData(glArrayBuffer,0,    v);
-    gl.bufferSubData(glArrayBuffer,vblen,c);
-    //gl.bufferSubData(glArrayBuffer,vblen+cblen,t);
-    gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,0);
-    gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,vblen);
-    //gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,vblen + cblen);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
-
-
-    gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
-
-    /*
     if(textured)
     {
+        gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
+        gl.bufferSubData(glArrayBuffer,0,    v);
+        gl.bufferSubData(glArrayBuffer,vblen,c);
+        gl.bufferSubData(glArrayBuffer,vblen+cblen,t);
+        gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,vblen);
+        gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,glFloat,false,0,vblen + cblen);
         gl.uniform1f(this._locationUniformUseTexture,this._currTint);
         gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
         gl.uniform1f(this._locationUniformImage,0);
-        gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
-        this._disableTexture();
+
     }
     else
     {
-        gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
+        gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
+        gl.bufferSubData(glArrayBuffer,0,    v);
+        gl.bufferSubData(glArrayBuffer,vblen,c);
+        gl.vertexAttribPointer(this._locationAttribPosition,    _CGLC.SIZE_OF_VERTEX, glFloat,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribVertexColor, _CGLC.SIZE_OF_COLOR,  glFloat,false,0,vblen);
     }
-    */
 
-
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
+    gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
 };
 
 CanvasGL.prototype.endBatch = function()
@@ -2668,8 +2548,7 @@ CanvasGL.prototype.getBatch = function()
     return [this._batchBufferVertices,
             this._batchBufferVertexColors,
             this._batchBufferIndices,
-            this._batchBufferTexCoords,
-            this._batchLimit];
+            this._batchBufferTexCoords];
 };
 
 
@@ -2770,7 +2649,7 @@ CanvasGL.prototype.loadFragmentShaderFromScript = function(shaderScriptId)
 
     if(s.type != this.gl.FRAGMENT_SHADER)
     {
-        return;
+        return null;
     }
 
     return this.loadFragmentShader(s.text);
@@ -3026,7 +2905,6 @@ CanvasGL.prototype.__faceIndicesFan = function(vertices,limit)
     }
 
     return a;
-
 };
 
 CanvasGL.prototype.__faceIndicesLinearCW = function(vertices,limit)
@@ -3045,6 +2923,41 @@ CanvasGL.prototype.__faceIndicesLinearCW = function(vertices,limit)
 
     return a;
 };
+
+CanvasGL.prototype.__texCoordsLinearCW = function(vertices,limit)
+{
+    var l  = limit || vertices.length,
+        a  = new Array(vertices.length),
+        al = a.length;
+
+    var i = 0;
+
+    while(i < al)
+    {
+        if((i/3)%2==0)
+        {
+            a[i  ] = 0.0;
+            a[i+1] = 0.0;
+            a[i+2] = 1.0;
+            a[i+3] = 0.0;
+            a[i+4] = 0.0;
+            a[i+5] = 1.0;
+        }
+        else
+        {
+            a[i  ] = 1.0;
+            a[i+1] = 0.0;
+            a[i+2] = 1.0;
+            a[i+3] = 1.0;
+            a[i+4] = 0.0;
+            a[i+5] = 1.0;
+        }
+        i+=6;
+    }
+
+    return a;
+};
+
 
 CanvasGL.prototype.__faceIndicesLinearCCW = function(vertices)
 {
@@ -3138,6 +3051,16 @@ CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordAr
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
     gl.uniform1f(this._locationUniformImage,0);
 
+};
+
+
+CanvasGL.prototype.__setArr = function(a,b)
+{
+    var i = -1,l = a.length;
+    while(++i< l)
+    {
+        a[i] = b[i];
+    }
 };
 
 

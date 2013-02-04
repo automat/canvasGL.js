@@ -160,6 +160,13 @@ function tri(value)
     return 1-4*abs(0.5-frac(0.5*value+0.25));
 }
 
+//FIX
+function rect(value)
+{
+    var a = abs(value);
+    return (a > 0.5) ? 0 : (a == 0.5) ? 0.5 : (a < 0.5) ? 1 : -1;
+}
+
 
 function frac(value)
 {
