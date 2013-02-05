@@ -94,8 +94,6 @@ function CanvasGL(parentDomElementId,width,height)
     this._glCanvas.style.left = '0px';
     this._glCanvas.style.top = '0px';
 
-
-
     //Init webgl
 
     this._usedBrowser    = null;
@@ -105,11 +103,11 @@ function CanvasGL(parentDomElementId,width,height)
 
     var names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
     var i = -1;
-
     while(++i<names.length)
     {
         try
         {
+
             this.gl = this._glCanvas.getContext(names[i],{ alpha:false,
                                                            depth:false,
                                                            stencil:false,
@@ -117,6 +115,7 @@ function CanvasGL(parentDomElementId,width,height)
                                                            premultipliedAlpha:false,
                                                            preserveDrawingBuffer:true
                                                            });
+
         }
         catch (e)
         {
@@ -430,8 +429,6 @@ function CanvasGL(parentDomElementId,width,height)
 /*---------------------------------------------------------------------------------------------------------*/
 // Set size
 /*---------------------------------------------------------------------------------------------------------*/
-
-//TODO: FIX WebGL: INVALID_FRAMEBUFFER_OPERATION: clear: no attachments
 
 CanvasGL.prototype.setSize = function(width,height)
 {
@@ -1474,9 +1471,11 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 
     var gl = this.gl;
 
+    c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
+
     if(this._fill && !this._texture)
     {
-        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
+
 
         if(this._batchActive)
         {
@@ -1491,9 +1490,8 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 
     if(this._texture)
     {
-        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
-
         var t = this._bufferTexCoordsEllipse;
+
 
         var ox = 0.5,
             oy = 0.5,
@@ -1525,6 +1523,7 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
             }
         }
 
+
         if(this._batchActive)
         {
             this._batchPush(v,this.__faceIndicesFan(v,l),c,t, l);
@@ -1534,6 +1533,8 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
             this.__fillBufferTexture(v,c,t);
             gl.drawArrays(gl.TRIANGLE_FAN,0,d);
         }
+
+
     }
 
     if(this._stroke)
@@ -1738,10 +1739,8 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
 
     if(this._texture)
     {
-        var t = this.__texCoordsLinearCW(v);
-        c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorArc);
-
-        console.log(t.length + "  " + v.length);
+        //var t = this.__texCoordsLinearCW(v);
+        //c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorArc);
 
 
         if(this._batchActive)
@@ -1910,9 +1909,7 @@ CanvasGL.prototype.bezierTangentAngle = function(d)
         p1x = nt32*x0+3*nt22*d2*x1+3*nt2*t22*x2+t32*x3,
         p1y = nt32*y0+3*nt22*d2*y1+3*nt2*t22*y2+t32*y3;
 
-    return atan2(p1y-p0y,p1x-p0x);
-
-
+    return Math.atan2(p1y-p0y,p1x-p0x);
 };
 
 CanvasGL.prototype.curve = function(points)
@@ -2049,7 +2046,7 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
                 offSetC = offSetV + vblen,
                 offSetT = vblen + cblen;
 
-            gl.bindBuffer(glArrayBuffer,this._vbo);
+            //gl.bindBuffer(glArrayBuffer,this._vbo);
             gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
 
             gl.bufferSubData(glArrayBuffer,0,v);
@@ -2106,7 +2103,7 @@ CanvasGL.prototype.points = function(vertices)
 
 CanvasGL.prototype._polyline = function(joints,length,loop)
 {
-    if(!this._stroke)return;
+    if(!this._stroke || this._currLineWidth <= 0.0)return;
 
     var color    = this._bufferColorStroke,
         colorLen = color.length;
@@ -2329,6 +2326,13 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
     }
     else
     {
+        if(this._texture)
+        {
+            gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
+            gl.vertexAttribPointer(this._locationAttribTextureCoord,_CGLC.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
+            gl.uniform1f(this._locationUniformUseTexture,0.0);
+        }
+
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    vertices);
         gl.bufferSubData(glArrayBuffer,vblen,colors);
@@ -2406,8 +2410,6 @@ CanvasGL.prototype.drawElements = function(vertices,indices,colors)
         gl.drawElements(gl.TRIANGLES,i.length,gl.UNSIGNED_SHORT,0);
     }
 };
-
-//TODO: FIX --> SLOOOOW!
 
 CanvasGL.prototype.beginBatch = function()
 {
@@ -3033,10 +3035,10 @@ CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordAr
         tlen  = vblen + cblen + tblen;
 
     var offSetV = 0,
-        offSetC = offSetV + vblen,
+        offSetC = vblen,
         offSetT = vblen + cblen;
 
-    gl.bindBuffer(glArrayBuffer,this._vbo);
+    //gl.bindBuffer(glArrayBuffer,this._vbo);
     gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
 
     gl.bufferSubData(glArrayBuffer,offSetV,vertexArray);
@@ -3049,7 +3051,7 @@ CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordAr
 
     gl.uniform1f(this._locationUniformUseTexture,this._currTint);
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-    gl.uniform1f(this._locationUniformImage,0);
+
 
 };
 
@@ -3269,7 +3271,7 @@ CanvasGL.prototype.text = function(string,x,y,width,height)
         offSetC = offSetV + vblen,
         offSetT = vblen + cblen;
 
-    gl.bindBuffer(glArrayBuffer,this._vbo);
+    //gl.bindBuffer(glArrayBuffer,this._vbo);
     gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
 
     gl.bufferSubData(glArrayBuffer,0,v);

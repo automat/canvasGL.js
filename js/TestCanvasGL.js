@@ -77,18 +77,11 @@ TestCanvasGL.prototype.draw = function()
         sampleStep  = PI / numSamples;
 
 
-    c.translate(c.width*0.5, c.height*0.5);
-
-    c.fill(255);
-    c.setEllipseDetail(10);
-    c.stroke(0);
-    c.setLineWidth(1);
-    c.texture(img0);
-    c.arc(0,0,200,200,0,PI*abs(sin(t)),30+120*abs(sin(t*0.05)),30+120*abs(sin(t*0.05)));
 
 
 
-    /*
+
+
     c.pushMatrix();
     {
         c.translate(0,0);
@@ -197,7 +190,7 @@ TestCanvasGL.prototype.draw = function()
         {
             c.translate(rs2*4,0);
             c.texture(img2);
-            c.setUVOffset(cos(t*0.25),sin(t*0.25),img2.width,img2.height);
+            c.setUVOffset(cos(t*0.25),sin(t*0.25),1,1);
             c.setUVQuad(1-asint05,1-asint05,1.0,0.0,0.0,1.0,asint025,asint025);
             c.setTextureWrap(CanvasGL.REPEAT);
             c.rect(0,0,rs2,rs2);
@@ -895,7 +888,7 @@ TestCanvasGL.prototype.draw = function()
    }
     c.popMatrix();
 
-     */
+
 
 
 
