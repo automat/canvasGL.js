@@ -25,10 +25,10 @@
     <splitter split-orientation="horizontal" split-proportion="0.42864582">
       <split-first>
         <leaf>
-          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="true">
+          <file leaf-file-name="canvasGL.js" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="1508" column="30" selection-start="39900" selection-end="39900" vertical-scroll-proportion="-0.45658684">
+                <state line="1836" column="30" selection-start="44733" selection-end="44733" vertical-scroll-proportion="12.2">
                   <folding />
                 </state>
               </provider>
@@ -43,10 +43,10 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="false">
+          <file leaf-file-name="TestCanvasGL.js" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/js/TestCanvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="868" column="27" selection-start="20484" selection-end="20484" vertical-scroll-proportion="-8.08">
+                <state line="13" column="0" selection-start="338" selection-end="338" vertical-scroll-proportion="0.33083832">
                   <folding />
                 </state>
               </provider>
@@ -59,7 +59,7 @@
           <file leaf-file-name="canvasGL.js" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="2967" column="70" selection-start="76445" selection-end="76445" vertical-scroll-proportion="0.37444934">
+                <state line="2310" column="16" selection-start="55130" selection-end="55130" vertical-scroll-proportion="7.109065">
                   <folding />
                 </state>
               </provider>
@@ -475,14 +475,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/js/TestCanvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="868" column="27" selection-start="20484" selection-end="20484" vertical-scroll-proportion="-8.08">
+        <state line="13" column="0" selection-start="338" selection-end="338" vertical-scroll-proportion="0.33083832">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/js/canvasGL.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="2967" column="70" selection-start="76445" selection-end="76445" vertical-scroll-proportion="0.37444934">
+        <state line="2310" column="16" selection-start="55130" selection-end="55130" vertical-scroll-proportion="7.109065">
           <folding />
         </state>
       </provider>

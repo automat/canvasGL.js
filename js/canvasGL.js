@@ -84,11 +84,13 @@ var _CGLC =
 };
 
 
-/** ------------------------------------------------------------------------------------------------------------------
- *
- * CanvasGL class
- *
- * ---------------------------------------------------------------------------------------------------------------- */
+/**
+ * @class CanvasGL
+ * @param {String} parentDomElementId
+ * @param {Number} width
+ * @param {Number} height
+ * @constructor
+ */
 
 function CanvasGL(parentDomElementId,width,height)
 {
@@ -433,9 +435,11 @@ function CanvasGL(parentDomElementId,width,height)
     this.parent.appendChild(this._glCanvas);
 }
 
-/*---------------------------------------------------------------------------------------------------------*/
-// Set size
-/*---------------------------------------------------------------------------------------------------------*/
+/**
+ * @method setSize
+ * @param {Number} width Width of the canvas in pixel
+ * @param {Number} height Height of the canvas in pixel
+ */
 
 CanvasGL.prototype.setSize = function(width,height)
 {
@@ -515,15 +519,30 @@ CanvasGL.THIN   = "thin";
 CanvasGL.REGULAR= "normal";
 CanvasGL.BOLD   = "bold";
 
+/**
+ * @method setEllipseMode
+ * @param mode
+ */
+
 CanvasGL.prototype.setEllipseMode = function(mode)
 {
     this._modeEllipse = mode;
 };
 
+/**
+ * @method setRectMode
+ * @param mode
+ */
+
 CanvasGL.prototype.setRectMode = function(mode)
 {
     this._modeRect = mode;
 };
+
+/**
+ * @method setEllipseDetail
+ * @param a
+ */
 
 CanvasGL.prototype.setEllipseDetail = function(a)
 {
@@ -532,11 +551,21 @@ CanvasGL.prototype.setEllipseDetail = function(a)
     this._currDetailEllipse = a > md ? md : a;
 };
 
+/**
+ * @method setBezierDetail
+ * @param {Integer}a Resolution of bezier curve
+ */
+
 CanvasGL.prototype.setBezierDetail = function(a)
 {
     var md = _CGLC.BEZIER_DETAIL_MAX;
     this._currDetailBezier = a > md ? md : a;
 };
+
+/**
+ * @method setCurveDetail
+ * @param {Integer} a Resolution of curves
+ */
 
 CanvasGL.prototype.setCurveDetail = function(a)
 {
@@ -544,41 +573,79 @@ CanvasGL.prototype.setCurveDetail = function(a)
     this._currDetailSpline = a  > md ? md : a;
 };
 
+/**
+ * @method setCornerDetail
+ * @param {Integer} a Resolution of corners
+ */
+
 CanvasGL.prototype.setCornerDetail = function(a)
 {
     var md = _CGLC.CORNER_DETAIL_MAX;
     this._currDetailCorner = a > md ? md : a;
 };
 
+/**
+ * @method setLineWidth
+ * @param {Number} a Width of lines
+ */
+
 CanvasGL.prototype.setLineWidth = function(a)
 {
     this._currLineWidth = a;
 };
+
+/**
+ * @method setTextureWrap
+ * @param mode
+ */
 
 CanvasGL.prototype.setTextureWrap = function(mode)
 {
     this._modeTexture = mode;
 };
 
+/**
+ * @method getEllipseDetail
+ * @return {Integer} Current detail of ellipses
+ */
+
 CanvasGL.prototype.getEllipseDetail = function()
 {
     return this._currDetailEllipse;
 };
+
+/**
+ * @method getBezierDetail
+ * @return {Integer} Current detail of bezier curves
+ */
 
 CanvasGL.prototype.getBezierDetail = function()
 {
     return this._currDetailBezier;
 };
 
-CanvasGL.prototype.getSplineDetail = function()
+/**
+ * @method getCurveDetail
+ * @return {Integer} Current detail of curves
+ */
+
+CanvasGL.prototype.getCurveDetail = function()
 {
     return this._currDetailSpline;
 };
+
+/**
+ * @method enableBlend
+ */
 
 CanvasGL.prototype.enableBlend = function()
 {
     this.gl.enable(this.gl.BLEND);
 };
+
+/**
+ * @method disableBlend
+ */
 
 CanvasGL.prototype.disableBlend = function()
 {
@@ -588,6 +655,10 @@ CanvasGL.prototype.disableBlend = function()
 /*---------------------------------------------------------------------------------------------------------*/
 // Shape fill/stroke/texture
 /*---------------------------------------------------------------------------------------------------------*/
+
+/**
+ * @method fill
+ */
 
 CanvasGL.prototype.fill = function()
 {
@@ -624,12 +695,23 @@ CanvasGL.prototype.fill = function()
     this._fill = true;
 };
 
+/**
+ * @method fill1i
+ * @param {Integer} k
+ */
+
 CanvasGL.prototype.fill1i = function(k)
 {
     var f = this._bufferColorFill = this._bufferColorFill4;
     f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
     this._fill = true;
 };
+
+/**
+ * @method fill2i
+ * @param {Integer} k
+ * @param {Number} a
+ */
 
 CanvasGL.prototype.fill2i = function(k,a)
 {
@@ -638,12 +720,27 @@ CanvasGL.prototype.fill2i = function(k,a)
     this._fill = true;
 };
 
+/**
+ * @method fill3i
+ * @param {Integer} r
+ * @param {Integer} g
+ * @param {Integer} b
+ */
+
 CanvasGL.prototype.fill3i = function(r,g,b)
 {
     var f = this._bufferColorFill = this._bufferColorFill4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
     this._fill = true;
 };
+
+/**
+ * @method fill4i
+ * @param {Integer} r
+ * @param {Integer} g
+ * @param {Integer} b
+ * @param {Number} a
+ */
 
 CanvasGL.prototype.fill4i = function(r,g,b,a)
 {
@@ -652,12 +749,23 @@ CanvasGL.prototype.fill4i = function(r,g,b,a)
     this._fill = true;
 };
 
+/**
+ * @method fill1f
+ * @param {Number} k
+ */
+
 CanvasGL.prototype.fill1f = function(k)
 {
     var f = this._bufferColorFill = this._bufferColorFill4;
     f[0] = f[1] = f[2] = k;f[3] = 1.0;
     this._fill = true;
 };
+
+/**
+ * @method fill2f
+ * @param {Number} k
+ * @param {Number} a
+ */
 
 CanvasGL.prototype.fill2f = function(k,a)
 {
@@ -666,12 +774,27 @@ CanvasGL.prototype.fill2f = function(k,a)
     this._fill = true;
 };
 
+/**
+ * @method fill3f
+ * @param {Number} r
+ * @param {Number} g
+ * @param {Number} b
+ */
+
 CanvasGL.prototype.fill3f = function(r,g,b)
 {
     var f = this._bufferColorFill = this._bufferColorFill4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
     this._fill = true;
 };
+
+/**
+ * @method fill4f
+ * @param {Number} r
+ * @param {Number} g
+ * @param {Number} b
+ * @param {Number} a
+ */
 
 CanvasGL.prototype.fill4f = function(r,g,b,a)
 {
@@ -680,10 +803,20 @@ CanvasGL.prototype.fill4f = function(r,g,b,a)
     this._fill = true;
 };
 
+/**
+ * @method fillArr
+ * @param {Array} a
+ */
+
 CanvasGL.prototype.fillArr =  function(a)
 {
     this.fillArrI(a);
 };
+
+/**
+ * @method fillArrI
+ * @param {Array} a
+ */
 
 CanvasGL.prototype.fillArrI = function(a)
 {
@@ -702,19 +835,29 @@ CanvasGL.prototype.fillArrI = function(a)
     this._fill = true;
 };
 
+/**
+ * @method fillArrF
+ * @param {Array} a
+ */
+
 CanvasGL.prototype.fillArrF = function(a)
 {
     this._bufferColorFill = a;
     this._fill = true;
 };
 
+/**
+ * @method noFill
+ */
+
 CanvasGL.prototype.noFill = function()
 {
     this._fill = false;
 };
 
-
-// Stroke
+/**
+ * @method stroke
+ */
 
 CanvasGL.prototype.stroke = function()
 {
@@ -750,12 +893,23 @@ CanvasGL.prototype.stroke = function()
     this._stroke = true;
 };
 
+/**
+ * @method stroke1i
+ * @param k
+ */
+
 CanvasGL.prototype.stroke1i = function(k)
 {
     var f = this._bufferColorStroke = this._bufferColorStroke4;
     f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
     this._stroke = true;
 };
+
+/**
+ * @method stroke2i
+ * @param k
+ * @param a
+ */
 
 CanvasGL.prototype.stroke2i = function(k,a)
 {
@@ -764,12 +918,27 @@ CanvasGL.prototype.stroke2i = function(k,a)
     this._stroke = true;
 };
 
+/**
+ * @method stroke3i
+ * @param r
+ * @param g
+ * @param b
+ */
+
 CanvasGL.prototype.stroke3i = function(r,g,b)
 {
     var f = this._bufferColorStroke = this._bufferColorStroke4;
     f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
     this._stroke = true;
 };
+
+/**
+ * @method stroke4i
+ * @param r
+ * @param g
+ * @param b
+ * @param a
+ */
 
 CanvasGL.prototype.stroke4i = function(r,g,b,a)
 {
@@ -778,12 +947,23 @@ CanvasGL.prototype.stroke4i = function(r,g,b,a)
     this._stroke = true;
 };
 
+/**
+ * @method stroke1f
+ * @param {Number} k
+ */
+
 CanvasGL.prototype.stroke1f = function(k)
 {
     var f = this._bufferColorStroke = this._bufferColorStroke4;
     f[0] = f[1] = f[2] = k;f[3] = 1.0;
     this._stroke = true;
 };
+
+/**
+ * @method stroke2f
+ * @param {Number} k
+ * @param {Number} a
+ */
 
 CanvasGL.prototype.stroke2f = function(k,a)
 {
@@ -792,12 +972,27 @@ CanvasGL.prototype.stroke2f = function(k,a)
     this._stroke = true;
 };
 
+/**
+ * @method stroke3f
+ * @param {Number} r
+ * @param {Number} g
+ * @param {Number} b
+ */
+
 CanvasGL.prototype.stroke3f = function(r,g,b)
 {
     var f = this._bufferColorStroke = this._bufferColorStroke4;
     f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
     this._stroke = true;
 };
+
+/**
+ * @method stroke4f
+ * @param {Number} r
+ * @param {Number} g
+ * @param {Number} b
+ * @param {Number} a
+ */
 
 CanvasGL.prototype.stroke4f = function(r,g,b,a)
 {
@@ -806,11 +1001,21 @@ CanvasGL.prototype.stroke4f = function(r,g,b,a)
     this._stroke = true;
 };
 
+/**
+ * @method strokeArr
+ * @param {Array} a
+ */
+
 CanvasGL.prototype.strokeArr = function(a)
 {
     this._bufferColorStroke = a;
     this._stroke = true;
 };
+
+/**
+ * @method strokeArrI
+ * @param {Array} a
+ */
 
 CanvasGL.prototype.strokeArrI = function(a)
 {
@@ -829,11 +1034,20 @@ CanvasGL.prototype.strokeArrI = function(a)
     this._stroke = true;
 };
 
+/**
+ * @method strokeArrF
+ * @param {Array} a
+ */
+
 CanvasGL.prototype.strokeArrF = function(a)
 {
     this._bufferColorStroke = a;
     this._stroke = true;
 };
+
+/**
+ * @method noStroke
+ */
 
 CanvasGL.prototype.noStroke = function()
 {
@@ -905,10 +1119,19 @@ CanvasGL.prototype._colorArrLerped = function(colors,arr)
     return arr;
 };
 
+/**
+ * @method tint
+ * @param {Number} a
+ */
+
 CanvasGL.prototype.tint = function(a)
 {
     this._currTint = Math.max(_CGLC.TINT_MIN,Math.min(a,_CGLC.TINT_MAX));
 };
+
+/**
+ * @method noTint
+ */
 
 CanvasGL.prototype.noTint = function()
 {
@@ -935,6 +1158,14 @@ CanvasGL.prototype._disableTexture = function()
     this._texture = false;
 };
 
+/**
+ * @method setUVOffset
+ * @param {Number} offsetU
+ * @param {Number} offsetV
+ * @param {Number} textureWidth
+ * @param {Number} textureHeight
+ */
+
 CanvasGL.prototype.setUVOffset = function(offsetU,offsetV,textureWidth,textureHeight)
 {
     this._textureOffsetX = offsetU;
@@ -945,6 +1176,10 @@ CanvasGL.prototype.setUVOffset = function(offsetU,offsetV,textureWidth,textureHe
     this._textureOffset = true;
 };
 
+/**
+ * @method resetUVOffset
+ */
+
 CanvasGL.prototype.resetUVOffset = function()
 {
     this._textureOffsetX = 0;
@@ -954,6 +1189,18 @@ CanvasGL.prototype.resetUVOffset = function()
 
     this._textureOffset = false;
 };
+
+/**
+ * @method setUVQuad
+ * @param {Number} u0 U-value of the first coordinate
+ * @param {Number} v0 V-value of the first coordinate
+ * @param {Number} u1 U-value of the second coordinate
+ * @param {Number} v1 V-value of the second coordinate
+ * @param {Number} u2 U-value of the third coordinate
+ * @param {Number} v2 V-value of the third coordinate
+ * @param {Number} u3 U-value of the fourth coordinate
+ * @param {Number} v3 V-value of the fourth coordinate
+ */
 
 CanvasGL.prototype.setUVQuad = function(u0,v0,u1,v1,u2,v2,u3,v3)
 {
@@ -969,10 +1216,25 @@ CanvasGL.prototype.setUVQuad = function(u0,v0,u1,v1,u2,v2,u3,v3)
     t[7] = v3;
 };
 
+/**
+ * Resets all quad uv-values to default.
+ * @method resetUVQuad
+ */
+
 CanvasGL.prototype.resetUVQuad = function()
 {
     this.__setArr(this._bufferTexCoordsQuad,this._bufferTexCoordsQuadDefault);
 };
+
+/**
+ * @method setUVTriangle
+ * @param {Number} u0 U-value of the first coordinate
+ * @param {Number} v0 V-value of the first coordinate
+ * @param {Number} u1 U-value of the second coordinate
+ * @param {Number} v1 V-value of the second coordinate
+ * @param {Number} u2 U-value of the third coordinate
+ * @param {Number} v2 V-value of the third coordinate
+ */
 
 CanvasGL.prototype.setUVTriangle = function(u0,v0,u1,v1,u2,v2)
 {
@@ -986,10 +1248,21 @@ CanvasGL.prototype.setUVTriangle = function(u0,v0,u1,v1,u2,v2)
     t[5] = v2;
 };
 
+/**
+ * Resets all triangle uv-values to default.
+ * @method resetUVTriangle
+ */
+
 CanvasGL.prototype.resetUVTriangle = function()
 {
     this.__setArr(this._bufferTexCoordsTriangle,this._bufferTexCoordsTriangleDefault);
 };
+
+/**
+ * Binds a texture.
+ * @method texture
+ * @param {CanvasGLImage} img
+ */
 
 CanvasGL.prototype.texture = function(img)
 {
@@ -1031,24 +1304,42 @@ CanvasGL.prototype._createTexture = function()
     return t;
 };
 
+/**
+ * Disables texture binding.
+ * @method noTexture
+ */
+
 CanvasGL.prototype.noTexture = function()
 {
     this._disableTexture();
     this._texture = false;
 };
 
-// Blending
+/**
+ * @method blend
+ * @param src
+ * @param dest
+ */
 
 CanvasGL.prototype.blend = function(src,dest)
 {
     this.gl.blendFunc(src,dest);
 };
 
+/**
+ * Resets blend to default.
+ * @method resetBlend
+ */
+
 CanvasGL.prototype.resetBlend = function()
 {
     var gl = this.gl;
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 };
+
+/**
+ * @method background
+ */
 
 CanvasGL.prototype.background = function()
 {
@@ -1142,6 +1433,11 @@ CanvasGL.prototype._applyFBOTexToQuad = function()
     this._setFrameBuffer(this._fboRTT);
 };
 
+/**
+ * Manually clears the color buffer.
+ * @method clearColorBuffer
+ */
+
 CanvasGL.prototype.clearColorBuffer = function()
 {
     var gl = this.gl;
@@ -1213,6 +1509,19 @@ CanvasGL.prototype._updateRTTTexture = function()
 /*---------------------------------------------------------------------------------------------------------*/
 // Drawing primitives
 /*---------------------------------------------------------------------------------------------------------*/
+
+/**
+ * Draws a quad.
+ * @method quad
+ * @param {Number} x0 X-value of the first coordinate
+ * @param {Number} y0 Y-value of the first coordinate
+ * @param {Number} x1 X-value of the second coordinate
+ * @param {Number} y1 Y-value of the second coordinate
+ * @param {Number} x2 X-value of the third coordinate
+ * @param {Number} y2 Y-value of the third coordinate
+ * @param {Number} x3 X-value of the fourth coordinate
+ * @param {Number} y3 Y-value of the fourth coordinate
+ */
 
 CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
@@ -1303,6 +1612,15 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
     }
 };
 
+/**
+ * Draws a rectangle.
+ * @method rect
+ * @param {Number} x X-value of the origin coordinate
+ * @param {Number} y Y-value of the origon coordinate
+ * @param {Number} width Width of the rectangle
+ * @param {Number} height Height of the rectangle
+ */
+
 CanvasGL.prototype.rect = function(x,y,width,height)
 {
     var cm = this._modeRect == CanvasGL.CENTER,
@@ -1329,6 +1647,16 @@ CanvasGL.prototype.rect = function(x,y,width,height)
 
     this.quad(rx,ry,rw,ry,rw,rh,rx,rh);
 };
+
+/**
+ * Draws a rounded rectangle.
+ * @method roundRect
+ * @param {Number} x X-value of the origin coordinate
+ * @param {Number} y Y-value of the origon coordinate
+ * @param {Number} width Width of the rectangle
+ * @param {Number} height Height of the rectangle
+ * @param {Number} cornerRadius Radius of the corners
+ */
 
 CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
 {
@@ -1513,6 +1841,15 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
     }
 };
 
+/**
+ * Draws an ellipse.
+ * @method ellipse
+ * @param {Number} x X-value of the origin coordinate
+ * @param {Number} y Y-value of the origin coordinate
+ * @param {Number} radiusX Horizonal radius
+ * @param {Number} radiusY Vertical radius
+ */
+
 
 CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 {
@@ -1626,6 +1963,14 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 };
 
 //http://slabode.exofire.net/circle_draw.shtml
+
+/**
+ * Draws a circle.
+ * @method circle
+ * @param {Number} x X-value of the origin coordinate
+ * @param {Number} y Y-value of the origin coordinate
+ * @param {Number} radius Radius
+ */
 
 CanvasGL.prototype.circle = function(x,y,radius)
 {
@@ -1742,7 +2087,16 @@ CanvasGL.prototype.circle = function(x,y,radius)
     }
 };
 
-CanvasGL.prototype.circles = function(positions,radi,fillColors,strokeColors)
+/**
+ * Draws circles from an array of positions
+ * @method circles
+ * @param {Array} positions An array containing all x- and y-values of the orgins
+ * @param {Array} radii An array containing all radii
+ * @param {Array} fillColors An array containing all fill-colors
+ * @param {Array} strokeColors An array containin all stroke-colors
+ */
+
+CanvasGL.prototype.circles = function(positions,radii,fillColors,strokeColors)
 {
     var i = 0,l = positions.length,i_2, f,s;
 
@@ -1759,11 +2113,24 @@ CanvasGL.prototype.circles = function(positions,radi,fillColors,strokeColors)
             s = strokeColors[i_2];
             this.stroke(s[0],s[1],s[2],s[3]);
         }
-        this.circle(positions[i],positions[i+1],radi[i_2]);
+        this.circle(positions[i],positions[i+1],radii[i_2]);
         i+=2;
     }
 
 };
+
+/**
+ * Dras an arc
+ * @method arc
+ * @param {Number} centerX X-value of the origin
+ * @param {Number} centerY Y-value of the origin
+ * @param {Number} radiusX Horizontal value of the outer radius
+ * @param {Number} radiusY Vertical value of the outer radius
+ * @param {Number} startAngle The start-angle
+ * @param {Number} stopAngle The stop-angle
+ * @param {Number} innerRadiusX Horizontal value of the inner radius
+ * @param {Number} innerRadiusY Vertical value of the inner radius
+ */
 
 CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,stopAngle,innerRadiusX,innerRadiusY)
 {
@@ -1851,6 +2218,11 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
     }
 };
 
+/**
+ * Draw a line.
+ * @method line
+ */
+
 CanvasGL.prototype.line = function()
 {
     if(!this._stroke)return;
@@ -1872,6 +2244,13 @@ CanvasGL.prototype.line = function()
             break;
     }
 };
+
+/**
+ * @method lines
+ * @param {Array} lines
+ * @param {Array} strokeColors
+ * @param {Array} lineWidths
+ */
 
 
 CanvasGL.prototype.lines = function(lines,strokeColors,lineWidths)
@@ -1897,6 +2276,18 @@ CanvasGL.prototype.lines = function(lines,strokeColors,lineWidths)
     }
 
 };
+
+/**
+ * @method bezier
+ * @param {Number} x0
+ * @param {Number} y0
+ * @param {Number} x1
+ * @param {Number} y1
+ * @param {Number} x2
+ * @param {Number} y2
+ * @param {Number} x3
+ * @param {Number} y3
+ */
 
 CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
@@ -1935,6 +2326,12 @@ CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
     this._polyline(v,d,false);
 };
 
+/**
+ * @method bezierPoint
+ * @param d
+ * @return {Array}
+ */
+
 CanvasGL.prototype.bezierPoint = function(d)
 {
     var nt  = 1 - d,
@@ -1958,6 +2355,12 @@ CanvasGL.prototype.bezierPoint = function(d)
             nt3*y0+3*nt2*d*y1+3*nt*t2*y2+t3*y3];
 
 };
+
+/**
+ * @method bezierTangentAngle
+ * @param d
+ * @return {Number}
+ */
 
 CanvasGL.prototype.bezierTangentAngle = function(d)
 {
@@ -1991,6 +2394,11 @@ CanvasGL.prototype.bezierTangentAngle = function(d)
 
     return Math.atan2(p1y-p0y,p1x-p0x);
 };
+
+/**
+ * @method curve
+ * @param {Array} points
+ */
 
 CanvasGL.prototype.curve = function(points)
 {
@@ -2038,20 +2446,44 @@ CanvasGL.prototype._catmullrom = function(a,b,c,d,i)
            d * ((i - 1) * i * i) * 0.5;
 };
 
+/**
+ * @method beginCurve
+ */
+
 CanvasGL.prototype.beginCurve =  function()
 {
     this._tempCurveVertices = [];
 };
+
+/**
+ * @method endCurve
+ */
 
 CanvasGL.prototype.endCurve =  function()
 {
     this.curve(this._tempCurveVertices);
 };
 
+/**
+ * @method curveVertex
+ * @param {Number} x
+ * @param {Number} y
+ */
+
 CanvasGL.prototype.curveVertex = function(x,y)
 {
     this._tempCurveVertices.push(x,y)
 };
+
+/**
+ * @method triangle
+ * @param {Number} x0
+ * @param {Number} y0
+ * @param {Number} x1
+ * @param {Number} y1
+ * @param {Number} x2
+ * @param {Number} y2
+ */
 
 CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 {
@@ -2154,6 +2586,12 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 
 //TODO: Fix (Works in Firefox)
 
+/**
+ * @method point
+ * @param {Number} x
+ * @param {Number} y
+ */
+
 CanvasGL.prototype.point = function(x,y)
 {
     if(!this._fill)return;
@@ -2170,6 +2608,11 @@ CanvasGL.prototype.point = function(x,y)
 };
 
 //TODO: Fix (Works in Firefox)
+
+/**
+ * @method points
+ * @param {Arraay} vertices
+ */
 
 CanvasGL.prototype.points = function(vertices)
 {
@@ -2423,6 +2866,13 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
     }
 };
 
+/**
+ * @method drawArrays
+ * @param {Array} vertices
+ * @param {Array} colors
+ * @param mode
+ */
+
 CanvasGL.prototype.drawArrays = function(vertices,colors,mode)
 {
     if(!this._fill)return;
@@ -2455,6 +2905,13 @@ CanvasGL.prototype.drawArrays = function(vertices,colors,mode)
         gl.drawArrays(mode,0,v.length*0.5);
     }
 };
+
+/**
+ * @method drawElements
+ * @param {Array} vertices
+ * @param {Array} indices
+ * @param {Array} colors
+ */
 
 CanvasGL.prototype.drawElements = function(vertices,indices,colors)
 {
@@ -2491,6 +2948,10 @@ CanvasGL.prototype.drawElements = function(vertices,indices,colors)
     }
 };
 
+/**
+ * @method beginBatch
+ */
+
 CanvasGL.prototype.beginBatch = function()
 {
     this._batchActive = true;
@@ -2502,6 +2963,7 @@ CanvasGL.prototype.beginBatch = function()
 
     this._batchOffsetVertices = 0;
 };
+
 
 CanvasGL.prototype._batchPush = function(vertices,indices,colors,texCoords,limit)
 {
@@ -2556,6 +3018,9 @@ CanvasGL.prototype._batchPush = function(vertices,indices,colors,texCoords,limit
     this._batchOffsetVertices+=vlen*0.5;
 };
 
+/**
+ * @method drawBatch
+ */
 
 CanvasGL.prototype.drawBatch = function()
 {
@@ -2620,10 +3085,19 @@ CanvasGL.prototype.drawBatch = function()
     gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
 };
 
+/**
+ * @method endBatch
+ */
+
 CanvasGL.prototype.endBatch = function()
 {
     this._batchActive = false;
 };
+
+/**
+ * @method getBatch
+ * @return {Array}
+ */
 
 CanvasGL.prototype.getBatch = function()
 {
@@ -2640,7 +3114,10 @@ CanvasGL.prototype.getBatch = function()
 // Image & Texture
 /*---------------------------------------------------------------------------------------------------------*/
 
-// Texture helper class
+/**
+ * @class CanvasGLImage
+ * @constructor
+ */
 
 CanvasGLImage = function()
 {
@@ -2657,8 +3134,13 @@ CanvasGLImage.prototype._set = function(t)
     this.height = t.image.height;
 };
 
-//Load image return CanvasGLImage
-
+/**
+ * @method loadImage
+ * @param {String} path
+ * @param {Object} target
+ * @param {CanvasGLImage} obj
+ * @param {String} callbackString
+ */
 CanvasGL.prototype.loadImage = function(path,target,obj,callbackString)
 {
     var gl = this.gl;
@@ -2695,6 +3177,15 @@ CanvasGL.prototype.loadImage = function(path,target,obj,callbackString)
     tex.image.src = path;
 };
 
+/**
+ * @method image
+ * @param {CanvasGLImage} image
+ * @param {Number} x
+ * @param {Number} y
+ * @param {Number} width
+ * @param {Number} height
+ */
+
 CanvasGL.prototype.image = function(image, x, y, width, height)
 {
     var rm = this._modeRect;
@@ -2708,6 +3199,12 @@ CanvasGL.prototype.image = function(image, x, y, width, height)
 
 };
 
+/**
+ * @method getImagePixel
+ * @param img
+ * @return {*}
+ */
+
 CanvasGL.prototype.getImagePixel = function(img)
 {
     this._context2DSetImage(img);
@@ -2720,10 +3217,22 @@ CanvasGL.prototype.getImagePixel = function(img)
 
 //TODO: Implement
 
+/**
+ * @method loadFragmentShader
+ * @param shaderScript
+ * @return {*}
+ */
+
 CanvasGL.prototype.loadFragmentShader = function(shaderScript)
 {
     return this._loadShader(shaderScript,this.gl.FRAGMENT_SHADER);
 };
+
+/**
+ * @method loadFragmentShaderFromScript
+ * @param shaderScriptId
+ * @return {*}
+ */
 
 CanvasGL.prototype.loadFragmentShaderFromScript = function(shaderScriptId)
 {
@@ -2787,6 +3296,13 @@ CanvasGL.prototype._loadProgram = function(vertexShader,fragmentShader)
 // Screen Coords / unproject
 /*---------------------------------------------------------------------------------------------------------*/
 
+/**
+ * @method getScreeCoord
+ * @param {Number} x
+ * @param {Number} y
+ * @return {Array}
+ */
+
 CanvasGL.prototype.getScreenCoord = function(x,y)
 {
     x = x || 0;
@@ -2820,25 +3336,50 @@ CanvasGL.prototype._loadIdentity = function()
 // Public Matrix transformations
 /*---------------------------------------------------------------------------------------------------------*/
 
+/**
+ * @method translate
+ * @param {Number} x
+ * @param {Number} y
+ */
+
 CanvasGL.prototype.translate = function(x,y)
 {
     this._transMatrix = this.__mat33MultPost(this._transMatrix,this.__makeMat33Translate(x,y));
 };
+
+/**
+ * @method scale
+ * @param {Number} x
+ * @param {Number} y
+ */
 
 CanvasGL.prototype.scale = function(x,y)
 {
     this._transMatrix = this.__mat33MultPost(this._transMatrix,this.__makeMat33Scale(x,y));
 };
 
+/**
+ * @method rotate
+ * @param {Number} a
+ */
+
 CanvasGL.prototype.rotate = function(a)
 {
     this._transMatrix = this.__mat33MultPost(this._transMatrix,this.__makeMat33Rotation(a));
 };
 
+/**
+ * @method pushMatrix
+ */
+
 CanvasGL.prototype.pushMatrix = function()
 {
     this._transMatrixStack.push(this.__makeMat33Copy(this._transMatrix));
 };
+
+/**
+ * @method popMatrix
+ */
 
 CanvasGL.prototype.popMatrix = function()
 {
@@ -3152,6 +3693,10 @@ CanvasGL.prototype.__rgbToHex = function(r,g,b)
 
 /*---------------------------------------------------------------------------------------------------------*/
 
+/**
+ * @method saveToPNG
+ */
+
 CanvasGL.prototype.saveToPNG = function()
 {
     window.open(this._glCanvas.toDataURL('image/png'));
@@ -3161,6 +3706,10 @@ CanvasGL.prototype.saveToPNG = function()
 // Text
 /*---------------------------------------------------------------------------------------------------------*/
 
+/**
+ * @method setFontWeight
+ * @param {String} weight
+ */
 
 CanvasGL.prototype.setFontWeight = function(weight)
 {
@@ -3168,11 +3717,21 @@ CanvasGL.prototype.setFontWeight = function(weight)
     this._context2DApplyFontStyle();
 };
 
+/**
+ * @method setFontSize
+ * @param {Number} size
+ */
+
 CanvasGL.prototype.setFontSize = function(size)
 {
     this._fontProperties.size = size;
     this._context2DApplyFontStyle();
 };
+
+/**
+ * @method setFontFamily
+ * @param {String} family
+ */
 
 CanvasGL.prototype.setFontFamily = function(family)
 {
@@ -3180,11 +3739,21 @@ CanvasGL.prototype.setFontFamily = function(family)
     this._context2DApplyFontStyle();
 };
 
+/**
+ * @method setTextBaseLine
+ * @param {String} textBaseLine
+ */
+
 CanvasGL.prototype.setTextBaseLine = function (textBaseLine)
 {
     this._fontProperties.baseLine = textBaseLine;
     this._context2DApplyFontStyle();
 };
+
+/**
+ * @method setTextAlign
+ * @param {String} textAlign
+ */
 
 CanvasGL.prototype.setTextAlign = function (textAlign)
 {
@@ -3192,16 +3761,32 @@ CanvasGL.prototype.setTextAlign = function (textAlign)
     this._context2DApplyFontStyle();
 };
 
+/**
+ * @method setTextLineHeight
+ * @param {Number} lineHeight
+ */
+
 CanvasGL.prototype.setTextLineHeight = function(lineHeight)
 {
     this._fontProperties.lineHeight = lineHeight;
     this._context2DApplyFontStyle();
 };
 
+/**
+ * @method textWidth
+ * @param {String} string
+ * @return {Number}
+ */
+
 CanvasGL.prototype.textWidth = function(string)
 {
     return this.context2d.measureText(string).width;
 };
+
+/**
+ * @method textHeight
+ * @return {Number}
+ */
 
 CanvasGL.prototype.textHeight = function()
 {
@@ -3209,6 +3794,15 @@ CanvasGL.prototype.textHeight = function()
 };
 
 //TODO: Fix
+
+/**
+ * @method text
+ * @param {String} string
+ * @param {Number} x
+ * @param {Number} y
+ * @param {Number} width
+ * @param {Number} height
+ */
 
 CanvasGL.prototype.text = function(string,x,y,width,height)
 {
@@ -3514,6 +4108,11 @@ CanvasGL.prototype._context2DSetSize = function(width,height)
 
 /*---------------------------------------------------------------------------------------------------------*/
 
+/**
+ * @method colori
+ * @return {Float32Array}
+ */
+
 function colori()
 {
     var c = colorf(arguments);
@@ -3547,6 +4146,11 @@ function colori()
 
     return c;
 }
+
+/**
+ * @method colorf
+ * @return {Float32Array}
+ */
 
 function colorf()
 {
