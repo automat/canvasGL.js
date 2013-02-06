@@ -457,6 +457,7 @@ TestCanvasGL.prototype.draw = function()
             c.setLineWidth(20);
             c.strokeArrF([pp1,0.0,0.0,1.0,
                           0.0,0.0,1-pp1,1.0]);
+            c.setCurveDetail(20);
             c.curve(pp0);
             c.noStroke();
             c.fill(255);
@@ -865,19 +866,37 @@ TestCanvasGL.prototype.draw = function()
 
             }
 
-            c.strokeArrF([0.0,0.0,0.0,1.0,
+            c.strokeArrF([1.0,0.0,1.0,1.0,
                            1.0,0.0,0.0,1.0]);
             c.setLineWidth(10);
 
             c.line(pp0);
-            c.setLineWidth(3);
-            c.strokeArrF([0.0,0.0,0.0,1.0,
-                          1.0,1.0,1.0,1.0]);
+            c.setLineWidth(1);
+            c.stroke(255);
             c.line(pp0);
 
             c.noStroke();
 
 
+
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+            c.translate(rs2*5+rs,rs2*2+rs);
+
+            c.setRectMode(CanvasGL.CENTER);
+            c.noStroke();
+            c.fill(255);
+            c.setCornerDetail(6);
+            pp0 = abs(sin(t))*20;
+            pp1 = pp0+(rs2-pp0)*abs(sin(t));
+            c.strokeArrF([0.0,0.0,0.0,1.0,
+                1.0,0.0,0.0,1.0]);
+            c.setLineWidth(4);
+            c.rotate((sin(t))*PI);
+            c.roundRect(0,0,pp1,pp1,pp0);
 
         }
         c.popMatrix();

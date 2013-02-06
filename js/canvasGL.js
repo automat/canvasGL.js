@@ -1,5 +1,7 @@
 /**
  *
+ * canvasGL.js Accelerated 2D drawing in WebGL
+ *
  * canvasGL.js is available under the terms of the MIT license.  The full text of the
  * MIT license is included below.
  *
@@ -48,6 +50,9 @@ var _CGLC =
     LINE_WIDTH_DEFAULT:1,
     LINE_ROUND_CAP_DETAIL_MAX:20,
     LINE_ROUND_CAP_DETAIL_MIN:4,
+
+    CORNER_DETAIL_DEFAULT : 5,
+    CORNER_DETAIL_MAX     : 10,
 
     TINT_DEFAULT:1.0,
     TINT_MAX    :1.0,
@@ -345,7 +350,7 @@ function CanvasGL(parentDomElementId,width,height)
     this._bufferVerticesSpline    = new Float32Array(_CGLC.SPLINE_DETAIL_MAX  * 4);
     this._bufferVerticesRoundRect = new Float32Array(_CGLC.ELLIPSE_DETAIL_MAX * _CGLC.SIZE_OF_VERTEX + _CGLC.SIZE_OF_QUAD);
 
-    this._bufferIndicesRoundRect  = new Float32Array((((this._bufferVerticesRoundRect.length + 4 ) / 2)) * _CGLC.SIZE_OF_FACE);
+    this._bufferIndicesRoundRect  = new Uint16Array((((this._bufferVerticesRoundRect.length) / 2)-2) * _CGLC.SIZE_OF_FACE);
 
     this._bufferTexCoordsQuadDefault     = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,1.0]);
     this._bufferTexCoordsQuad            = new Float32Array(this._bufferTexCoordsQuadDefault);
@@ -389,6 +394,7 @@ function CanvasGL(parentDomElementId,width,height)
     this._currRadiusCircle   = 0;
     this._currDetailBezier   = _CGLC.BEZIER_DETAIL_DEFAULT;
     this._currDetailSpline   = _CGLC.SPLINE_DETAIL_DEFAULT;
+    this._currDetailCorner   = _CGLC.CORNER_DETAIL_DEFAULT;
 
     this._modeTexture = CanvasGL.CLAMP;
 
@@ -396,6 +402,7 @@ function CanvasGL(parentDomElementId,width,height)
     this._prevRadiusXEllipse = 0;
     this._prevRadiusYEllipse = 0;
     this._prevRadiusCircle   = 0;
+    this._prevDetailCorner   = 0;
 
     this._currLineWidth = _CGLC.LINE_WIDTH_DEFAULT;
 
@@ -535,6 +542,12 @@ CanvasGL.prototype.setCurveDetail = function(a)
 {
     var md = _CGLC.SPLINE_DETAIL_MAX;
     this._currDetailSpline = a  > md ? md : a;
+};
+
+CanvasGL.prototype.setCornerDetail = function(a)
+{
+    var md = _CGLC.CORNER_DETAIL_MAX;
+    this._currDetailCorner = a > md ? md : a;
 };
 
 CanvasGL.prototype.setLineWidth = function(a)
@@ -1317,33 +1330,41 @@ CanvasGL.prototype.rect = function(x,y,width,height)
     this.quad(rx,ry,rw,ry,rw,rh,rx,rh);
 };
 
-//TODO: Fix
-
 CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
 {
-    if(!this.fill && !this.stroke)return;
+    if(!this._fill && !this._stroke && !this._texture)return;
 
     var rm = this._modeRect;
 
     var xx = x + (rm == 1 ? 0.0 : - width*0.5),
         yy = y + (rm == 1 ? 0.0 : - height*0.5);
 
+
     var xc  = xx + cornerRadius,
         yc  = yy + cornerRadius,
         xwc = xx + width  - cornerRadius,
         yhc = yy + height - cornerRadius;
 
+    if(cornerRadius == 0)
+    {
+        this.quad(xc,yc,xwc,yc,xwc,yhc,xc,yhc);
+        return;
+    }
+
     var e = [xwc,yhc,xc,yhc,xc,yc,xwc,yc],
         ex,ey;
 
     var v = this._bufferVerticesRoundRect,
-        i = this._bufferIndicesRoundRect,
-        c = this._applyColorToColorBuffer(this._bufferColorFill4,this._bufferColorRoundRect);
+        i = this._bufferIndicesRoundRect;
 
-    var d  = floor(cornerRadius),
+    var d  = this._currDetailCorner,
         d2 = d * _CGLC.SIZE_OF_VERTEX,
-        l  = (d2+2) * 4,
-        il = (l+4)/2*_CGLC.SIZE_OF_FACE;
+        d3 = d2 + 2,
+        i2 = (d  + 1) * _CGLC.SIZE_OF_FACE,
+        i3 = (i2 - 6),
+        l  = d3 * 4,
+        is = d3 / 2,
+        il = (l  / 2  + 2) * _CGLC.SIZE_OF_FACE;
 
     var m, m2,n,o,om,on;
 
@@ -1375,68 +1396,127 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
             n+=2;
         }
 
-        n  = 0;
-
-        while(n < 6+(d-1)*3)
-        {
-            i[n]   = 0;
-            i[n+1] = 1;
-            i[n+2] = 2;
-
-
-            n+=3;
-        }
-
         ++m;
     }
 
-    var gl = this.gl,
-        glArrayBuffer = gl.ARRAY_BUFFER,
-        glDynamicDraw = gl.DYNAMIC_DRAW,
-        glFloat       = gl.FLOAT;
-
-    var vblen = v.byteLength,
-        cblen = c.byteLength,
-        tlen  = vblen + cblen;
-
-
-
-
-    this._setMatrixUniform();
-
-    gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
-    gl.bufferSubData(glArrayBuffer,0,    v);
-    gl.bufferSubData(glArrayBuffer,vblen,c);
-    gl.vertexAttribPointer(this._locationAttribPosition,   _CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
-    gl.vertexAttribPointer(this._locationAttribVertexColor,_CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
-    gl.drawElements(gl.TRIANGLES,il*0.5,gl.UNSIGNED_SHORT,0);
-
-
-
-
-
-
-
-/*
- m = 0;
-    while(m<l)
+    if(this._currDetailCorner != this._prevDetailCorner)
     {
-        this.circle(v[m],v[m+1],2);
-        m+=2;
+        m = 0;
+        while(m<4)
+        {
+            om  = m * i2;
+            n   = om;
+            on  = n + i3;
+            o   = 1;
+            om /= 3;
+
+            while(n < on)
+            {
+                i[n]   = om;
+                i[n+1] = om + o ;
+                i[n+2] = om + o + 1;
+
+                o++;
+                n+=3;
+            }
+
+            om = m * is;
+
+            if(m<3)
+            {
+                i[n]   = i[n+3] = om;
+                i[n+1] = om + is;
+                i[n+2] = i[n+5] = i[n+1] + 1 ;
+                i[n+4] = om + d;
+            }
+            else if(m==3)
+            {
+                i[n]   = om;
+                i[n+1] = i[n+4] = om +d;
+                i[n+2] = i[n+3] = 0;
+                i[n+5] = 1;
+
+            }
+
+            ++m;
+        }
+
+        i[il-4] = 0;
+        i[il-2] = is*2;
+        i[il-5] = i[il-3] = is;
+        i[il-6] = i[il-1] = is*3;
     }
-    */
+
+    var gl = this.gl;
+    var c;
+
+    if(this._fill && !this._texture)
+    {
+        c = this._applyColorToColorBuffer(this._bufferColorFill4,this._bufferColorRoundRect);
+
+        if(this._batchActive)
+        {
+            this._batchPush(v,i,c,null);
+        }
+        else
+        {
+            var glArrayBuffer = gl.ARRAY_BUFFER,
+                glDynamicDraw = gl.DYNAMIC_DRAW,
+                glFloat       = gl.FLOAT;
+
+            var vblen = v.byteLength,
+                cblen = c.byteLength,
+                tlen  = vblen + cblen;
+
+            this._setMatrixUniform();
+
+            gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
+            gl.bufferSubData(glArrayBuffer,0,    v);
+            gl.bufferSubData(glArrayBuffer,vblen,c);
+            gl.vertexAttribPointer(this._locationAttribPosition,   _CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
+            gl.vertexAttribPointer(this._locationAttribVertexColor,_CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
+            gl.drawElements(gl.TRIANGLES, il,gl.UNSIGNED_SHORT,0);
+
+        }
+    }
+
+    if(this._texture)
+    {
+        if(this._batchActive)
+        {
+
+        }
+        else
+        {
+
+        }
+
+    }
+
+    if(this._stroke)
+    {
+        v[0]      = v[2];
+        v[1]      = v[3];
+
+        v[d3]     = v[d3+2];
+        v[d3+1]   = v[d3+3];
+
+        v[d3*2]   = v[d3*2+2];
+        v[d3*2+1] = v[d3*2+3];
+
+        v[d3*3]   = v[d3*3+2];
+        v[d3*3+1] = v[d3*3+3];
 
 
-
-    this._polyline(v,l,true);
-
+        this._polyline(v,d2*4+8,true);
+    }
 };
 
 
 CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 {
-    if(!this._fill && !this._stroke)return;
+    if(!this._fill && !this._stroke && !this._texture)return;
 
     var cm = this._modeEllipse;
 
@@ -1549,7 +1629,7 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 
 CanvasGL.prototype.circle = function(x,y,radius)
 {
-    if(!this._fill && !this._stroke)return;
+    if(!this._fill && !this._stroke && !this._texture)return;
 
     var gl = this.gl;
 
@@ -3055,7 +3135,6 @@ CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordAr
 
 };
 
-
 CanvasGL.prototype.__setArr = function(a,b)
 {
     var i = -1,l = a.length;
@@ -3065,25 +3144,13 @@ CanvasGL.prototype.__setArr = function(a,b)
     }
 };
 
-
 CanvasGL.prototype.__rgbToHex = function(r,g,b)
 {
     var h = (r << 16 | g << 8 | b).toString(16);
     return "#"+new Array(7-h.length).join("0")+h;
 };
 
-
-
-
-
 /*---------------------------------------------------------------------------------------------------------*/
-
-// Floors every input vertex
-
-CanvasGL.prototype.setPixelPerfect = function(bool)
-{
-    this._pixelPerfect = bool;
-};
 
 CanvasGL.prototype.saveToPNG = function()
 {
