@@ -85,6 +85,8 @@ var _CGLC =
 
 
 /**
+ *
+ *
  * @class CanvasGL
  * @param {String} parentDomElementId
  * @param {Number} width
@@ -419,6 +421,8 @@ function CanvasGL(parentDomElementId,width,height)
     this._batchBufferTexCoords    = [];
 
     this._batchLimit = 0;
+
+    this._batchTextureActive = false;
 
     // canvas text
 
@@ -2088,7 +2092,7 @@ CanvasGL.prototype.circle = function(x,y,radius)
 };
 
 /**
- * Draws circles from an array of positions
+ * Draws a set of circles.
  * @method circles
  * @param {Array} positions An array containing all x- and y-values of the orgins
  * @param {Array} radii An array containing all radii
@@ -2219,7 +2223,7 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
 };
 
 /**
- * Draw a line.
+ * Draws a line.
  * @method line
  */
 
@@ -2230,6 +2234,7 @@ CanvasGL.prototype.line = function()
     switch (arguments.length)
     {
         case 1:
+            if(arguments[0].length == 0)return;
             this._polyline(arguments[0]);
             break;
         case 4:
@@ -2246,10 +2251,11 @@ CanvasGL.prototype.line = function()
 };
 
 /**
+ * Draws a set of lines.
  * @method lines
- * @param {Array} lines
- * @param {Array} strokeColors
- * @param {Array} lineWidths
+ * @param {Array} lines An array containing lines
+ * @param {Array} strokeColors  An array containing all stroke-colors
+ * @param {Array} lineWidths  An array containing all line-widths
  */
 
 
@@ -2278,15 +2284,17 @@ CanvasGL.prototype.lines = function(lines,strokeColors,lineWidths)
 };
 
 /**
+ * Draws a bezier curve.
+ *
  * @method bezier
- * @param {Number} x0
- * @param {Number} y0
- * @param {Number} x1
- * @param {Number} y1
- * @param {Number} x2
- * @param {Number} y2
- * @param {Number} x3
- * @param {Number} y3
+ * @param {Number} x0 X-value of the first anchor point
+ * @param {Number} y0 Y-value of the first anchor point
+ * @param {Number} x1 X-value of the first control point
+ * @param {Number} y1 Y-value of the first control point
+ * @param {Number} x2 X-value of the second control point
+ * @param {Number} y2 Y-value of the second control point
+ * @param {Number} x3 X-value of the second anchor point
+ * @param {Number} y3 Y-value of the second anchor point
  */
 
 CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
@@ -2327,9 +2335,11 @@ CanvasGL.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3)
 };
 
 /**
+ * Draws a bezier curve.
+ *
  * @method bezierPoint
- * @param d
- * @return {Array}
+ * @param {Number} d A value between 0 and 1
+ * @return {Array} Returns the point on the curve
  */
 
 CanvasGL.prototype.bezierPoint = function(d)
@@ -2357,9 +2367,11 @@ CanvasGL.prototype.bezierPoint = function(d)
 };
 
 /**
+ * Calculates the angle of the tangent of a point on a bezier curve.
+ *
  * @method bezierTangentAngle
- * @param d
- * @return {Number}
+ * @param {Number} d A value between 0 and 1
+ * @return {Number} Returns the a in radians
  */
 
 CanvasGL.prototype.bezierTangentAngle = function(d)
@@ -2396,8 +2408,10 @@ CanvasGL.prototype.bezierTangentAngle = function(d)
 };
 
 /**
+ * Draws a bezier curve through a set of points.
+ *
  * @method curve
- * @param {Array} points
+ * @param {Array} points The x- and y-values of the points
  */
 
 CanvasGL.prototype.curve = function(points)
@@ -2447,6 +2461,7 @@ CanvasGL.prototype._catmullrom = function(a,b,c,d,i)
 };
 
 /**
+ * Begins a bezier curve
  * @method beginCurve
  */
 
@@ -2456,6 +2471,7 @@ CanvasGL.prototype.beginCurve =  function()
 };
 
 /**
+ * Ends and draws a bezier curve
  * @method endCurve
  */
 
@@ -2465,9 +2481,10 @@ CanvasGL.prototype.endCurve =  function()
 };
 
 /**
+ * Adds a point to a bezier curve. (Must be called in between beginCurve and endCurve)
  * @method curveVertex
- * @param {Number} x
- * @param {Number} y
+ * @param {Number} x The x-value of the point to be added
+ * @param {Number} y The y-value of the point to be added
  */
 
 CanvasGL.prototype.curveVertex = function(x,y)
@@ -2476,6 +2493,7 @@ CanvasGL.prototype.curveVertex = function(x,y)
 };
 
 /**
+ * Draws a triangle.
  * @method triangle
  * @param {Number} x0
  * @param {Number} y0
@@ -2611,7 +2629,7 @@ CanvasGL.prototype.point = function(x,y)
 
 /**
  * @method points
- * @param {Arraay} vertices
+ * @param {Array} vertices
  */
 
 CanvasGL.prototype.points = function(vertices)
@@ -3105,6 +3123,17 @@ CanvasGL.prototype.getBatch = function()
             this._batchBufferVertexColors,
             this._batchBufferIndices,
             this._batchBufferTexCoords];
+};
+
+CanvasGL.prototype.beginBatchToTexture = function()
+{
+    this._batchTextureActive = true;
+};
+
+CanvasGL.prototype.endBatchToTexture = function()
+{
+    this._batchTextureActive = false;
+
 };
 
 

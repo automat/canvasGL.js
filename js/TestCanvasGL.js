@@ -1,7 +1,10 @@
 
 function TestCanvasGL(parentDomElementId)
 {
-    this.cgl = new CanvasGL(parentDomElementId,window.innerWidth,window.innerHeight);
+    var w = window.innerWidth  < 1280 ? 640 : window.innerWidth*0.5,
+        h = window.innerHeight < 600 ? 600 : window.innerHeight;
+
+    this.cgl = new CanvasGL(parentDomElementId,w,h);
     this.t = 0.0;
 
     this.numImages = 3;
@@ -16,6 +19,17 @@ function TestCanvasGL(parentDomElementId)
 
     this.sn = new SimplexNoise();
 
+    this.nh = 7;
+    this.nd = 21;
+    this.rs = this.cgl.width/(this.nh*2);
+    this.nv = round(this.cgl.height/this.rs);
+
+    this.dl =null;
+    this.dcl = new Array(this.nd*2);
+    this._resetDL();
+
+
+
     window.addEventListener("resize", this.onWindowResize.bind(this), false);
 
     c.loadImage("images/l512.jpg",this.img0,this,"onImageLoaded");
@@ -26,8 +40,40 @@ function TestCanvasGL(parentDomElementId)
 
 TestCanvasGL.prototype.onWindowResize = function()
 {
-    //var w = window.innerWidth < 1280 ? 1280 : window.innerWidth;
-    this.cgl.setSize(window.innerWidth,window.innerHeight);
+    var w = window.innerWidth  < 1280 ? 640 : window.innerWidth*0.5,
+        h = window.innerHeight < 600 ? 600 : window.innerHeight;
+    this.rs = this.cgl.width/(this.nh*2);
+    this.nv = round(this.cgl.height/this.rs);
+    this._resetDL();
+    this.cgl.setSize(w,h);
+};
+
+TestCanvasGL.prototype._resetDL = function()
+{
+    this.dl = new Array(this.nh*this.nv*2);
+
+    var dl = this.dl;
+
+    var i = 0, j, k,l;
+
+
+    while(i<this.dcl.length)
+    {
+        j = randomInteger(this.nh);
+        k = randomInteger(this.nv);
+
+        this.dcl[i ] = j * this.rs*2;
+        this.dcl[i+1]= k * this.rs*2;
+
+        i+=2;
+
+
+    }
+
+
+
+
+
 };
 
 TestCanvasGL.prototype.onImageLoaded = function()
@@ -57,14 +103,25 @@ TestCanvasGL.prototype.draw = function()
     var t = this.t,
         c = this.cgl;
 
-    c.background(200,0.6);//0.01);
+    c.background(10,0.6);//0.01);
 
     var i,j;
-    var rs = c.width/32,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
+
+    var nh = this.nh,
+        nv = this.nv;
+
+    var rs = this.rs,rs2 = rs* 2,rs3 = rs* 3,rs4 = rs* 4,rs05 =rs*0.5, rs025 = rs* 0.25;
+
+    var dcl = this.dcl;
+
+
+
     var pa,ps;
-    var pp0,pp1,pp2,pp3,pp4,pp5,pp6,pp7,pp8,pp9,pp10,pp11,pp12,pp13;
+    var pp0,pp1,pp2,pp3,pp4,pp5,pp6,pp7,pp8,pp9,pp10,pp11,pp12,pp13,pp14,pp15,pp16;
     var sint = sin(t),sint05 = sin(t*0.5),sint025 = sin(t*0.25);
     var asint = abs(sint), asint05 = abs(sint05),asint025 = abs(sint025);
+
+
 
     var verticesA,verticesB;
     var indicesA,indicesB;
@@ -144,7 +201,7 @@ TestCanvasGL.prototype.draw = function()
             c.translate(rs2*3+10,10);
 
             pp8 = rs2;
-            pp0 = 25;
+            pp0 = 15;
             pp1 = (pp8-20) / pp0;
             pp2 = new Array(pp0*2);
             pp4 = floor(1+abs(sin(t*0.25)*19));
@@ -281,70 +338,7 @@ TestCanvasGL.prototype.draw = function()
         }
         c.popMatrix();
 
-        c.pushMatrix();
-        {
-            c.translate(rs2*7,0);
 
-            pa = this.img0Data.length;
-
-            pp0 = this.img0.width;
-            pp1 = this.img0.height;
-            pp3 = this.img0Data;
-
-            c.blend(CanvasGL.SRC_COLOR,CanvasGL.ONE_MINUS_SRC_COLOR);
-
-           var s = 40;
-
-            var is = Math.floor(pp0/(s));
-
-            var nn  = stepSmoothCubed(asint05);
-            pp5 = [];
-            pp6 = [];
-
-
-            c.setRectMode(CanvasGL.CENTER);
-            c.translate(rs,rs);
-            c.rotate(nn*PI);
-
-
-            pp7 = stepSmoothCubed(abs(sin(t*0.125)));
-            c.noStroke();
-
-            i = 0;
-
-            nn  = stepSmoothCubed(abs(sin(t*0.5)));
-            pp6 = [rs  ,rs];
-
-            while(i < pp0)
-            {
-                j = 0;
-                while(j < pp1)
-                {
-
-                    pp2 = (i+j*pp0)*4;
-
-                    pp4 = [pp3[pp2],pp3[pp2+1],pp3[pp2+2],pp3[pp2+3]];
-
-                    pp5 = [i/(pp0)*rs2,j/(pp1)*rs2];
-                    pp8 = floor(pp4[0]*(1-pp7)+(255-pp4[0])*pp7);
-
-
-                    c.fill(pp8,0,pp8,1);
-                    c.rect(pp5[0] * (1-nn) + pp6[0] * nn - rs,pp5[1] * (1-nn) + pp6[1] * nn -rs,
-                           is*(nn*4),is*(nn*4));
-
-
-                    j+=s;
-
-                }
-
-                i+=s;
-            }
-
-            c.blend(CanvasGL.SRC_ALPHA,CanvasGL.ONE_MINUS_SRC_ALPHA);
-
-        }
-        c.popMatrix();
 
 
         c.pushMatrix();
@@ -509,7 +503,7 @@ TestCanvasGL.prototype.draw = function()
 
             pp8 = rs2-20;
 
-            pa = 2+floor(abs(sin(t*0.25))*28);
+            pa = 2+floor(abs(sin(t*0.25))*8);
             ps =pp8/(pa-1);
 
             c.stroke(20);
@@ -551,17 +545,25 @@ TestCanvasGL.prototype.draw = function()
                           0.0,0.0,1.0,1.0]);
 
             c.setLineWidth(2);
-            c.beginBatch();
+            //c.beginBatch();
+
+
+
             c.line(pp1);
             c.line(pp4);
             c.line(pp5);
             c.line(pp6);
             c.line(pp7);
-            c.drawBatch();
+            //c.drawBatch();
             c.translate(0,pp8);
             c.scale(1,-1);
-            c.drawBatch();
-            c.endBatch();
+            c.line(pp1);
+            c.line(pp4);
+            c.line(pp5);
+            c.line(pp6);
+            c.line(pp7);
+            //c.drawBatch();
+            //c.endBatch();
 
         }
         c.popMatrix();
@@ -640,62 +642,7 @@ TestCanvasGL.prototype.draw = function()
         c.popMatrix();
 
 
-        c.pushMatrix();
-        {
-            c.translate(rs2*7,rs2);
 
-            pp4 = 20;
-            pp0 = new Array(pp4*pp4*2);
-            pp3 = (rs2) / (pp4-1);
-            pp5 = new Array((pp0.length/2-2)*3);
-            pp7 = pp4 - 1;
-            pp9 = new Array(pp4*pp4*4);
-
-
-
-            i = 0;
-            while(i<pp4)
-            {
-                j = 0;
-                while(j<pp4)
-                {
-                    pp1        = (i+j*pp4)*2;
-                    pp0[pp1  ] = j*pp3;
-                    pp0[pp1+1] = i*pp3;
-
-                    pp2        = (i+j*pp4)*4;
-
-                    pp6 = 1+stepSmoothCubed(abs(sin(t*0.25)));
-
-                    var x  = -pp6*0.5+(j/pp4)*pp6,
-                        y  = -pp6*0.5+(i/pp4)*pp6;
-
-                    pp9[pp2 ]  = (this.sn.noise(cos(x+t),sin(y+t*0.25))+this.sn.noise(sin(x),sin(y)));
-                    pp9[pp2+1 ]  = pp9[pp2 ];
-                    pp9[pp2+2 ]  = pp9[pp2 ];
-                    pp9[pp2+3 ]  = pp9[pp2 ];
-                    pp6 = (i+j*pp7)*6;
-
-                    pp8 = i+j*pp4;
-
-                    if(i < pp4-1 && j < pp4-1)
-                    {
-                        pp5[pp6]   = pp5[pp6+3] = pp8;
-                        pp5[pp6+1] = pp8 + 1;
-                        pp5[pp6+2] = pp5[pp6+1] + pp4;
-                        pp5[pp6+4] = pp8 + pp4;
-                        pp5[pp6+5] = pp5[pp6+1] + pp4;
-                    }
-
-
-                    ++j;
-                }
-                ++i;
-            }
-
-            c.drawElements(pp0,pp5,pp9);
-        }
-        c.popMatrix();
 
         c.pushMatrix();
         {
@@ -743,32 +690,7 @@ TestCanvasGL.prototype.draw = function()
 
             c.translate(rs2*2,rs2*2);
 
-            pp0 = rs2;
-            pp1 = new Array(floor(pp0)*2);
-            pp4 = new Array(floor(pp0)*2);
-            pp5 =new Array(floor(pp0)*2);
-            pp2 = rs / (pp0-1);
 
-            i = 0;
-            while(i < pp1.length)
-            {
-                pp3 = i / pp0;
-                pp1[i] = pp2*i;
-                pp1[i+1] = rs*0.5-tri(t*0.5+pp3*2)*rs*0.25;
-                pp4[i] = pp2*i;
-                pp4[i+1] = rs2-rs-saw(t*0.5+pp3*2)*rs*0.25;
-                pp5[i] = pp2*i;
-                pp5[i+1] = rs2-rect(saw(t*0.5+pp3*2))*rs*0.5;
-
-                i+=2;
-            }
-
-            c.setLineWidth(2);
-            c.stroke(50);
-            c.line(pp1);
-            c.stroke(50);
-            c.line(pp4);
-            c.line(pp5);
 
 
 
@@ -776,6 +698,71 @@ TestCanvasGL.prototype.draw = function()
 
             c.noStroke();
 
+
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+            c.translate(rs2*2,rs2*2);
+
+            pa = this.img0Data.length;
+
+            pp0 = this.img0.width;
+            pp1 = this.img0.height;
+            pp3 = this.img0Data;
+
+            c.blend(CanvasGL.SRC_COLOR,CanvasGL.ONE_MINUS_SRC_COLOR);
+
+            var s = 40;
+
+            var is = Math.floor(pp0/(s));
+
+            var nn  = stepSmoothCubed(asint05);
+            pp5 = [];
+            pp6 = [];
+
+
+            c.setRectMode(CanvasGL.CENTER);
+            c.translate(rs,rs);
+            c.rotate(nn*PI);
+
+
+            pp7 = stepSmoothCubed(abs(sin(t*0.125)));
+            c.noStroke();
+
+            i = 0;
+
+            nn  = stepSmoothCubed(abs(sin(t*0.5)));
+            pp6 = [rs  ,rs];
+
+            while(i < pp0)
+            {
+                j = 0;
+                while(j < pp1)
+                {
+
+                    pp2 = (i+j*pp0)*4;
+
+                    pp4 = [pp3[pp2],pp3[pp2+1],pp3[pp2+2],pp3[pp2+3]];
+
+                    pp5 = [i/(pp0)*rs2,j/(pp1)*rs2];
+                    pp8 = floor(pp4[0]*(1-pp7)+(255-pp4[0])*pp7);
+
+
+                    c.fill(pp8,0,pp8,1);
+                    c.rect(pp5[0] * (1-nn) + pp6[0] * nn - rs,pp5[1] * (1-nn) + pp6[1] * nn -rs,
+                        is*(nn*4),is*(nn*4));
+
+
+                    j+=s;
+
+                }
+
+                i+=s;
+            }
+
+            c.blend(CanvasGL.SRC_ALPHA,CanvasGL.ONE_MINUS_SRC_ALPHA);
 
         }
         c.popMatrix();
@@ -843,13 +830,13 @@ TestCanvasGL.prototype.draw = function()
 
 
 
-            pp3 = 200;
+            pp3 = 50;
             pp0 = new Array(pp3*2);
 
             c.setRectMode(CanvasGL.CENTER);
             i = 0;
 
-            pp7 = 4*abs(sin(t*0.05));
+            pp7 = 2*abs(sin(t*0.05));
 
             pp5 = 2 * PI/ (pp3-1);
 
@@ -890,13 +877,365 @@ TestCanvasGL.prototype.draw = function()
             c.noStroke();
             c.fill(255);
             c.setCornerDetail(6);
-            pp0 = abs(sin(t))*20;
-            pp1 = pp0+(rs2-pp0)*abs(sin(t));
-            c.strokeArrF([0.0,0.0,0.0,1.0,
-                1.0,0.0,0.0,1.0]);
+            pp0 = abs(sin(t*0.5))*(rs-10);
+
+            c.fill4f(abs(sin(t)),0.0,abs(sin(t)),1.0);
+
             c.setLineWidth(4);
-            c.rotate((sin(t))*PI);
-            c.roundRect(0,0,pp1,pp1,pp0);
+            c.stroke4f(1-abs(sin(t)),0.0,0.0,1.0);
+            c.rotate(PI*sin(t));
+
+            c.roundRect(0,0,rs2-20,rs2-20,pp0);
+
+        }
+        c.popMatrix();
+
+        c.pushMatrix();
+        {
+            c.translate(rs2*6,rs2*2);
+
+            pp4 = 20;
+            pp0 = new Array(pp4*pp4*2);
+            pp3 = (rs2) / (pp4-1);
+            pp5 = new Array((pp0.length/2-2)*3);
+            pp7 = pp4 - 1;
+            pp9 = new Array(pp4*pp4*4);
+
+
+
+            i = 0;
+            while(i<pp4)
+            {
+                j = 0;
+                while(j<pp4)
+                {
+                    pp1        = (i+j*pp4)*2;
+                    pp0[pp1  ] = j*pp3;
+                    pp0[pp1+1] = i*pp3;
+
+                    pp2        = (i+j*pp4)*4;
+
+                    pp6 = 1+stepSmoothCubed(abs(sin(t*0.25)));
+
+                    var x  = -pp6*0.5+(j/pp4)*pp6,
+                        y  = -pp6*0.5+(i/pp4)*pp6;
+
+                    pp9[pp2 ]  = (this.sn.noise(cos(x+t),sin(y+t*0.25))+this.sn.noise(sin(x),sin(y)));
+                    pp9[pp2+1 ]  = pp9[pp2 ];
+                    pp9[pp2+2 ]  = pp9[pp2 ];
+                    pp9[pp2+3 ]  = pp9[pp2 ];
+                    pp6 = (i+j*pp7)*6;
+
+                    pp8 = i+j*pp4;
+
+                    if(i < pp4-1 && j < pp4-1)
+                    {
+                        pp5[pp6]   = pp5[pp6+3] = pp8;
+                        pp5[pp6+1] = pp8 + 1;
+                        pp5[pp6+2] = pp5[pp6+1] + pp4;
+                        pp5[pp6+4] = pp8 + pp4;
+                        pp5[pp6+5] = pp5[pp6+1] + pp4;
+                    }
+
+
+                    ++j;
+                }
+                ++i;
+            }
+
+            c.drawElements(pp0,pp5,pp9);
+        }
+        c.popMatrix();
+
+
+
+
+        c.pushMatrix();
+        {
+
+
+            c.stroke(40);
+            c.fill(0,0.25);
+            c.setLineWidth(1.0);
+            c.setRectMode(CanvasGL.CORNER);
+
+
+            pp0 = rs/(10);
+            pp1 = pp0 * 2 ;
+            pp11 = rs + pp1;
+
+            c.translate(rs2,floor(c.height*0.5-rs));
+
+
+            pp3 = [rs,pp1,
+                   rs-pp1,0,
+                   pp1,0,
+                   0,pp1,
+                   0,rs2-pp1,
+                   pp1,rs2,
+                   rs-pp1,rs2,
+                   rs,rs2-pp1];
+
+           pp2 = rs+pp1;
+
+            c.stroke(40);
+            c.noStroke();
+            c.fill(0,0.75);
+
+
+
+           // c.rect(0,0,rs2*5,rs2);
+
+            c.setLineWidth(1);
+            c.fill(0,0.5);
+            c.noStroke();
+
+            c.rect(0,0,rs,rs2);
+            c.rect(pp0,pp0,rs - pp1 ,rs2-pp1);
+
+            c.rect(rs+pp1,0,rs,rs2);
+            c.rect(pp1+rs+pp0,pp0,rs - pp1 ,rs2-pp1);
+
+            c.rect(pp2,0,rs,rs2);
+            c.rect(pp2+pp0,pp0,rs - pp1 ,rs2-pp1);
+
+            c.rect(pp2*2,0,rs,rs2);
+            c.rect(pp2*2+pp0,pp0,rs - pp1 ,rs2-pp1);
+            c.rect(pp2*3,0,rs,rs2);
+            c.rect(pp2*3+pp0,pp0,rs - pp1 ,rs2-pp1);
+            c.rect(pp2*4,0,rs,rs2);
+            c.rect(pp2*4+pp0,pp0,rs - pp1 ,rs2-pp1);
+            c.rect(pp2*5,0,rs,rs2);
+            c.rect(pp2*5+pp0,pp0,rs - pp1 ,rs2-pp1);
+
+            c.rect(pp2*6,0,rs,rs2);
+            c.rect(pp2*6+pp0,pp0,rs - pp1 ,rs2-pp1);
+
+            c.rect(pp2*7,0,rs,rs2);
+            c.rect(pp2*7+pp0,pp0,rs - pp1 ,rs2-pp1);
+
+            c.rect(pp2*7.25+pp0,0,rs*0.5,rs);
+            c.rect(pp2*7.25+pp0*2,pp0,rs*0.5 - pp1 ,rs-pp1);
+            c.rect(pp2*7.75+pp0*2,0,rs*0.5,rs);
+            c.rect(pp2*7.75+pp0*3,pp0,rs*0.5 - pp1 ,rs-pp1);
+
+           pp4 = [pp2+rs,rs2,
+                  pp2+rs,pp1,
+                  pp2+rs-pp1,0,
+                  pp2+pp1,0,
+                  pp2,pp1,
+                  pp2,rs2,
+                  pp2,rs,
+                  pp2+rs,rs];
+
+            pp2 = (pp11)*2;
+
+            pp5 = [pp2,rs2,
+                   pp2,0,
+                   pp2,pp1,
+                   pp2+pp1,0,
+                   pp2+rs-pp1,0,
+                   pp2+rs,pp1,
+                   pp2+rs,rs2];
+
+            pp2 = (pp11)*3;
+
+            pp6 = [pp2,0,
+                   pp2+rs*0.5,rs2,
+                   pp2+rs,0];
+
+            pp2 = (pp11)*4;
+
+            pp7 = [pp2+rs,rs2,
+                pp2+rs,pp1,
+                pp2+rs-pp1,0,
+                pp2+pp1,0,
+                pp2,pp1,
+                pp2,rs2,
+                pp2,rs,
+                pp2+rs,rs];
+
+            pp2 = (pp11)*5;
+
+            pp8 = [pp2+rs,pp1,
+                pp2+rs-pp1,0,
+                pp2+pp1,0,
+                pp2,pp1,
+                pp2,rs-pp1,
+                pp2+pp1,rs,
+                pp2+rs-pp1,rs,
+                pp2+rs,rs+pp1,
+                pp2+rs,rs2-pp1,
+                pp2+rs-pp1,rs2,
+
+                pp2+pp1,rs2,
+                pp2,rs2-pp1
+
+
+                ];
+
+            pp2 = (pp11)*6;
+
+
+
+            pp9 = [pp2+rs,pp1,
+                    pp2+rs-pp1,0,
+                    pp2+pp1,0,
+                    pp2,pp1,
+                pp2,rs2-pp1,
+                pp2+pp1,rs2,
+                pp2+rs-pp1,rs2,
+                pp2+rs,rs2-pp1,
+                pp2+rs,rs,
+                pp2+rs*0.75,rs
+
+
+            ];
+
+            pp2 = (pp11)*7;
+
+            pp10 = [
+                pp2,0,
+                pp2,rs2-pp1,
+                pp2+pp1,rs2,
+                pp2+rs-pp1,rs2,
+                pp2+rs,rs2-pp1
+
+
+            ];
+
+            pp2 =rs2*4.5;
+            pp1*=0.75;
+
+            pp14 = [
+                pp2-pp1,rs-pp1,
+                pp2,rs,
+                pp2-pp1+rs*0.5-pp1,rs,
+                pp2-pp1+rs*0.5,rs-pp1,
+                pp2-pp1+rs*0.5,0
+                   ];
+
+
+            pp15 = [
+                pp2+rs,pp1,
+                pp2+rs-pp1,0,
+                pp2+rs*0.5+pp1,0,
+                pp2+rs*0.5,pp1,
+                pp2+rs*0.5,rs*0.5-pp1,
+                pp2+rs*0.5+pp1,rs*0.5,
+                pp2+rs-pp1,rs*0.5,
+                pp2+rs,rs*0.5+pp1,
+                pp2+rs,rs-pp1,
+                pp2+rs-pp1,rs,
+                pp2+rs*0.5+pp1,rs,
+                pp2+rs*0.5,rs-pp1
+
+
+
+            ];
+
+
+
+            c.setLineWidth(1);
+            c.stroke(255);
+            c.line(pp3);
+            c.line(pp4);
+            c.line(pp5);
+            c.line(pp6);
+            c.line(pp7);
+            c.line(pp8);
+            c.stroke(150);
+            c.setLineWidth(1);
+            c.line(pp9);
+            c.line(pp10);
+
+            c.line(pp14);
+            c.line(pp15);
+
+
+
+
+
+            c.noStroke();
+            c.fill(255);
+
+            pp13 = 2;
+
+            i = 0;
+            while(i < pp3.length)
+            {
+                c.circle(pp3[i],pp3[i+1],pp13);
+                i+=2;
+            }
+
+
+
+            i = 0;
+            while(i < pp4.length)
+            {
+                c.circle(pp4[i],pp4[i+1],pp13);
+                i+=2;
+            }
+
+            i = 0;
+            while(i < pp5.length)
+            {
+                c.circle(pp5[i],pp5[i+1],pp13);
+                i+=2;
+            }
+
+            i = 0;
+            while(i < pp6.length)
+            {
+                c.circle(pp6[i],pp6[i+1],pp13);
+                i+=2;
+            }
+
+            i = 0;
+            while(i < pp7.length)
+            {
+                c.circle(pp7[i],pp7[i+1],pp13);
+                i+=2;
+            }
+
+            i = 0;
+            while(i < pp8.length)
+            {
+                c.circle(pp8[i],pp8[i+1],pp13);
+                i+=2;
+            }
+
+            c.fill(255,0,255);
+            i = 0;
+            while(i < pp9.length)
+            {
+                //c.circle(pp9[i],pp9[i+1],pp13);
+                i+=2;
+            }
+
+            i = 0;
+            while(i < pp10.length)
+            {
+                //c.circle(pp10[i],pp10[i+1],pp13);
+                i+=2;
+            }
+
+            i = 0;
+            while(i < pp14.length)
+            {
+                //c.circle(pp14[i],pp14[i+1],pp13);
+                i+=2;
+            }
+
+            i = 0;
+            while(i < pp15.length)
+            {
+                //c.circle(pp15[i],pp15[i+1],pp13);
+                i+=2;
+            }
+
+
+
 
         }
         c.popMatrix();
