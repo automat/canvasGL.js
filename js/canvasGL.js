@@ -99,9 +99,6 @@ function CanvasGL(parentDomElementId,width,height)
     this.parent = document.getElementById(parentDomElementId);
 
     this._glCanvas = document.createElement('canvas');
-    this._glCanvas.style.position = 'absolute';
-    this._glCanvas.style.left = '0px';
-    this._glCanvas.style.top = '0px';
 
     //Init webgl
 
@@ -1376,7 +1373,7 @@ CanvasGL.prototype.background = function()
             break;
     }
 
-    this._backgroundClear = col[3] == 1.0;
+    this._backgroundClear = (col[3] == 1.0);
 
     this._stroke   = false;
     this._texture  = false;
@@ -1448,6 +1445,9 @@ CanvasGL.prototype.clearColorBuffer = function()
 
     var c  = this._bufferColorBg,
         co = this._bufferColorBgOld;
+
+
+
 
     if(this._backgroundClear)
     {

@@ -6,6 +6,8 @@
     <style>
         *{
             background-color: #06959b;
+            margin: 0 0 0 0;
+            float: left;
 
         }
 
@@ -13,22 +15,16 @@
         {
 
 
+
         }
 
-
-        #ontoptext
+        #canvas
         {
-            font-family: arial;
-            background: none;
-            position: absolute;
-            color: #ffffff;
-            font-weight: bold;
-            text-align: center ;
-            font-size:10px;
-            z-index: 2;
-            padding: 5px;
 
         }
+
+
+
     </style>
     <script type="text/javascript">
 
@@ -41,9 +37,11 @@
 </head>
 <body onload="onBodyLoaded();">
 <div id="container">
-    <div id="texture"></div>
     <div id="canvas" style="z-index: -1"></div>
-    <div id="ontoptext">hello</div>
+    <div id="panel">
+        <div id="label">hello</div>
+    </div>
+
 </div>
 </body>
 </html>

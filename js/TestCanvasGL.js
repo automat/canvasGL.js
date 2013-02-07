@@ -22,7 +22,7 @@ function TestCanvasGL(parentDomElementId)
     this.nh = 7;
     this.nd = 21;
     this.rs = this.cgl.width/(this.nh*2);
-    this.nv = round(this.cgl.height/this.rs);
+    this.nv = round(this.cgl.height/(this.rs*2));
 
     this.dl =null;
     this.dcl = new Array(this.nd*2);
@@ -43,7 +43,7 @@ TestCanvasGL.prototype.onWindowResize = function()
     var w = window.innerWidth  < 1280 ? 640 : window.innerWidth*0.5,
         h = window.innerHeight < 600 ? 600 : window.innerHeight;
     this.rs = this.cgl.width/(this.nh*2);
-    this.nv = round(this.cgl.height/this.rs);
+    this.nv = round(this.cgl.height/(this.rs*2));
     this._resetDL();
     this.cgl.setSize(w,h);
 };
@@ -59,11 +59,11 @@ TestCanvasGL.prototype._resetDL = function()
 
     while(i<this.dcl.length)
     {
-        j = randomInteger(this.nh);
-        k = randomInteger(this.nv);
+        j = randomInteger(this.nh) * this.rs*2;
+        k = randomInteger(this.nv) * this.rs*2;
 
-        this.dcl[i ] = j * this.rs*2;
-        this.dcl[i+1]= k * this.rs*2;
+        this.dcl[i ] = j;
+        this.dcl[i+1]= k;
 
         i+=2;
 
@@ -103,7 +103,7 @@ TestCanvasGL.prototype.draw = function()
     var t = this.t,
         c = this.cgl;
 
-    c.background(10,0.6);//0.01);
+    c.background(8,0.5);//0.01);
 
     var i,j;
 
@@ -115,11 +115,27 @@ TestCanvasGL.prototype.draw = function()
     var dcl = this.dcl;
 
 
+    /*
+    i = 0;
+    while(i<dcl.length)
+    {
+        dcl[i]+= 2*sin(t*0.00025+i);
+        dcl[i+1]+= 2*sin(t*0.00025+i);
+        i+=2;
+    }
+    */
+
 
     var pa,ps;
     var pp0,pp1,pp2,pp3,pp4,pp5,pp6,pp7,pp8,pp9,pp10,pp11,pp12,pp13,pp14,pp15,pp16;
     var sint = sin(t),sint05 = sin(t*0.5),sint025 = sin(t*0.25);
     var asint = abs(sint), asint05 = abs(sint05),asint025 = abs(sint025);
+
+    if(saw(t*0.25)>0.98)
+        this._resetDL();
+
+
+   // this._resetDL();
 
 
 
@@ -144,10 +160,14 @@ TestCanvasGL.prototype.draw = function()
         c.translate(0,0);
         c.scale(1,1);
 
+
+
+
         c.pushMatrix();
         {
+            c.noFill();
             c.noStroke();
-            c.translate(rs,rs);
+            c.translate(dcl[0]+rs,dcl[1]+rs);
             c.rotate(asint025*TWO_PI*2);
             c.setLineWidth(3+floor(asint025*15));
             c.setEllipseDetail(3+floor(asint025*27));
@@ -164,7 +184,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2+rs,rs);
+            c.translate(dcl[2]+rs,dcl[3]+rs);
             c.rotate(QUARTER_PI+abs(sin(t*0.05))*4*PI);
             c.setRectMode(CanvasGL.CENTER);
             c.setLineWidth(3+floor(asint025*15));
@@ -184,7 +204,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2*2,0);
+            c.translate(dcl[4],dcl[5]);
             c.setEllipseDetail(8);
             c.fill(255);
             c.setLineWidth(2);
@@ -198,7 +218,7 @@ TestCanvasGL.prototype.draw = function()
         c.pushMatrix();
         {
 
-            c.translate(rs2*3+10,10);
+            c.translate(dcl[6]+10,dcl[7]+10);
 
             pp8 = rs2;
             pp0 = 15;
@@ -245,7 +265,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2*4,0);
+            c.translate(dcl[8],dcl[9]);
             c.texture(img2);
             c.setUVOffset(cos(t*0.25),sin(t*0.25),1,1);
             c.setUVQuad(1-asint05,1-asint05,1.0,0.0,0.0,1.0,asint025,asint025);
@@ -259,7 +279,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2*5+rs,rs);
+            c.translate(dcl[10]+rs,dcl[11]+rs);
             c.blend(CanvasGL.SRC_COLOR,CanvasGL.ONE_MINUS_SRC_COLOR);
             pp0 = 0+rs*0.75*stepSmooth(asint05);
             pp1 = rs*stepSmoothCubed(abs(sint025));
@@ -279,7 +299,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2*6,0);
+            c.translate(dcl[12],dcl[13]);
             pp0 = abs(sin(t*0.05));
             pp3 = abs(sin(t*0.075));
             pp4 = abs(sin(t*0.075));
@@ -345,7 +365,7 @@ TestCanvasGL.prototype.draw = function()
         {
             c.setRectMode(CanvasGL.CORNER);
             c.noStroke();
-            c.translate(0,rs2);
+            c.translate(dcl[14],dcl[15]);
             c.blend(CanvasGL.SRC_COLOR,CanvasGL.ONE_MINUS_SRC_COLOR);
             c.fill(255,0,255);
             c.pushMatrix();
@@ -361,7 +381,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2+rs,rs2+rs);
+            c.translate(dcl[16]+rs,dcl[17]+rs);
             c.scale(0.5+0.5*abs(sin(t*0.025)),0.5+0.5*abs(sin(t*0.025)));
             c.rotate(sin(t*0.025)*TWO_PI);
 
@@ -442,7 +462,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2*2,rs2);
+            c.translate(dcl[18],dcl[19]);
 
             pp0 = [15,rs2-15,30,15,rs,rs,rs2-30,15,rs2-15,rs2-15];
             pp1 = stepSquared(abs(sin(t)));
@@ -467,7 +487,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2*6,rs2);
+            c.translate(dcl[20],dcl[21]);
 
             pp0 = new Array(6);
 
@@ -497,7 +517,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2*3+10,rs2+10);
+            c.translate(dcl[22]+10,dcl[23]+10);
             c.setLineWidth(1);
             c.stroke(35);
 
@@ -578,7 +598,7 @@ TestCanvasGL.prototype.draw = function()
         c.pushMatrix();
         {
             pp5 = 20+10*(sin(t));
-            c.translate(rs2*4+pp5,rs2);
+            c.translate(dcl[24]+pp5,dcl[25]);
             c.noStroke();
 
             c.setEllipseDetail(12);
@@ -619,7 +639,7 @@ TestCanvasGL.prototype.draw = function()
         c.pushMatrix();
         {
 
-            c.translate(rs2*5,rs2);
+            c.translate(dcl[26],dcl[27]);
             c.noStroke();
             c.fill(100,0,0);
             c.setEllipseDetail(20);
@@ -646,7 +666,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs,rs2*2+rs);
+            c.translate(dcl[28]+rs,dcl[29]+rs);
             c.rotate(TWO_PI*sin(t*0.1));
 
             c.setEllipseDetail(3+(floor(abs(sin(t*0.05))*7)));
@@ -662,7 +682,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2+rs,rs2*2+rs);
+            c.translate(dcl[30]+rs,dcl[31]+rs);
             c.rotate(TWO_PI*sin(t*0.1));
 
             c.setEllipseDetail(3+(floor(abs(sin(t*0.05))*7)));
@@ -682,29 +702,11 @@ TestCanvasGL.prototype.draw = function()
         }
         c.popMatrix();
 
-        c.pushMatrix();
-        {
 
-
-
-
-            c.translate(rs2*2,rs2*2);
-
-
-
-
-
-
-
-            c.noStroke();
-
-
-        }
-        c.popMatrix();
 
         c.pushMatrix();
         {
-            c.translate(rs2*2,rs2*2);
+            c.translate(dcl[32],dcl[33]);
 
             pa = this.img0Data.length;
 
@@ -770,7 +772,7 @@ TestCanvasGL.prototype.draw = function()
         c.pushMatrix();
         {
 
-            c.translate(rs2*3,rs2*2);
+            c.translate(dcl[34],dcl[35]);
             c.setEllipseDetail(10);
 
             c.strokeArrF([1.0,0.0,0.0,1.0,
@@ -822,7 +824,7 @@ TestCanvasGL.prototype.draw = function()
         c.pushMatrix();
         {
 
-            c.translate(rs2*4+rs,rs2*2+rs);
+            c.translate(dcl[36]+rs,dcl[37]+rs);
 
 
 
@@ -871,7 +873,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2*5+rs,rs2*2+rs);
+            c.translate(dcl[38]+rs,dcl[39]+rs);
 
             c.setRectMode(CanvasGL.CENTER);
             c.noStroke();
@@ -892,7 +894,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.translate(rs2*6,rs2*2);
+            c.translate(dcl[40],dcl[41]);
 
             pp4 = 20;
             pp0 = new Array(pp4*pp4*2);
@@ -959,12 +961,17 @@ TestCanvasGL.prototype.draw = function()
             c.setLineWidth(1.0);
             c.setRectMode(CanvasGL.CORNER);
 
+            //c.fill(0,0.25);
+            //c.rect(0,0, c.width, c.height);
+
 
             pp0 = rs/(10);
             pp1 = pp0 * 2 ;
             pp11 = rs + pp1;
 
-            c.translate(rs2,floor(c.height*0.5-rs));
+            rs2 = floor(rs2);
+
+            c.translate(rs2+0.5,floor(c.height*0.5-rs)+0.5);
 
 
             pp3 = [rs,pp1,
@@ -1028,7 +1035,7 @@ TestCanvasGL.prototype.draw = function()
                   pp2,rs,
                   pp2+rs,rs];
 
-            pp2 = (pp11)*2;
+            pp2 = floor((pp11)*2);
 
             pp5 = [pp2,rs2,
                    pp2,0,
@@ -1038,13 +1045,13 @@ TestCanvasGL.prototype.draw = function()
                    pp2+rs,pp1,
                    pp2+rs,rs2];
 
-            pp2 = (pp11)*3;
+            pp2 = floor((pp11)*3);
 
             pp6 = [pp2,0,
                    pp2+rs*0.5,rs2,
                    pp2+rs,0];
 
-            pp2 = (pp11)*4;
+            pp2 = floor((pp11)*4);
 
             pp7 = [pp2+rs,rs2,
                 pp2+rs,pp1,
@@ -1055,7 +1062,7 @@ TestCanvasGL.prototype.draw = function()
                 pp2,rs,
                 pp2+rs,rs];
 
-            pp2 = (pp11)*5;
+            pp2 = floor((pp11)*5);
 
             pp8 = [pp2+rs,pp1,
                 pp2+rs-pp1,0,
@@ -1074,7 +1081,7 @@ TestCanvasGL.prototype.draw = function()
 
                 ];
 
-            pp2 = (pp11)*6;
+            pp2 = floor((pp11)*6);
 
 
 
@@ -1092,7 +1099,7 @@ TestCanvasGL.prototype.draw = function()
 
             ];
 
-            pp2 = (pp11)*7;
+            pp2 = floor((pp11)*7);
 
             pp10 = [
                 pp2,0,
@@ -1104,7 +1111,7 @@ TestCanvasGL.prototype.draw = function()
 
             ];
 
-            pp2 =rs2*4.5;
+            pp2 = floor(rs2*4.5);
             pp1*=0.75;
 
             pp14 = [
@@ -1205,7 +1212,7 @@ TestCanvasGL.prototype.draw = function()
                 i+=2;
             }
 
-            c.fill(255,0,255);
+            c.fill(140,0,115);
             i = 0;
             while(i < pp9.length)
             {
