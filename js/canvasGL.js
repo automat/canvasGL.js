@@ -153,7 +153,7 @@ function CanvasGL(parentDomElementId,width,height)
                 "gl_Position     = vec4(clipSpace.x,-clipSpace.y * u_flip_y,0,1);" +
                 "v_texture_coord = a_texture_coord;" +
                 "v_vertex_color  = a_vertex_color;" +
-                "gl_PointSize = PointSize;" +
+                "gl_PointSize = 1.0;" +
             "}",
 
         this.gl.VERTEX_SHADER);
