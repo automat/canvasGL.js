@@ -152,6 +152,7 @@ function CanvasGL(parentDomElementId,width,height)
         this.gl.FRAGMENT_SHADER);
 
 
+    var CONSTANTS = CanvasGL._CGLC;
 
     // Load and init program & set size to default
 
@@ -167,15 +168,15 @@ function CanvasGL(parentDomElementId,width,height)
 
     this._bufferColorBg      = new Float32Array([1.0,1.0,1.0,1.0]);
     this._bufferColorBgOld   = new Float32Array([-1.0,-1.0,-1.0,-1.0]);
-    this._backgroundClear    = CanvasGL._CGLC.CLEAR_BACKGROUND;
+    this._backgroundClear    = CONSTANTS.CLEAR_BACKGROUND;
 
     this._screenTex = gl.createTexture();
     this._fboRTT    = gl.createFramebuffer();
     this._fboCanvas = null;
 
-    this._iwidth      = this._twidth  = this.width  = width  || CanvasGL._CGLC.WIDTH_DEFAULT;
-    this._iheight     = this._theight = this.height = height || CanvasGL._CGLC.HEIGHT_DEFAULT;
-    this._ssaaf      = CanvasGL._CGLC.SSAA_FACTOR;
+    this._iwidth      = this._twidth  = this.width  = width  || CONSTANTS.WIDTH_DEFAULT;
+    this._iheight     = this._theight = this.height = height || CONSTANTS.HEIGHT_DEFAULT;
+    this._ssaaf       = CONSTANTS.SSAA_FACTOR;
 
     this.setSize(this.width,this.height);
 
@@ -219,7 +220,7 @@ function CanvasGL(parentDomElementId,width,height)
 
     // Create default blank texture and texture coords / use color & set alpha to 1.0
 
-    this._currTint = CanvasGL._CGLC.TINT_DEFAULT;
+    this._currTint = CONSTANTS.TINT_DEFAULT;
 
     this._blankTexture = gl.createTexture();
     gl.bindTexture(glTexture2d,this._blankTexture);
@@ -235,8 +236,8 @@ function CanvasGL(parentDomElementId,width,height)
     gl.enableVertexAttribArray(this._locationAttribTextureCoord);
     gl.enableVertexAttribArray(this._locationAttribVertexColor);
 
-    gl.vertexAttribPointer(    this._locationAttribPosition,    CanvasGL._CGLC.SIZE_OF_VERTEX ,glFloat,false,0,0);
-    gl.vertexAttribPointer(    this._locationAttribTextureCoord,CanvasGL._CGLC.SIZE_OF_T_COORD,glFloat,false,0,0);
+    gl.vertexAttribPointer(    this._locationAttribPosition,    CONSTANTS.SIZE_OF_VERTEX ,glFloat,false,0,0);
+    gl.vertexAttribPointer(    this._locationAttribTextureCoord,CONSTANTS.SIZE_OF_T_COORD,glFloat,false,0,0);
 
     // Create matrix stack and apply to shader
 
@@ -273,31 +274,31 @@ function CanvasGL(parentDomElementId,width,height)
 
     this._fontProperties =
     {
-        style:     CanvasGL._CGLC.TEXT_DEFAULT_STYLE,
-        weight:    CanvasGL._CGLC.TEXT_DEFAULT_WEIGHT,
-        size:      CanvasGL._CGLC.TEXT_DEFAULT_SIZE,
-        family:    CanvasGL._CGLC.TEXT_DEFAULT_FAMILY,
-        baseLine:  CanvasGL._CGLC.TEXT_DEFAULT_BASELINE,
-        align:     CanvasGL._CGLC.TEXT_DEFAULT_ALIGN,
-        lineHeight:CanvasGL._CGLC.TEXT_DEFAULT_LINE_HEIGHT,
-        spacing:   CanvasGL._CGLC.TEXT_DEFAULT_SPACING
+        style:     CONSTANTS.TEXT_DEFAULT_STYLE,
+        weight:    CONSTANTS.TEXT_DEFAULT_WEIGHT,
+        size:      CONSTANTS.TEXT_DEFAULT_SIZE,
+        family:    CONSTANTS.TEXT_DEFAULT_FAMILY,
+        baseLine:  CONSTANTS.TEXT_DEFAULT_BASELINE,
+        align:     CONSTANTS.TEXT_DEFAULT_ALIGN,
+        lineHeight:CONSTANTS.TEXT_DEFAULT_LINE_HEIGHT,
+        spacing:   CONSTANTS.TEXT_DEFAULT_SPACING
     };
 
 
     // Setup vertex buffers
 
-    this._bufferVerticesQuad      = new Float32Array(CanvasGL._CGLC.SIZE_OF_QUAD);
-    this._bufferVerticesTriangle  = new Float32Array(CanvasGL._CGLC.SIZE_OF_TRIANGLE);
-    this._bufferVerticesLine      = new Float32Array(CanvasGL._CGLC.SIZE_OF_LINE);
-    this._bufferVerticesPoint     = new Float32Array(CanvasGL._CGLC.SIZE_OF_POINT);
-    this._bufferVerticesEllipse   = new Float32Array(CanvasGL._CGLC.ELLIPSE_DETAIL_MAX * CanvasGL._CGLC.SIZE_OF_VERTEX);
-    this._bufferVerticesBezier    = new Float32Array(CanvasGL._CGLC.BEZIER_DETAIL_MAX  * CanvasGL._CGLC.SIZE_OF_VERTEX);
-    this._bufferVerticesArc       = new Float32Array(CanvasGL._CGLC.ELLIPSE_DETAIL_MAX * CanvasGL._CGLC.SIZE_OF_VERTEX*2);
-    this._bufferVerticesArcStroke = new Float32Array(CanvasGL._CGLC.ELLIPSE_DETAIL_MAX * CanvasGL._CGLC.SIZE_OF_VERTEX);
-    this._bufferVerticesSpline    = new Float32Array(CanvasGL._CGLC.SPLINE_DETAIL_MAX  * 4);
-    this._bufferVerticesRoundRect = new Float32Array(CanvasGL._CGLC.ELLIPSE_DETAIL_MAX * CanvasGL._CGLC.SIZE_OF_VERTEX + CanvasGL._CGLC.SIZE_OF_QUAD);
+    this._bufferVerticesQuad      = new Float32Array(CONSTANTS.SIZE_OF_QUAD);
+    this._bufferVerticesTriangle  = new Float32Array(CONSTANTS.SIZE_OF_TRIANGLE);
+    this._bufferVerticesLine      = new Float32Array(CONSTANTS.SIZE_OF_LINE);
+    this._bufferVerticesPoint     = new Float32Array(CONSTANTS.SIZE_OF_POINT);
+    this._bufferVerticesEllipse   = new Float32Array(CONSTANTS.ELLIPSE_DETAIL_MAX * CONSTANTS.SIZE_OF_VERTEX);
+    this._bufferVerticesBezier    = new Float32Array(CONSTANTS.BEZIER_DETAIL_MAX  * CONSTANTS.SIZE_OF_VERTEX);
+    this._bufferVerticesArc       = new Float32Array(CONSTANTS.ELLIPSE_DETAIL_MAX * CONSTANTS.SIZE_OF_VERTEX*2);
+    this._bufferVerticesArcStroke = new Float32Array(CONSTANTS.ELLIPSE_DETAIL_MAX * CONSTANTS.SIZE_OF_VERTEX);
+    this._bufferVerticesSpline    = new Float32Array(CONSTANTS.SPLINE_DETAIL_MAX  * 4);
+    this._bufferVerticesRoundRect = new Float32Array(CONSTANTS.ELLIPSE_DETAIL_MAX * CONSTANTS.SIZE_OF_VERTEX + CONSTANTS.SIZE_OF_QUAD);
 
-    this._bufferIndicesRoundRect  = new Uint16Array((((this._bufferVerticesRoundRect.length) / 2)-2) * CanvasGL._CGLC.SIZE_OF_FACE);
+    this._bufferIndicesRoundRect  = new Uint16Array((((this._bufferVerticesRoundRect.length) / 2)-2) * CONSTANTS.SIZE_OF_FACE);
 
     this._bufferTexCoordsQuadDefault     = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,1.0]);
     this._bufferTexCoordsQuad            = new Float32Array(this._bufferTexCoordsQuadDefault);
@@ -306,16 +307,16 @@ function CanvasGL(parentDomElementId,width,height)
     this._bufferTexCoordsEllipse         = new Float32Array(this._bufferVerticesEllipse.length);
     this._bufferTexCoodsArc              = new Float32Array(this._bufferVerticesArc.length);
 
-    this._bufferColorVertex       = new Float32Array(CanvasGL._CGLC.SIZE_OF_COLOR);
-    this._bufferColorQuad         = new Float32Array(CanvasGL._CGLC.SIZE_OF_COLOR*4);
-    this._bufferColorTriangle     = new Float32Array(CanvasGL._CGLC.SIZE_OF_COLOR*3);
-    this._bufferColorLine         = new Float32Array(CanvasGL._CGLC.SIZE_OF_COLOR*2);
-    this._bufferColorPoint        = new Float32Array(CanvasGL._CGLC.SIZE_OF_COLOR);
-    this._bufferColorArc          = new Float32Array(CanvasGL._CGLC.SIZE_OF_COLOR*CanvasGL._CGLC.ELLIPSE_DETAIL_MAX*2);
-    this._bufferColorEllipse      = new Float32Array(CanvasGL._CGLC.SIZE_OF_COLOR*CanvasGL._CGLC.ELLIPSE_DETAIL_MAX);
+    this._bufferColorVertex       = new Float32Array(CONSTANTS.SIZE_OF_COLOR);
+    this._bufferColorQuad         = new Float32Array(CONSTANTS.SIZE_OF_COLOR*4);
+    this._bufferColorTriangle     = new Float32Array(CONSTANTS.SIZE_OF_COLOR*3);
+    this._bufferColorLine         = new Float32Array(CONSTANTS.SIZE_OF_COLOR*2);
+    this._bufferColorPoint        = new Float32Array(CONSTANTS.SIZE_OF_COLOR);
+    this._bufferColorArc          = new Float32Array(CONSTANTS.SIZE_OF_COLOR*CONSTANTS.ELLIPSE_DETAIL_MAX*2);
+    this._bufferColorEllipse      = new Float32Array(CONSTANTS.SIZE_OF_COLOR*CONSTANTS.ELLIPSE_DETAIL_MAX);
     this._bufferColorRoundRect    = new Float32Array(this._bufferVerticesRoundRect.length * 2);
 
-    this._cachedPointsBezier      = new Array(CanvasGL._CGLC.SIZE_OF_POINT*4);
+    this._cachedPointsBezier      = new Array(CONSTANTS.SIZE_OF_POINT*4);
 
     this._indicesTriangle = [0,1,2];
     this._indicesQuad     = [0,1,2,1,2,3];
@@ -335,13 +336,13 @@ function CanvasGL(parentDomElementId,width,height)
     this._tempScreenCoords  = new Array(2);
     this._tempCurveVertices = [];
 
-    this._currDetailEllipse  = CanvasGL._CGLC.ELLIPSE_DETAIL_DEFAULT;
+    this._currDetailEllipse  = CONSTANTS.ELLIPSE_DETAIL_DEFAULT;
     this._currRadiusXEllipse = 0;
     this._currRadiusYEllipse = 0;
     this._currRadiusCircle   = 0;
-    this._currDetailBezier   = CanvasGL._CGLC.BEZIER_DETAIL_DEFAULT;
-    this._currDetailSpline   = CanvasGL._CGLC.SPLINE_DETAIL_DEFAULT;
-    this._currDetailCorner   = CanvasGL._CGLC.CORNER_DETAIL_DEFAULT;
+    this._currDetailBezier   = CONSTANTS.BEZIER_DETAIL_DEFAULT;
+    this._currDetailSpline   = CONSTANTS.SPLINE_DETAIL_DEFAULT;
+    this._currDetailCorner   = CONSTANTS.CORNER_DETAIL_DEFAULT;
 
     this._modeTexture = CanvasGL.CLAMP;
 
@@ -351,7 +352,7 @@ function CanvasGL(parentDomElementId,width,height)
     this._prevRadiusCircle   = 0;
     this._prevDetailCorner   = 0;
 
-    this._currLineWidth = CanvasGL._CGLC.LINE_WIDTH_DEFAULT;
+    this._currLineWidth = CONSTANTS.LINE_WIDTH_DEFAULT;
 
     // batch
 
@@ -369,11 +370,11 @@ function CanvasGL(parentDomElementId,width,height)
 
     // canvas text
 
-    this.setFontSize(      CanvasGL._CGLC.TEXT_DEFAULT_SIZE);
-    this.setFontFamily(    CanvasGL._CGLC.TEXT_DEFAULT_FAMILY);
-    this.setTextAlign(     CanvasGL._CGLC.TEXT_DEFAULT_ALIGN);
-    this.setTextBaseLine(  CanvasGL._CGLC.TEXT_DEFAULT_BASELINE);
-    this.setTextLineHeight(CanvasGL._CGLC.TEXT_DEFAULT_LINE_HEIGHT);
+    this.setFontSize(      CONSTANTS.TEXT_DEFAULT_SIZE);
+    this.setFontFamily(    CONSTANTS.TEXT_DEFAULT_FAMILY);
+    this.setTextAlign(     CONSTANTS.TEXT_DEFAULT_ALIGN);
+    this.setTextBaseLine(  CONSTANTS.TEXT_DEFAULT_BASELINE);
+    this.setTextLineHeight(CONSTANTS.TEXT_DEFAULT_LINE_HEIGHT);
 
     // Attach canvas to parent DOM element
 
@@ -426,7 +427,7 @@ CanvasGL._CGLC =
     TEXT_DEFAULT_FAMILY:'Arial',
     TEXT_DEFAULT_BASELINE:'top',
     TEXT_DEFAULT_ALIGN:'left',
-    TEXT_DEFAULT_LINE_HEIGHT:'1',
+    TEXT_DEFAULT_LINE_HEIGHT:1,
     TEXT_DEFAULT_SPACING:'1',
 
     SSAA_FACTOR : 2,
@@ -1380,9 +1381,11 @@ CanvasGL.prototype.background = function()
     this._fill     = false;
     this._currTint = 1.0;
 
-    this._currLineWidth = CanvasGL._CGLC.LINE_WIDTH_DEFAULT;
-    this._modeEllipse   = CanvasGL._CGLC.ELLIPSE_MODE_DEFAULT;
-    this._modeRect      = CanvasGL._CGLC.RECT_MODE_DEFAULT;
+    var CONSTANTS = CanvasGL._CGLC;
+
+    this._currLineWidth = CONSTANTS.LINE_WIDTH_DEFAULT;
+    this._modeEllipse   = CONSTANTS.ELLIPSE_MODE_DEFAULT;
+    this._modeRect      = CONSTANTS.RECT_MODE_DEFAULT;
 
     this.resetBlend();
 
@@ -1689,14 +1692,16 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
     var v = this._bufferVerticesRoundRect,
         i = this._bufferIndicesRoundRect;
 
+    var CONSTANTS = CanvasGL._CGLC;
+
     var d  = this._currDetailCorner,
-        d2 = d * CanvasGL._CGLC.SIZE_OF_VERTEX,
+        d2 = d * CONSTANTS.SIZE_OF_VERTEX,
         d3 = d2 + 2,
-        i2 = (d  + 1) * CanvasGL._CGLC.SIZE_OF_FACE,
+        i2 = (d  + 1) * CONSTANTS.SIZE_OF_FACE,
         i3 = (i2 - 6),
         l  = d3 * 4,
         is = d3 / 2,
-        il = (l  / 2  + 2) * CanvasGL._CGLC.SIZE_OF_FACE;
+        il = (l  / 2  + 2) * CONSTANTS.SIZE_OF_FACE;
 
     var m, m2,n,o,om,on;
 
@@ -1802,11 +1807,13 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
 
             this._setMatrixUniform();
 
+            var CONSTANTS = CanvasGL._CGLC;
+
             gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
             gl.bufferSubData(glArrayBuffer,0,    v);
             gl.bufferSubData(glArrayBuffer,vblen,c);
-            gl.vertexAttribPointer(this._locationAttribPosition,   CanvasGL._CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
-            gl.vertexAttribPointer(this._locationAttribVertexColor,CanvasGL._CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
+            gl.vertexAttribPointer(this._locationAttribPosition,   CONSTANTS.SIZE_OF_VERTEX,glFloat,false,0,0);
+            gl.vertexAttribPointer(this._locationAttribVertexColor,CONSTANTS.SIZE_OF_COLOR, glFloat,false,0,vblen);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
             gl.drawElements(gl.TRIANGLES, il,gl.UNSIGNED_SHORT,0);
 
@@ -2576,6 +2583,8 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
                 offSetC = offSetV + vblen,
                 offSetT = vblen + cblen;
 
+            var CONSTANTS = CanvasGL._CGLC;
+
             //gl.bindBuffer(glArrayBuffer,this._vbo);
             gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
 
@@ -2583,9 +2592,9 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
             gl.bufferSubData(glArrayBuffer,offSetC,c);
             gl.bufferSubData(glArrayBuffer,offSetT,t);
 
-            gl.vertexAttribPointer(this._locationAttribPosition,    CanvasGL._CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-            gl.vertexAttribPointer(this._locationAttribVertexColor, CanvasGL._CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-            gl.vertexAttribPointer(this._locationAttribTextureCoord,CanvasGL._CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
+            gl.vertexAttribPointer(this._locationAttribPosition,    CONSTANTS.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
+            gl.vertexAttribPointer(this._locationAttribVertexColor, CONSTANTS.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
+            gl.vertexAttribPointer(this._locationAttribTextureCoord,CONSTANTS.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
 
             gl.uniform1f(this._locationUniformUseTexture,this._currTint);
             gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
@@ -2602,7 +2611,6 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
     }
 };
 
-//TODO: Fix (Works in Firefox)
 
 /**
  * @method point
@@ -2625,7 +2633,6 @@ CanvasGL.prototype.point = function(x,y)
     this.gl.drawArrays(this.gl.POINTS,0,1);
 };
 
-//TODO: Fix (Works in Firefox)
 
 /**
  * @method points
@@ -2660,10 +2667,12 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
 
     var lineWidth = this._currLineWidth;
 
+    var CONSTANTS = CanvasGL._CGLC;
+
     var jointSize      = 2,
         jointLen       = (length || joints.length) + (loop ? jointSize : 0),
-        jointCapResMax = CanvasGL._CGLC.LINE_ROUND_CAP_DETAIL_MAX,
-        jointCapResMin = CanvasGL._CGLC.LINE_ROUND_CAP_DETAIL_MIN,
+        jointCapResMax = CONSTANTS.LINE_ROUND_CAP_DETAIL_MAX,
+        jointCapResMin = CONSTANTS.LINE_ROUND_CAP_DETAIL_MIN,
         jointCapRes    = (lineWidth <= 2.0 ) ? 0 : round(lineWidth)*4 ,
         jointRad       = lineWidth * 0.5,
         jointNum       = jointLen  * 0.5,
@@ -2867,18 +2876,20 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
     }
     else
     {
+        var CONSTANTS = CanvasGL._CGLC;
+
         if(this._texture)
         {
             gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
-            gl.vertexAttribPointer(this._locationAttribTextureCoord,CanvasGL._CGLC.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
+            gl.vertexAttribPointer(this._locationAttribTextureCoord,CONSTANTS.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
             gl.uniform1f(this._locationUniformUseTexture,0.0);
         }
 
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    vertices);
         gl.bufferSubData(glArrayBuffer,vblen,colors);
-        gl.vertexAttribPointer(this._locationAttribPosition,   CanvasGL._CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
-        gl.vertexAttribPointer(this._locationAttribVertexColor,CanvasGL._CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
+        gl.vertexAttribPointer(this._locationAttribPosition,   CONSTANTS.SIZE_OF_VERTEX,glFloat,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribVertexColor,CONSTANTS.SIZE_OF_COLOR, glFloat,false,0,vblen);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
         gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
     }
@@ -2915,11 +2926,13 @@ CanvasGL.prototype.drawArrays = function(vertices,colors,mode)
     }
     else
     {
+        var CONSTANTS = CanvasGL._CGLC;
+
         gl.bufferData(glArrayBuffer,vblen + cblen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,v);
         gl.bufferSubData(glArrayBuffer,vblen,c);
-        gl.vertexAttribPointer(this._locationAttribPosition,   CanvasGL._CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
-        gl.vertexAttribPointer(this._locationAttribVertexColor,CanvasGL._CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
+        gl.vertexAttribPointer(this._locationAttribPosition,   CONSTANTS.SIZE_OF_VERTEX,glFloat,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribVertexColor,CONSTANTS.SIZE_OF_COLOR, glFloat,false,0,vblen);
         gl.drawArrays(mode,0,v.length*0.5);
     }
 };
@@ -2954,13 +2967,16 @@ CanvasGL.prototype.drawElements = function(vertices,indices,colors)
     }
     else
     {
+
         this._setMatrixUniform();
+
+        var CONSTANTS = CanvasGL._CGLC;
 
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    v);
         gl.bufferSubData(glArrayBuffer,vblen,c);
-        gl.vertexAttribPointer(this._locationAttribPosition,   CanvasGL._CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
-        gl.vertexAttribPointer(this._locationAttribVertexColor,CanvasGL._CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
+        gl.vertexAttribPointer(this._locationAttribPosition,   CONSTANTS.SIZE_OF_VERTEX,glFloat,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribVertexColor,CONSTANTS.SIZE_OF_COLOR, glFloat,false,0,vblen);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
         gl.drawElements(gl.TRIANGLES,i.length,gl.UNSIGNED_SHORT,0);
     }
@@ -3076,15 +3092,17 @@ CanvasGL.prototype.drawBatch = function()
 
     this._setMatrixUniform();
 
+    var CONSTANTS = CanvasGL._CGLC;
+
     if(textured)
     {
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    v);
         gl.bufferSubData(glArrayBuffer,vblen,c);
         gl.bufferSubData(glArrayBuffer,vblen+cblen,t);
-        gl.vertexAttribPointer(this._locationAttribPosition,    CanvasGL._CGLC.SIZE_OF_VERTEX, glFloat,false,0,0);
-        gl.vertexAttribPointer(this._locationAttribVertexColor, CanvasGL._CGLC.SIZE_OF_COLOR,  glFloat,false,0,vblen);
-        gl.vertexAttribPointer(this._locationAttribTextureCoord,CanvasGL._CGLC.SIZE_OF_T_COORD,glFloat,false,0,vblen + cblen);
+        gl.vertexAttribPointer(this._locationAttribPosition,    CONSTANTS.SIZE_OF_VERTEX, glFloat,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribVertexColor, CONSTANTS.SIZE_OF_COLOR,  glFloat,false,0,vblen);
+        gl.vertexAttribPointer(this._locationAttribTextureCoord,CONSTANTS.SIZE_OF_T_COORD,glFloat,false,0,vblen + cblen);
         gl.uniform1f(this._locationUniformUseTexture,this._currTint);
         gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
         gl.uniform1f(this._locationUniformImage,0);
@@ -3095,8 +3113,8 @@ CanvasGL.prototype.drawBatch = function()
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    v);
         gl.bufferSubData(glArrayBuffer,vblen,c);
-        gl.vertexAttribPointer(this._locationAttribPosition,    CanvasGL._CGLC.SIZE_OF_VERTEX, glFloat,false,0,0);
-        gl.vertexAttribPointer(this._locationAttribVertexColor, CanvasGL._CGLC.SIZE_OF_COLOR,  glFloat,false,0,vblen);
+        gl.vertexAttribPointer(this._locationAttribPosition,    CONSTANTS.SIZE_OF_VERTEX, glFloat,false,0,0);
+        gl.vertexAttribPointer(this._locationAttribVertexColor, CONSTANTS.SIZE_OF_COLOR,  glFloat,false,0,vblen);
     }
 
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
@@ -3666,11 +3684,13 @@ CanvasGL.prototype.__fillBuffer = function(vertexArray,colorArray)
     var vblen = vertexArray.byteLength,
         cblen = colorArray.byteLength;
 
+    var CONSTANTS = CanvasGL._CGLC;
+
     gl.bufferData(glArrayBuffer,vblen + cblen,glDynamicDraw);
     gl.bufferSubData(glArrayBuffer,0,vertexArray);
     gl.bufferSubData(glArrayBuffer,vblen,colorArray);
-    gl.vertexAttribPointer(this._locationAttribPosition,   CanvasGL._CGLC.SIZE_OF_VERTEX,glFloat,false,0,0);
-    gl.vertexAttribPointer(this._locationAttribVertexColor,CanvasGL._CGLC.SIZE_OF_COLOR, glFloat,false,0,vblen);
+    gl.vertexAttribPointer(this._locationAttribPosition,   CONSTANTS.SIZE_OF_VERTEX,glFloat,false,0,0);
+    gl.vertexAttribPointer(this._locationAttribVertexColor,CONSTANTS.SIZE_OF_COLOR, glFloat,false,0,vblen);
 };
 
 CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordArray)
@@ -3695,9 +3715,11 @@ CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordAr
     gl.bufferSubData(glArrayBuffer,offSetC,colorArray);
     gl.bufferSubData(glArrayBuffer,offSetT,coordArray);
 
-    gl.vertexAttribPointer(this._locationAttribPosition,    CanvasGL._CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-    gl.vertexAttribPointer(this._locationAttribVertexColor, CanvasGL._CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-    gl.vertexAttribPointer(this._locationAttribTextureCoord,CanvasGL._CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
+    var CONSTANTS = CanvasGL._CGLC;
+
+    gl.vertexAttribPointer(this._locationAttribPosition,    CONSTANTS.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
+    gl.vertexAttribPointer(this._locationAttribVertexColor, CONSTANTS.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord,CONSTANTS.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
 
     gl.uniform1f(this._locationUniformUseTexture,this._currTint);
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
@@ -3968,9 +3990,11 @@ CanvasGL.prototype.text = function(string,x,y,width,height)
     gl.bufferSubData(glArrayBuffer,offSetC,c);
     gl.bufferSubData(glArrayBuffer,offSetT,t);
 
-    gl.vertexAttribPointer(this._locationAttribPosition,    CanvasGL._CGLC.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-    gl.vertexAttribPointer(this._locationAttribVertexColor, CanvasGL._CGLC.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-    gl.vertexAttribPointer(this._locationAttribTextureCoord,CanvasGL._CGLC.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
+    var CONSTANTS = CanvasGL._CGLC;
+
+    gl.vertexAttribPointer(this._locationAttribPosition,    CONSTANTS.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
+    gl.vertexAttribPointer(this._locationAttribVertexColor, CONSTANTS.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
+    gl.vertexAttribPointer(this._locationAttribTextureCoord,CONSTANTS.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
 
     gl.uniform1f(this._locationUniformUseTexture,this._currTint);
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
