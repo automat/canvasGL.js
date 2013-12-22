@@ -33,134 +33,53 @@
 /**
  *
  * @class CanvasGL
- * @param {String} parentDomElementId
+ * @param {String} element
  * @param {Number} width
  * @param {Number} height
  * @constructor
  */
 
-function CanvasGL(parentDomElementId,width,height)
-{
-    this.parent = document.getElementById(parentDomElementId);
-
-    this._glCanvas = document.createElement('canvas');
+function CanvasGL(element,width,height){
+    this.parent = element;
+    this._canvas3d = document.createElement('canvas');
 
     //Init webgl
-
-    this._usedBrowser    = null;
-    this._implementation = null;
-
-    this.gl = null;
-
+    var gl = this.gl = null;
     var names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
     var i = -1;
-    while(++i<names.length)
-    {
-        try
-        {
-
-            this.gl = this._glCanvas.getContext(names[i],{ alpha:false,
-                                                           depth:false,
-                                                           stencil:false,
-                                                           antialias: false,
-                                                           premultipliedAlpha:false,
-                                                           preserveDrawingBuffer:true
-                                                           });
-
-        }
-        catch (e)
-        {
+    while(++i<names.length){
+        try{
+            gl = this.gl = this._canvas3d.getContext(names[i],{ alpha:false,
+                                                                depth:false,
+                                                                stencil:false,
+                                                                antialias: false,
+                                                                premultipliedAlpha:false,
+                                                                preserveDrawingBuffer:true});
+        }catch (e){
             throw ("WebGL context could not be initialized");
         }
-        if(this.gl)
-        {
-            this._implementation = names[i];
+        if(this.gl){
             break;
         }
     }
 
-     // Setup and load vertex shader
+    //Setup Shader
 
-    this._vertexShader = this._loadShader(
+    var glVertexShader   = gl.VERTEX_SHADER,
+        glFragmentShader = gl.FRAGMENT_SHADER;
 
-            "uniform   mat3  a_matrix;" +
-            "attribute vec2  a_position; " +
-            "uniform   vec2  u_resolution;" +
-            "uniform   float u_flip_y;" +
-            "attribute vec2  a_texture_coord;" +
-            "varying   vec2  v_texture_coord;" +
-            "attribute vec4  a_vertex_color;"+
-            "varying   vec4  v_vertex_color;" +
-
-            "void main()" +
-            "{" +
-                "vec2 clipSpace  = vec2(a_matrix * vec3(a_position.xy,1)).xy / u_resolution * 2.0 - 1.0;" +
-                "gl_Position     = vec4(clipSpace.x,-clipSpace.y * u_flip_y,0,1);" +
-                "v_texture_coord = a_texture_coord;" +
-                "v_vertex_color  = a_vertex_color;" +
-                "gl_PointSize = 1.0;" +
-            "}",
-
-        this.gl.VERTEX_SHADER);
-
-
-    // Setup and load fragment shader
-
-    this._fragmentShader = this._loadShader(
-
-            "precision mediump float;" +
-            "uniform float     u_use_texture;" +
-            "uniform sampler2D u_image;" +
-            "varying vec2      v_texture_coord;" +
-            "varying vec4      v_vertex_color;" +
-
-            "void main()" +
-            "{" +
-                "vec4 texColor = texture2D(u_image,v_texture_coord);" +
-                "gl_FragColor  = v_vertex_color * (1.0 - u_use_texture) + texColor * u_use_texture;" +
-            "}",
-
-        this.gl.FRAGMENT_SHADER);
-
-    this._vertexShaderRender = this._loadShader(
-
-            "attribute vec2  a_position; " +
-            "attribute vec2  a_texture_coord;" +
-            "varying   vec2  v_texture_coord;" +
-            "uniform   vec2  u_resolution;" +
-
-            "void main()" +
-            "{" +
-                "vec2 cs = vec2(a_position/u_resolution*2.0-1.0);" +
-                "gl_Position     = vec4(cs.x,cs.y,0,1);" +
-                "v_texture_coord = a_texture_coord;" +
-            "}",
-
-        this.gl.VERTEX_SHADER);
-
-    this._fragmentShaderRender = this._loadShader(
-
-            "precision mediump float;" +
-            "uniform sampler2D u_screen_tex;" +
-            "varying vec2      v_texture_coord;" +
-
-            "void main()" +
-            "{" +
-                "gl_FragColor =  texture2D(u_screen_tex,v_texture_coord);"+
-            "}",
-
-        this.gl.FRAGMENT_SHADER);
+    this._vertShader     = this._loadShader(CanvasGL.__vertShader,     glVertexShader);
+    this._fragShader     = this._loadShader(CanvasGL.__fragShader,     glFragmentShader);
+    this._vertShaderPost = this._loadShader(CanvasGL.__vertShaderPost, glVertexShader);
+    this._fragShaderPost = this._loadShader(CanvasGL.__fragShaderPost, glFragmentShader);
 
 
     var CONSTANTS = CanvasGL._CGLC;
 
-    // Load and init program & set size to default
+    this._program     = this._loadProgram(this._vertShader,    this._fragShader);
+    this._programPost = this._loadProgram(this._vertShaderPost,this._fragShaderPost);
 
-    this._program        = this._loadProgram(this._vertexShader,      this._fragmentShader);
-    this._programRender  = this._loadProgram(this._vertexShaderRender,this._fragmentShaderRender);
-
-    var gl          = this.gl,
-        glTexture2d = gl.TEXTURE_2D,
+    var glTexture2d = gl.TEXTURE_2D,
         glRGBA      = gl.RGBA,
         glFloat     = gl.FLOAT;
 
@@ -203,10 +122,10 @@ function CanvasGL(parentDomElementId,width,height)
     // Post-Shader
     // attribute and uniform locations
 
-    this._locationPostAttribPoition      = gl.getAttribLocation( this._programRender, "a_position");
-    this._locationPostAttribTextureCoord = gl.getAttribLocation( this._programRender, "a_texture_coord");
-    this._locationPostUniformScreenTex   = gl.getUniformLocation(this._programRender, "u_screen_tex");
-    this._locationPostUniformResolution  = gl.getUniformLocation(this._programRender, "u_resolution");
+    this._locationPostAttribPoition      = gl.getAttribLocation( this._programPost, "a_position");
+    this._locationPostAttribTextureCoord = gl.getAttribLocation( this._programPost, "a_texture_coord");
+    this._locationPostUniformScreenTex   = gl.getUniformLocation(this._programPost, "u_screen_tex");
+    this._locationPostUniformResolution  = gl.getUniformLocation(this._programPost, "u_resolution");
 
 
     // Set default y flip
@@ -380,9 +299,13 @@ function CanvasGL(parentDomElementId,width,height)
 
 
 
-    this.parent.appendChild(this._glCanvas);
+    this.parent.appendChild(this._canvas3d);
 }
 
+CanvasGL.__vertShader     = "uniform mat3 a_matrix; attribute vec2 a_position; uniform vec2 u_resolution; uniform float u_flip_y; attribute vec2 a_texture_coord; varying vec2 v_texture_coord; attribute vec4 a_vertex_color; varying vec4 v_vertex_color; void main() { vec2 clipSpace = vec2(a_matrix * vec3(a_position.xy,1)).xy / u_resolution * 2.0 - 1.0; gl_Position = vec4(clipSpace.x,-clipSpace.y * u_flip_y,0,1); v_texture_coord = a_texture_coord; v_vertex_color = a_vertex_color; gl_PointSize = 1.0; }";
+CanvasGL.__fragShader     = "precision mediump float; uniform float u_use_texture; uniform sampler2D u_image; varying vec2 v_texture_coord; varying vec4 v_vertex_color; void main(){ vec4 texColor = texture2D(u_image,v_texture_coord); gl_FragColor = v_vertex_color * (1.0 - u_use_texture) + texColor * u_use_texture; }";
+CanvasGL.__vertShaderPost = "attribute vec2 a_position; attribute vec2 a_texture_coord; varying vec2 v_texture_coord; uniform vec2 u_resolution; void main() { vec2 cs = vec2(a_position/u_resolution*2.0-1.0); gl_Position = vec4(cs.x,cs.y,0,1); v_texture_coord = a_texture_coord; }";
+CanvasGL.__fragShaderPost = "precision mediump float; uniform sampler2D u_screen_tex; varying vec2 v_texture_coord; void main() { gl_FragColor = texture2D(u_screen_tex,v_texture_coord); }";
 
 CanvasGL._CGLC =
 {
@@ -445,7 +368,7 @@ CanvasGL._CGLC =
 
 CanvasGL.prototype.setSize = function(width,height)
 {
-    var glc = this._glCanvas,
+    var glc = this._canvas3d,
         gl  = this.gl,
         s   = this._ssaaf,
         c   = this._bufferColorBg;
@@ -459,7 +382,7 @@ CanvasGL.prototype.setSize = function(width,height)
 
     this._updateRTTTexture();
 
-    gl.useProgram(this._programRender);
+    gl.useProgram(this._programPost);
     gl.uniform2f(this._locationPostUniformResolution,width,height);
     gl.useProgram(this._program);
     gl.uniform2f(this._locationUniformResolution,width,height);
@@ -3750,7 +3673,7 @@ CanvasGL.prototype.__rgbToHex = function(r,g,b)
 
 CanvasGL.prototype.saveToPNG = function()
 {
-    window.open(this._glCanvas.toDataURL('image/png'));
+    window.open(this._canvas3d.toDataURL('image/png'));
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
