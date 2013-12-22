@@ -1,8 +1,8 @@
 
 function TestCanvasGL(parentDomElementId)
 {
-    var w = window.innerWidth  < 1280 ? 640 : window.innerWidth*0.5,
-        h = window.innerHeight < 600 ? 600 : window.innerHeight;
+    var w = window.innerWidth,
+        h = window.innerHeight;
 
     this.cgl = new CanvasGL(parentDomElementId,w,h);
     this.t = 0.0;
@@ -40,9 +40,9 @@ function TestCanvasGL(parentDomElementId)
 
 TestCanvasGL.prototype.onWindowResize = function()
 {
-    var w = window.innerWidth  < 1280 ? 640 : window.innerWidth*0.5,
-        h = window.innerHeight < 600 ? 600 : window.innerHeight;
-    this.rs = this.cgl.width/(this.nh*2);
+    var w = window.innerWidth,
+        h = window.innerHeight;
+    this.rs = this.cgl.width/(this.nh*4);
     this.nv = round(this.cgl.height/(this.rs*2));
     this._resetDL();
     this.cgl.setSize(w,h);
