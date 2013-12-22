@@ -19,7 +19,7 @@ function TestCanvasGL(parentDomElementId)
 
     this.sn = new SimplexNoise();
 
-    this.nh = 7;
+    this.nh = 16;
     this.nd = 21;
     this.rs = this.cgl.width/(this.nh*2);
     this.nv = round(this.cgl.height/(this.rs*2));
@@ -42,7 +42,7 @@ TestCanvasGL.prototype.onWindowResize = function()
 {
     var w = window.innerWidth,
         h = window.innerHeight;
-    this.rs = this.cgl.width/(this.nh*4);
+    this.rs = this.cgl.width/(this.nh*2);
     this.nv = round(this.cgl.height/(this.rs*2));
     this._resetDL();
     this.cgl.setSize(w,h);
