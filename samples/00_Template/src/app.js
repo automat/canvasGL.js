@@ -1,29 +1,39 @@
 function App(element){
-    this.cgl = new CanvasGL(element,300,100);
-
-
+    CanvasGL.call(this,element);
 }
 
+App.prototype = Object.create(CanvasGL.prototype);
+
 App.prototype.draw = function(){
-    var ctx = this.cgl;
 
-    ctx.background(255,1,1);
-    ctx.fill1f(1);
-    ctx.circle(0,0,10,10);
+    var c = this;
 
-    ctx.stroke1f(1);
-    ctx.line(0,0,50,50);
+    //console.log(c.getKeyStr());
 
-    ctx.stroke3f(0);
-    ctx.rect(20,20,10,10);
 
-    ctx.arc(100,100,50,50,0,1.2,10,10);
+    c.background(Math.abs(Math.sin(c.getSecondsElapsed() * Math.PI)) * 255,1,1);
+    c.fill1f(1);
+    c.circle(0,0,10,10);
+
+    c.stroke1f(1);
+    c.line(0,0,50,50);
+
+    c.stroke3f(1,1,1);
+    c.rect(20,20,10,10);
+
+    c.arc(100,100,50,50,0,1.2,10,10);
+
+    c.setLineWidth(10);
+    c.stroke3f(Math.abs(Math.sin(c.getSecondsElapsed() * 100 * Math.PI)),0,0);
+    c.strokefv([1,1,1,1,0,0,0,0]);
+    c.line(100+ Math.cos(c.getSecondsElapsed()*Math.PI) * 100,100+ Math.sin(c.getSecondsElapsed()*Math.PI) * 100,250,250);
 };
+
+
+
 
 window.addEventListener("load",function(){
    var app = new App(document.getElementById("container"));
-       app.draw();
-       app.draw();
 });
 
 window.addEventListener("resize",function(){

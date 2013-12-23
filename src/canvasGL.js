@@ -39,18 +39,20 @@
  * @constructor
  */
 
-function CanvasGL(element,width,height){
+function CanvasGL(element){
     this.parent = element;
 
-    // Setup contexts
+    /*------------------------------------------------------------------------------------------------------------*/
+    //  Get contexts
+    /*------------------------------------------------------------------------------------------------------------*/
 
-    this._canvas3d = document.createElement('canvas');
-    var gl = this.contex3d = null;
+    var canvas3d = this._canvas3d = document.createElement('canvas');
+    var gl = this.context3d = null;
     var names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
     var i = -1;
     while(++i<names.length){
         try{
-            gl = this.contex3d = this._canvas3d.getContext(names[i],{ alpha:false,
+            gl = this.context3d = this._canvas3d.getContext(names[i],{ alpha:false,
                                                                 depth:false,
                                                                 stencil:false,
                                                                 antialias: false,
@@ -59,16 +61,20 @@ function CanvasGL(element,width,height){
         }catch (e){
             throw ("WebGL context could not be initialized");
         }
-        if(this.contex3d){
+        if(this.context3d){
             break;
         }
     }
 
+    canvas3d.style.tabIndex = '1';
+
     this._canvas2d = document.createElement('canvas');
     this.context2d = this._canvas2d.getContext('2d');
 
+    /*------------------------------------------------------------------------------------------------------------*/
+    //  Init
+    /*------------------------------------------------------------------------------------------------------------*/
 
-    // Init
 
     var glVertexShader       = gl.VERTEX_SHADER,
         glFragmentShader     = gl.FRAGMENT_SHADER,
@@ -98,8 +104,9 @@ function CanvasGL(element,width,height){
     this._bufferColorBgOld   = new Float32Array([-1.0,-1.0,-1.0,-1.0]);
     this._backgroundClear    = Default.CLEAR_BACKGROUND;
 
-    this._screenTex = gl.createTexture();
-    this._fboRTT    = gl.createFramebuffer();
+    this._fbo0      = gl.createFramebuffer(); // main
+    this._tex0      = gl.createTexture(); // fbo0 texture target
+
     this._fboCanvas = null;
 
     this._iwidth  = this._twidth  = this.width  = element.clientWidth;
@@ -108,11 +115,11 @@ function CanvasGL(element,width,height){
 
     this.setSize(this.width,this.height);
 
-    gl.bindFramebuffer(glFrameBuffer,this._fboRTT);
-    gl.framebufferTexture2D(glFrameBuffer, gl.COLOR_ATTACHMENT0,glTexture2d,this._screenTex,0);
+    gl.bindFramebuffer(glFrameBuffer,this._fbo0);
+    gl.framebufferTexture2D(glFrameBuffer, gl.COLOR_ATTACHMENT0,glTexture2d,this._tex0,0);
     gl.bindTexture(glTexture2d,null);
 
-    this._setFrameBuffer(this._fboRTT);
+    this._bindFBO(this._fbo0);
 
     // VBO / IBO
 
@@ -149,40 +156,25 @@ function CanvasGL(element,width,height){
 
     gl.uniform1f(this._uniformLocationFlipY,1.0); //set default flip y
 
-
-
-
-
-
     // Create default blank texture and texture coords / use color & set alpha to 1.0
-
     this._currTint = Default.TINT;
-
     this._blankTexture = gl.createTexture();
     gl.bindTexture(glTexture2d,this._blankTexture);
     gl.texImage2D( glTexture2d, 0, glRGBA, 1, 1, 0, glRGBA, gl.UNSIGNED_BYTE, new Uint8Array([1,1,1,1]));
     gl.uniform1f(this._uniformLocationUseTexture,0.0);
 
 
-
-
-    // Create matrix stack and apply to shader
-
-    this._matrix      = this.__makeMat33();
-    this._matrixTemp  = this.__makeMat33();
+    // Create matrix stack and apply
+    this._matrix      = this._makeMat33();
+    this._matrixTemp  = this._makeMat33();
     this._matrixStack = [];
-
     gl.uniformMatrix3fv(this._uniformLocationMatix,false,this._matrix);
 
 
-    // Enable contex3d flags
-
+    // Enable context3d flags
     gl.enable(gl.BLEND);
 
-
-
     // Set draw modes
-
     this._modeEllipse = CanvasGL.CENTER;
     this._modeRect    = CanvasGL.CORNER;
 
@@ -207,6 +199,10 @@ function CanvasGL(element,width,height){
         spacing:   Default.TEXT_SPACING
     };
 
+    /*------------------------------------------------------------------------------------------------------------*/
+    //  Set vertices/color/texCoord temp buffers
+    /*------------------------------------------------------------------------------------------------------------*/
+
     var SIZE_OF_VERTEX   = Common.SIZE_OF_VERTEX,
         SIZE_OF_POINT    = Common.SIZE_OF_POINT,
         SIZE_OF_FACE     = Common.SIZE_OF_FACE,
@@ -217,8 +213,6 @@ function CanvasGL(element,width,height){
     var ELLIPSE_DETAIL_MAX = Common.ELLIPSE_DETAIL_MAX,
         SPLINE_DETAIL_MAX  = Common.SPLINE_DETAIL_MAX,
         BEZIER_DETAIL_MAX  = Common.BEZIER_DETAIL_MAX;
-
-    // Setup vertex buffers
 
     this._bufferVerticesQuad      = new Float32Array(SIZE_OF_QUAD);
     this._bufferVerticesTriangle  = new Float32Array(SIZE_OF_TRIANGLE);
@@ -255,8 +249,9 @@ function CanvasGL(element,width,height){
     this._indicesQuad     = [0,1,2,1,2,3];
 
 
-
-    // Setup fill props, buffers and cached value
+    /*------------------------------------------------------------------------------------------------------------*/
+    //  Setup fill props, buffers and cached values
+    /*------------------------------------------------------------------------------------------------------------*/
 
     this._fill               = true;
     this._bufferColorFill4   = [1.0,1.0,1.0,1.0];
@@ -311,8 +306,92 @@ function CanvasGL(element,width,height){
 
     // Attach _canvas2d to parent DOM element
 
+    /*------------------------------------------------------------------------------------------------------------*/
+    //  Setup input
+    /*------------------------------------------------------------------------------------------------------------*/
+
+    this._keyDown   = false;
+    this._keyStr    = '';
+    this._keyCode   = '';
+
+    this._mousePos        = [0,0];
+    this._mousePosLast    = [0,0];
+    this._mouseDown       = false;
+    this._mouseMove       = false;
+    this._mouseWheelDelta = 0.0;
+    this._hideCursor      = false;
+
+    var self = this;
+
+    canvas3d.addEventListener('mousemove',
+        function(e){
+            self._mousePosLast[0] = self._mousePos[0];
+            self._mousePosLast[1] = self._mousePos[1];
+            self._mousePos[0] = e.offsetX; // TODO: non-chrome
+            self._mousePos[1] = e.offsetY;
+            self.onMouseMove(e);
+        });
+
+    canvas3d.addEventListener('mousedown',
+        function(e){
+            self._mouseDown = true;
+            self.onMouseDown(e);
+        });
+
+    canvas3d.addEventListener('mouseup',
+        function(e){
+            self._mouseDown = false;
+            self.onMouseUp(e);
+        });
+
+    canvas3d.addEventListener('mousewheel',
+        function(e){
+            self._mouseWheelDelta += Math.max(-1,Math.min(1, e.wheelDelta)) * -1;
+            self.onMouseWheel(e);
+        });
+
+    canvas3d.addEventListener('keydown',
+        function(e){
+            self._keyDown = true;
+            self._keyCode = e.keyCode;
+            self._keyStr  = String.fromCharCode(e.keyCode);//not reliable;
+            self.onKeyDown(e);
+        });
+
+    canvas3d.addEventListener('keyup',
+        function(e){
+            self._keyDown = false;
+            self._keyCode = e.keyCode;
+            self._keyStr  = String.fromCharCode(e.keyCode);
+            self.onKeyUp(e);
+        });
 
 
+    /*------------------------------------------------------------------------------------------------------------*/
+    //  Setup anim
+    /*------------------------------------------------------------------------------------------------------------*/
+
+    this._targetFPS    = Default.FPS;
+    this._frameNum     = 0;
+    this._time         = 0;
+    this._timeStart    = -1;
+    this._timeNext     = 0;
+    this._timeInterval = this._targetFPS / 1000.0;
+    this._timeDelta    = 0;
+    this._timeElapsed  = 0;
+
+    this._noLoop = false;
+
+    window.requestAnimationFrame = window.requestAnimationFrame ||
+                                   window.webkitRequestAnimationFrame ||
+                                   window.mozRequestAnimationFrame;
+
+    this._initDrawLoop();
+
+
+    /*------------------------------------------------------------------------------------------------------------*/
+
+    // attach the monster
     this.parent.appendChild(this._canvas3d);
 }
 
@@ -338,8 +417,8 @@ CanvasGL.__Default = {
     TEXT_BASELINE:   'top',
     TEXT_ALIGN:      'left',
     TEXT_LINE_HEIGHT: 1,
-    TEXT_SPACING:     '1'
-
+    TEXT_SPACING:     '1',
+    FPS: 30
 };
 
 CanvasGL.__Common = {
@@ -364,62 +443,8 @@ CanvasGL.__Common = {
     SSAA_FACTOR : 2,
 
     BUFFER_DEFAULT_RESERVE_AMOUNT : 50
-
-
-
-
-
 };
 
-CanvasGL._CGLC ={
-
-    BEZIER_DETAIL_DEFAULT:30,
-    BEZIER_DETAIL_MAX:50,
-
-    ELLIPSE_MODE_DEFAULT : 0,
-    ELLIPSE_DETAIL_DEFAULT:10,
-    ELLIPSE_DETAIL_MAX:50,
-
-    RECT_MODE_DEFAULT : 1,
-
-    SPLINE_DETAIL_DEFAULT:10,
-    SPLINE_DETAIL_MAX:50,
-
-    LINE_WIDTH_DEFAULT:1,
-    LINE_ROUND_CAP_DETAIL_MAX:20,
-    LINE_ROUND_CAP_DETAIL_MIN:4,
-
-    CORNER_DETAIL_DEFAULT : 5,
-    CORNER_DETAIL_MAX     : 10,
-
-    TINT_DEFAULT:1.0,
-    TINT_MAX    :1.0,
-    TINT_MIN    :0.0,
-
-    SIZE_OF_VERTEX:2,
-    SIZE_OF_TRIANGLE:6,
-    SIZE_OF_QUAD:8,
-    SIZE_OF_LINE:4,
-    SIZE_OF_POINT:2,
-    SIZE_OF_COLOR:4,
-    SIZE_OF_T_COORD:2,
-    SIZE_OF_FACE:3,
-
-    TEXT_DEFAULT_STYLE:'',
-    TEXT_DEFAULT_WEIGHT:'normal',
-    TEXT_DEFAULT_SIZE:8,
-    TEXT_DEFAULT_FAMILY:'Arial',
-    TEXT_DEFAULT_BASELINE:'top',
-    TEXT_DEFAULT_ALIGN:'left',
-    TEXT_DEFAULT_LINE_HEIGHT:1,
-    TEXT_DEFAULT_SPACING:'1',
-
-    SSAA_FACTOR : 2,
-
-    BUFFER_DEFAULT_RESERVE_AMOUNT : 50,
-
-    CLEAR_BACKGROUND : true
-};
 
 /**
  * @method setSize
@@ -427,10 +452,9 @@ CanvasGL._CGLC ={
  * @param {Number} height Height of the _canvas2d in pixel
  */
 
-CanvasGL.prototype.setSize = function(width,height)
-{
+CanvasGL.prototype.setSize = function(width,height){
     var glc = this._canvas3d,
-        gl  = this.contex3d,
+        gl  = this.context3d,
         s   = this._ssaaf,
         c   = this._bufferColorBg;
 
@@ -441,7 +465,7 @@ CanvasGL.prototype.setSize = function(width,height)
     glc.width        = this._iwidth  = width  * s;
     glc.height       = this._iheight = height * s;
 
-    this._updateRTTTexture();
+    this._updateTex0Size();
 
     gl.useProgram(this._programPost);
     gl.uniform2f(this._uniformLocationPostResolution,width,height);
@@ -449,23 +473,133 @@ CanvasGL.prototype.setSize = function(width,height)
     gl.uniform2f(this._uniformLocationResolution,width,height);
     gl.viewport(0,0,width,height);
 
-    var c0 = c[0]/255,
-        c1 = c[1]/255,
-        c2 = c[2]/255;
+    var i_255 = 1.0 / 255.0;
+    var c0 = c[0] * i_255,
+        c1 = c[1] * i_255,
+        c2 = c[2] * i_255;
 
 
-    this._setFrameBuffer(this._fboCanvas);
+    this._bindFBO(this._fboCanvas);
     gl.clearColor(c0,c1,c2,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT );
 
     /*
-    this._setFrameBuffer(this._fboRTT);
-    contex3d.clearColor(c0,c1,c2,1.0);
-    contex3d.clear(contex3d.COLOR_BUFFER_BIT );
+    this._setFrameBuffer(this._fbo0);
+    context3d.clearColor(c0,c1,c2,1.0);
+    context3d.clear(context3d.COLOR_BUFFER_BIT );
     */
-
-
 };
+
+CanvasGL.prototype.noLoop = function(b){
+    this._noLoop = typeof b === 'undefined' ? true : b;
+};
+
+CanvasGL.prototype._initDrawLoop = function(){
+    this._timeStart = Date.now();
+    if(!this._noLoop){
+        var time, timeDelta;
+        var timeInterval = this._timeInterval;
+        var timeNext;
+
+
+        var self = this;
+
+        function drawLoop(){
+            requestAnimationFrame(drawLoop,null);
+
+            time      = self._time = Date.now();
+            timeDelta = time - self._timeNext;
+            self._timeDelta = Math.min(timeDelta / timeInterval, 1);
+
+            if(timeDelta > timeInterval){
+                timeNext = self._timeNext = time - (timeDelta % timeInterval);
+                self._draw();
+
+                self._timeElapsed = (timeNext - self._timeStart) / 1000.0;
+                self._frameNum++;
+            }
+        }
+
+        drawLoop();
+
+    } else
+        this._draw();
+};
+
+CanvasGL.prototype._resetDrawProperties = function(){
+    var Default = CanvasGL.__Default;
+
+    this._stroke   = false;
+    this._texture  = false;
+    this._fill     = false;
+    this._currTint = 1.0;
+
+    this._currLineWidth = Default.LINE_WIDTH;
+    this._modeEllipse   = Default.ELLIPSE_MODE;
+    this._modeRect      = Default.RECT_MODE;
+
+    this.resetBlend();
+
+    this.resetUVOffset();
+    this.resetUVQuad();
+    this.resetUVTriangle();
+};
+
+
+CanvasGL.prototype._draw = function(){
+    this._resetDrawProperties();
+
+    this._applyFBOTexToQuad();
+    this.clearColorBuffer();
+
+    this.scale(this._ssaaf,this._ssaaf);
+    this.draw();
+};
+
+// Override in subclass
+CanvasGL.prototype.draw = function(){};
+
+
+// Get time props
+CanvasGL.prototype.setTargetFPS      = function(fps){this._targetFPS = fps;this._timeInterval  = this._targetFPS / 1000.0;};
+CanvasGL.prototype.getTargetFPS      = function()   {return this._targetFPS;};
+CanvasGL.prototype.getFramesElapsed  = function(){return this._frameNum;};
+CanvasGL.prototype.getSecondsElapsed = function(){return this._timeElapsed;};
+CanvasGL.prototype.getTime           = function(){return this._time};
+CanvasGL.prototype.getTimeStart      = function(){return this._timeStart;};
+CanvasGL.prototype.getTimeNext       = function(){return this._timeNext};
+CanvasGL.prototype.getTimeDelta      = function(){return this._timeDelta;};
+
+/*---------------------------------------------------------------------------------------------------------*/
+// Input
+/*---------------------------------------------------------------------------------------------------------*/
+
+
+CanvasGL.prototype.isKeyDown          = function(){return this._keyDown;};
+CanvasGL.prototype.isMouseDown        = function(){return this._mouseDown;};
+CanvasGL.prototype.isMouseMove        = function(){return this._mouseMove;};
+CanvasGL.prototype.getKeyCode         = function(){return this._keyCode;};
+CanvasGL.prototype.getKeyStr          = function(){return this._keyStr;};
+
+CanvasGL.prototype.getMousePos        = function(){return this._mousePos;};
+CanvasGL.prototype.getMousePosLast    = function(){return this._mousePosLast;};
+CanvasGL.prototype.getMousePosX       = function(){return this._mousePos[0];};
+CanvasGL.prototype.getMousePosY       = function(){return this._mousePos[1];};
+CanvasGL.prototype.getMousePosXLast   = function(){return this._mousePosLast[0];};
+CanvasGL.prototype.getMousePosYLast   = function(){return this._mousePosLast[1];};
+
+CanvasGL.prototype.getMouseWheelDelta = function(){return this._mouseWheelDelta;};
+
+//Override in subclass
+CanvasGL.prototype.onMouseMove  = function(e){};
+CanvasGL.prototype.onMouseDown  = function(e){};
+CanvasGL.prototype.onMouseUp    = function(e){};
+CanvasGL.prototype.onMouseWheel = function(e){};
+CanvasGL.prototype.onKeyDown    = function(e){};
+CanvasGL.prototype.onKeyUp      = function(e){};
+
+
+
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Drawing settings
@@ -477,8 +611,6 @@ CanvasGL.WRAP   = 2;
 CanvasGL.CLAMP  = 3;
 CanvasGL.REPEAT = 4;
 
-
-
 CanvasGL.FUNC_ADD = "";
 CanvasGL.FUNC_SUBSTRACT = "";
 CanvasGL.FUNC_REVERSER_SUBSTRACT = "";
@@ -489,13 +621,11 @@ CanvasGL.ONE = "";
 CanvasGL.SRC_ALPHA = 770;
 CanvasGL.SRC_COLOR = 768;
 
-
 CanvasGL.ONE_MINUS_SRC_ALPHA = 771;
 CanvasGL.ONE_MINUS_SRC_COLOR = 769;
 
 CanvasGL.TRIANGLE_STRIP = 5;
 CanvasGL.TRIANGLE_FAN   = 6;
-
 
 CanvasGL.TOP    = "top";
 CanvasGL.MIDDLE = "middle";
@@ -510,8 +640,7 @@ CanvasGL.BOLD   = "bold";
  * @param mode
  */
 
-CanvasGL.prototype.setEllipseMode = function(mode)
-{
+CanvasGL.prototype.setEllipseMode = function(mode){
     this._modeEllipse = mode;
 };
 
@@ -520,8 +649,7 @@ CanvasGL.prototype.setEllipseMode = function(mode)
  * @param mode
  */
 
-CanvasGL.prototype.setRectMode = function(mode)
-{
+CanvasGL.prototype.setRectMode = function(mode){
     this._modeRect = mode;
 };
 
@@ -530,8 +658,7 @@ CanvasGL.prototype.setRectMode = function(mode)
  * @param a
  */
 
-CanvasGL.prototype.setEllipseDetail = function(a)
-{
+CanvasGL.prototype.setEllipseDetail = function(a){
     var md = CanvasGL._CGLC.BEZIER_DETAIL_MAX;
     this._prevDetailEllipse = this._currDetailEllipse;
     this._currDetailEllipse = a > md ? md : a;
@@ -542,8 +669,7 @@ CanvasGL.prototype.setEllipseDetail = function(a)
  * @param {Integer}a Resolution of bezier curve
  */
 
-CanvasGL.prototype.setBezierDetail = function(a)
-{
+CanvasGL.prototype.setBezierDetail = function(a){
     var md = CanvasGL._CGLC.BEZIER_DETAIL_MAX;
     this._currDetailBezier = a > md ? md : a;
 };
@@ -553,8 +679,7 @@ CanvasGL.prototype.setBezierDetail = function(a)
  * @param {Integer} a Resolution of curves
  */
 
-CanvasGL.prototype.setCurveDetail = function(a)
-{
+CanvasGL.prototype.setCurveDetail = function(a){
     var md = CanvasGL._CGLC.SPLINE_DETAIL_MAX;
     this._currDetailSpline = a  > md ? md : a;
 };
@@ -619,7 +744,7 @@ CanvasGL.prototype.getCurveDetail = function(){
  */
 
 CanvasGL.prototype.enableBlend = function(){
-    this.contex3d.enable(this.contex3d.BLEND);
+    this.context3d.enable(this.context3d.BLEND);
 };
 
 /**
@@ -627,7 +752,7 @@ CanvasGL.prototype.enableBlend = function(){
  */
 
 CanvasGL.prototype.disableBlend = function(){
-    this.contex3d.disable(this.contex3d.BLEND);
+    this.context3d.disable(this.context3d.BLEND);
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -1036,22 +1161,22 @@ CanvasGL.prototype._color1fArr = function(k,length){
     return a;
 };
 
-CanvasGL.prototype._colorArrLerped = function(colors,arr){
-    var l = arr.length,
-        i = 0,
-        j1,
-        j;
+CanvasGL.prototype._colorvLerped = function(colors,arr){
+    var i, j, k, k1, l, l_1;
 
-    while(i<l){
-        j  = i / l;
-        j1 = 1 - j;
+    l   = arr.length / 4;
+    l_1 = l - 1;
+    i   = -1;
 
-        arr[i  ] = colors[0] * j1 + colors[4] * j;
-        arr[i+1] = colors[1] * j1 + colors[5] * j;
-        arr[i+2] = colors[2] * j1 + colors[6] * j;
-        arr[i+3] = colors[3] * j1 + colors[7] * j;
+    while(++i<l){
+        j  = i * 4;
+        k  = i / l_1;
+        k1 = 1 - k;
 
-        i+=4;
+        arr[j  ] = colors[0] * k1 + colors[4] * k;
+        arr[j+1] = colors[1] * k1 + colors[5] * k;
+        arr[j+2] = colors[2] * k1 + colors[6] * k;
+        arr[j+3] = colors[3] * k1 + colors[7] * k;
     }
 
     return arr;
@@ -1071,23 +1196,23 @@ CanvasGL.prototype.tint = function(a){
  */
 
 CanvasGL.prototype.noTint = function(){
-    this._currTint = CanvasGL._CGLC.TINT_MAX;
+    this._currTint = CanvasGL.__Common.TINT_MAX;
 };
 
 
 // Texture
 
 CanvasGL.prototype._applyTexture = function(){
-    var gl = this.contex3d;
+    var gl = this.context3d;
     gl.uniform1f(this._uniformLocationUseTexture,1.0);
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
     gl.uniform1f(this._uniformLocationImage,0);
 };
 
 CanvasGL.prototype._disableTexture = function(){
-    var gl = this.contex3d;
+    var gl = this.context3d;
     gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
-    gl.vertexAttribPointer(this._attribLocationTexCoord,CanvasGL._CGLC.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
+    gl.vertexAttribPointer(this._attribLocationTexCoord,CanvasGL.__Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
     gl.uniform1f(this._uniformLocationUseTexture,0.0);
     this._texture = false;
 };
@@ -1193,13 +1318,13 @@ CanvasGL.prototype.resetUVTriangle = function(){
  */
 
 CanvasGL.prototype.texture = function(img){
-    this._setCurrTexture(img._t);
+    this._bindTexture(img._t);
 };
 
-CanvasGL.prototype._setCurrTexture = function(tex){
+CanvasGL.prototype._bindTexture = function(tex){
     this._textureCurr = tex;
 
-    var gl = this.contex3d,
+    var gl = this.context3d,
         m  = this._modeTexture;
 
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
@@ -1219,7 +1344,7 @@ CanvasGL.prototype._setCurrTexture = function(tex){
 };
 
 CanvasGL.prototype._createTexture = function(){
-    var gl = this.contex3d;
+    var gl = this.context3d;
     var t  = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D,t);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -1246,7 +1371,7 @@ CanvasGL.prototype.noTexture = function(){
  */
 
 CanvasGL.prototype.blend = function(src,dest){
-    this.contex3d.blendFunc(src,dest);
+    this.context3d.blendFunc(src,dest);
 };
 
 /**
@@ -1255,7 +1380,7 @@ CanvasGL.prototype.blend = function(src,dest){
  */
 
 CanvasGL.prototype.resetBlend = function(){
-    var gl = this.contex3d;
+    var gl = this.context3d;
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 };
 
@@ -1295,33 +1420,11 @@ CanvasGL.prototype.background = function()
     }
 
     this._backgroundClear = (col[3] == 1.0);
-
-    this._stroke   = false;
-    this._texture  = false;
-    this._fill     = false;
-    this._currTint = 1.0;
-
-    var Default = CanvasGL.__Default;
-
-    this._currLineWidth = Default.LINE_WIDTH;
-    this._modeEllipse   = Default.ELLIPSE_MODE;
-    this._modeRect      = Default.RECT_MODE;
-
-    this.resetBlend();
-
-    this._applyFBOTexToQuad();
-    this.clearColorBuffer();
-
-    this.resetUVOffset();
-    this.resetUVQuad();
-    this.resetUVTriangle();
-
-    this.scale(this._ssaaf,this._ssaaf);
 };
 
 CanvasGL.prototype._applyFBOTexToQuad = function()
 {
-    var gl = this.contex3d,
+    var gl = this.context3d,
         lt = this._uniformLocationUseTexture,
         lf = this._uniformLocationFlipY,
         w  = this._twidth ,
@@ -1334,12 +1437,12 @@ CanvasGL.prototype._applyFBOTexToQuad = function()
     this._setMatrixUniform();
     this.resetUVQuad();
 
-    gl.useProgram(this._program);
-    this._setFrameBuffer(this._fboCanvas);
+    //gl.useProgram(this._program);
+    this._bindFBO(this._fboCanvas);
 
     gl.uniform1f(lt,1.0);
     gl.uniform1f(lf,-1.0);
-    this._setCurrTexture(this._screenTex);
+    this._bindTexture(this._tex0);
 
     v[0] = v[1] = v[3] = v[4] =0;
     v[2] = v[6] = w;
@@ -1351,10 +1454,10 @@ CanvasGL.prototype._applyFBOTexToQuad = function()
     gl.useProgram(this._program);
     gl.uniform1f(lt,0.0);
     gl.uniform1f(lf,1.0);
-    this._setCurrTexture(this._blankTexture);
+    this._bindTexture(this._blankTexture);
     this._disableTexture();
 
-    this._setFrameBuffer(this._fboRTT);
+    this._bindFBO(this._fbo0);
 };
 
 /**
@@ -1364,7 +1467,7 @@ CanvasGL.prototype._applyFBOTexToQuad = function()
 
 CanvasGL.prototype.clearColorBuffer = function()
 {
-    var gl = this.contex3d;
+    var gl = this.context3d;
 
     var c  = this._bufferColorBg,
         co = this._bufferColorBgOld;
@@ -1385,11 +1488,11 @@ CanvasGL.prototype.clearColorBuffer = function()
                 c1 = c[1]/255,
                 c2 = c[2]/255;
 
-            this._setFrameBuffer(this._fboCanvas);
+            this._bindFBO(this._fboCanvas);
             gl.clearColor(c0,c1,c2,1.0);
             gl.clear(gl.COLOR_BUFFER_BIT );
 
-            this._setFrameBuffer(this._fboRTT);
+            this._bindFBO(this._fbo0);
             gl.clearColor(c0,c1,c2,1.0);
             gl.clear(gl.COLOR_BUFFER_BIT );
 
@@ -1405,9 +1508,9 @@ CanvasGL.prototype.clearColorBuffer = function()
     }
 };
 
-CanvasGL.prototype._setFrameBuffer = function(fbo)
+CanvasGL.prototype._bindFBO = function(fbo)
 {
-    var gl = this.contex3d,
+    var gl = this.context3d,
         w  = this._iwidth,
         h  = this._iheight;
 
@@ -1416,16 +1519,16 @@ CanvasGL.prototype._setFrameBuffer = function(fbo)
     gl.viewport(0,0,w,h);
 };
 
-CanvasGL.prototype._updateRTTTexture = function()
+CanvasGL.prototype._updateTex0Size = function()
 {
-    var gl = this.contex3d,
+    var gl = this.context3d,
         glTexture2d = gl.TEXTURE_2D,
         glNearest   = gl.NEAREST;
 
     this._twidth  = this.__np2(this._iwidth);
     this._theight = this.__np2(this._iheight);
 
-    gl.bindTexture(glTexture2d,this._screenTex);
+    gl.bindTexture(glTexture2d,this._tex0);
     gl.texParameteri(glTexture2d, gl.TEXTURE_MIN_FILTER, glNearest);
     gl.texParameteri(glTexture2d, gl.TEXTURE_MAG_FILTER, glNearest);
     gl.texImage2D(glTexture2d,0,gl.RGBA,this._twidth,this._theight,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
@@ -1454,7 +1557,7 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 {
     if(!this._fill && !this._stroke && !this._texture)return;
 
-    var gl = this.contex3d;
+    var gl = this.context3d;
     var v = this._bufferVerticesQuad;
 
     this._setMatrixUniform();
@@ -1704,7 +1807,7 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
         i[il-6] = i[il-1] = is*3;
     }
 
-    var gl = this.contex3d;
+    var gl = this.context3d;
     var c;
 
     if(this._fill && !this._texture)
@@ -1726,8 +1829,6 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius)
                 tlen  = vblen + cblen;
 
             this._setMatrixUniform();
-
-            var Common = CanvasGL.__Common;
 
             gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
             gl.bufferSubData(glArrayBuffer,0,    v);
@@ -1817,7 +1918,7 @@ CanvasGL.prototype.ellipse = function(x,y,radiusX,radiusY)
 
     var c;
 
-    var gl = this.contex3d;
+    var gl = this.context3d;
 
     c = this._applyColorToColorBuffer(this._bufferColorFill,this._bufferColorEllipse);
 
@@ -1907,7 +2008,7 @@ CanvasGL.prototype.circle = function(x,y,radius)
 {
     if(!this._fill && !this._stroke && !this._texture)return;
 
-    var gl = this.contex3d;
+    var gl = this.context3d;
 
     var cm = this._modeEllipse;
 
@@ -2108,7 +2209,7 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
         }
         else
         {
-            var gl = this.contex3d;
+            var gl = this.context3d;
             this.__fillBuffer(v,c);
             gl.drawArrays(gl.TRIANGLE_STRIP,0,l*0.5);
         }
@@ -2128,7 +2229,7 @@ CanvasGL.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,sto
         else
         {
             //this.__fillBufferTexture(v,c,t);
-            //contex3d.drawArrays(contex3d.TRIANGLE_FAN,0,d)
+            //context3d.drawArrays(context3d.TRIANGLE_FAN,0,d)
         }
     }
 
@@ -2434,7 +2535,7 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 {
     if(!this._fill && !this._stroke)return;
 
-    var gl = this.contex3d;
+    var gl = this.context3d;
     var v  = this._bufferVerticesTriangle;
     v[0] = x0;
     v[1] = y0;
@@ -2505,7 +2606,7 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2)
 
             var Common = CanvasGL.__Common;
 
-            //contex3d.bindBuffer(glArrayBuffer,this._vboShared);
+            //context3d.bindBuffer(glArrayBuffer,this._vboShared);
             gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
 
             gl.bufferSubData(glArrayBuffer,0,v);
@@ -2550,7 +2651,7 @@ CanvasGL.prototype.point = function(x,y)
 
     this._setMatrixUniform();
     this.__fillBuffer(v,c);
-    this.contex3d.drawArrays(this.contex3d.POINTS,0,1);
+    this.context3d.drawArrays(this.context3d.POINTS,0,1);
 };
 
 
@@ -2562,7 +2663,7 @@ CanvasGL.prototype.point = function(x,y)
 CanvasGL.prototype.points = function(vertices)
 {
     if(!this._fill)return;
-    var gl  = this.contex3d;
+    var gl  = this.context3d;
     this._setMatrixUniform();
     this.__fillBuffer(new Float32Array(vertices),
                      this._applyColorToColorBuffer(this._bufferColorFill,new Float32Array(vertices.length*2)));
@@ -2742,7 +2843,7 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
 
     if(pvcol)
     {
-        var colIArr = this._colorArrLerped(color,new Array(jointNum*4));
+        var colIArr = this._colorvLerped(color,new Array(jointNum*4));
         var colorsTLen = colorsJLen + colorsJLen;
 
         i = 0;
@@ -2781,7 +2882,7 @@ CanvasGL.prototype._polyline = function(joints,length,loop)
 
     this._setMatrixUniform();
 
-    var gl = this.contex3d,
+    var gl = this.context3d,
         glArrayBuffer = gl.ARRAY_BUFFER,
         glDynamicDraw = gl.DYNAMIC_DRAW,
         glFloat       = gl.FLOAT;
@@ -2829,7 +2930,7 @@ CanvasGL.prototype.drawArrays = function(vertices,colors,mode)
     var v = new Float32Array(vertices),
         c = this._applyColorToColorBuffer((colors || this._bufferColorFill4),new Float32Array(vertices.length * 2));
 
-    var gl  = this.contex3d;
+    var gl  = this.context3d;
     var glArrayBuffer = gl.ARRAY_BUFFER,
         glDynamicDraw = gl.DYNAMIC_DRAW,
         glFloat       = gl.FLOAT;
@@ -2872,7 +2973,7 @@ CanvasGL.prototype.drawElements = function(vertices,indices,colors)
         i = new Uint16Array(indices || this.__faceIndicesLinearCW(vertices)),
         c = this._applyColorToColorBuffer((colors || this._bufferColorFill4),new Float32Array(vertices.length * 2));
 
-    var gl = this.contex3d,
+    var gl = this.context3d,
         glArrayBuffer = gl.ARRAY_BUFFER,
         glDynamicDraw = gl.DYNAMIC_DRAW,
         glFloat       = gl.FLOAT;
@@ -2978,7 +3079,7 @@ CanvasGL.prototype._batchPush = function(vertices,indices,colors,texCoords,limit
 
 CanvasGL.prototype.drawBatch = function()
 {
-    var gl = this.contex3d,
+    var gl = this.context3d,
         glArrayBuffer = gl.ARRAY_BUFFER,
         glDynamicDraw = gl.DYNAMIC_DRAW,
         glFloat       = gl.FLOAT;
@@ -3110,7 +3211,7 @@ CanvasGLImage.prototype._set = function(t)
  */
 CanvasGL.prototype.loadImage = function(path,target,obj,callbackString)
 {
-    var gl = this.contex3d;
+    var gl = this.context3d;
     var tex = gl.createTexture();
     tex.image = new Image();
 
@@ -3192,7 +3293,7 @@ CanvasGL.prototype.getImagePixel = function(img)
 
 CanvasGL.prototype.loadFragmentShader = function(shaderScript)
 {
-    return this._loadShader(shaderScript,this.contex3d.FRAGMENT_SHADER);
+    return this._loadShader(shaderScript,this.context3d.FRAGMENT_SHADER);
 };
 
 /**
@@ -3201,21 +3302,18 @@ CanvasGL.prototype.loadFragmentShader = function(shaderScript)
  * @return {*}
  */
 
-CanvasGL.prototype.loadFragmentShaderFromScript = function(shaderScriptId)
-{
+CanvasGL.prototype.loadFragmentShaderFromScript = function(shaderScriptId){
     var s = document.getElementById(shaderScriptId);
 
-    if(s.type != this.contex3d.FRAGMENT_SHADER)
-    {
+    if(s.type != this.context3d.FRAGMENT_SHADER){
         return null;
     }
 
     return this.loadFragmentShader(s.text);
 };
 
-CanvasGL.prototype._loadShaderFromScript = function(shaderScriptId)
-{
-    var gl = this.contex3d;
+CanvasGL.prototype._loadShaderFromScript = function(shaderScriptId){
+    var gl = this.context3d;
 
     var script = document.getElementById(shaderScriptId),
         type   = script.type == "x-shader/x-vertex" ? gl.VERTEX_SHADER : script.type == "x-shader/x-fragment" ? gl.FRAGMENT_SHADER : null,
@@ -3224,37 +3322,29 @@ CanvasGL.prototype._loadShaderFromScript = function(shaderScriptId)
     return this._loadShader(source,type);
 };
 
-CanvasGL.prototype._loadShader = function(source,type)
-{
-    var gl = this.contex3d;
+CanvasGL.prototype._loadShader = function(source,type){
+    var gl = this.context3d;
     var shader = gl.createShader(type);
 
     gl.shaderSource(shader,source);
     gl.compileShader(shader);
 
     if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))
-    {
-        console.log(gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
-        shader = null;
-    }
+        throw gl.getShaderInfoLog(shader);
 
     return shader;
 };
 
 CanvasGL.prototype._loadProgram = function(vertexShader,fragmentShader)
 {
-    var gl = this.contex3d;
+    var gl = this.context3d;
     var program = gl.createProgram();
     gl.attachShader(program,vertexShader);
     gl.attachShader(program,fragmentShader);
     gl.linkProgram(program);
+
     if(!gl.getProgramParameter(program,gl.LINK_STATUS))
-    {
-        console.log("Could not link program.");
-        gl.deleteProgram(program);
-        program = null;
-    }
+        throw gl.getProgramInfoLog(program);
 
     return program;
 };
@@ -3288,15 +3378,12 @@ CanvasGL.prototype.getScreenCoord = function(x,y)
 // Internal Matrix apply
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype._setMatrixUniform = function()
-{
-    this.contex3d.uniformMatrix3fv(this._uniformLocationMatix,false,this._matrix);
+CanvasGL.prototype._setMatrixUniform = function(){
+    this.context3d.uniformMatrix3fv(this._uniformLocationMatix,false,this._matrix);
 };
 
-CanvasGL.prototype._loadIdentity = function()
-{
-    this.__mat33Identity(this._matrix);
-
+CanvasGL.prototype._loadIdentity = function(){
+    this._mat33Identity(this._matrix);
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -3309,9 +3396,8 @@ CanvasGL.prototype._loadIdentity = function()
  * @param {Number} y
  */
 
-CanvasGL.prototype.translate = function(x,y)
-{
-    this._matrix = this.__mat33MultPost(this._matrix,this.__makeMat33Translate(x,y));
+CanvasGL.prototype.translate = function(x,y){
+    this._matrix = this._mat33MultPost(this._matrix,this._makeMat33Translate(x,y));
 };
 
 /**
@@ -3320,9 +3406,8 @@ CanvasGL.prototype.translate = function(x,y)
  * @param {Number} y
  */
 
-CanvasGL.prototype.scale = function(x,y)
-{
-    this._matrix = this.__mat33MultPost(this._matrix,this.__makeMat33Scale(x,y));
+CanvasGL.prototype.scale = function(x,y){
+    this._matrix = this._mat33MultPost(this._matrix,this._makeMat33Scale(x,y));
 };
 
 /**
@@ -3330,37 +3415,31 @@ CanvasGL.prototype.scale = function(x,y)
  * @param {Number} a
  */
 
-CanvasGL.prototype.rotate = function(a)
-{
-    this._matrix = this.__mat33MultPost(this._matrix,this.__makeMat33Rotation(a));
+CanvasGL.prototype.rotate = function(a){
+    this._matrix = this._mat33MultPost(this._matrix,this._makeMat33Rotation(a));
 };
 
 /**
  * @method pushMatrix
  */
 
-CanvasGL.prototype.pushMatrix = function()
-{
-    this._matrixStack.push(this.__makeMat33Copy(this._matrix));
+CanvasGL.prototype.pushMatrix = function(){
+    this._matrixStack.push(this._makeMat33Copy(this._matrix));
 };
 
 /**
  * @method popMatrix
  */
 
-CanvasGL.prototype.popMatrix = function()
-{
+CanvasGL.prototype.popMatrix = function(){
     var stack = this._matrixStack;
 
-    if(stack.length == 0)
-    {
+    if(stack.length == 0){
         throw "Invalid pop!";
     }
 
     this._matrix = stack.pop();
-
     return this._matrix;
-
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -3373,49 +3452,40 @@ CanvasGL.prototype.popMatrix = function()
 //  0 SY  0   3  4  5
 // TX TY  1   6  7  8
 
-CanvasGL.prototype.__tempMatrix = function()
-{
-    return this.__mat33Identity(this._matrixTemp);
+CanvasGL.prototype._makeMat33Temp = function(){
+    return this._mat33Identity(this._matrixTemp);
 };
 
-CanvasGL.prototype.__makeMat33 = function()
-{
-    return new Float32Array([ 1, 0, 0,
-                              0, 1, 0,
-                              0, 0, 1]);
+CanvasGL.prototype._makeMat33 = function(){
+    return new Float32Array([ 1, 0, 0, 0, 1, 0,0, 0, 1]);
 };
 
-CanvasGL.prototype.__mat33Identity = function(m)
-{
+CanvasGL.prototype._mat33Identity = function(m){
     m[ 0] = 1;m[ 4] = 1;m[ 8] = 1;
     m[ 1] = m[ 2] = m[ 3] = m[ 5] = m[ 6] = m[ 7] = 0;
     return m;
 };
 
-CanvasGL.prototype.__mat33Copy = function(m)
-{
+CanvasGL.prototype._mat33Copy = function(m){
     return new Float32Array(m);
 };
 
-CanvasGL.prototype.__makeMat33Scale = function(x,y)
-{
-    var  m = this.__tempMatrix();
+CanvasGL.prototype._makeMat33Scale = function(x,y){
+    var  m = this._makeMat33Temp();
     m[0] = x;
     m[4] = y;
     return m;
 };
 
-CanvasGL.prototype.__makeMat33Translate = function(x,y)
-{
-    var  m = this.__tempMatrix();
+CanvasGL.prototype._makeMat33Translate = function(x,y){
+    var  m = this._makeMat33Temp();
     m[6] = x;
     m[7] = y;
     return m;
 };
 
-CanvasGL.prototype.__makeMat33Rotation = function(a)
-{
-    var  m = this.__tempMatrix();
+CanvasGL.prototype._makeMat33Rotation = function(a){
+    var  m = this._makeMat33Temp();
 
     var sin = Math.sin(a),
         cos = Math.cos(a);
@@ -3427,9 +3497,8 @@ CanvasGL.prototype.__makeMat33Rotation = function(a)
     return m;
 };
 
-CanvasGL.prototype.__makeMat33Copy = function(m)
-{
-    var d = this.__makeMat33();
+CanvasGL.prototype._makeMat33Copy = function(m){
+    var d = this._makeMat33();
 
     d[ 0] = m[ 0];d[ 1] = m[ 1];d[ 2] = m[ 2];
     d[ 3] = m[ 3];d[ 4] = m[ 4];d[ 5] = m[ 5];
@@ -3438,9 +3507,8 @@ CanvasGL.prototype.__makeMat33Copy = function(m)
     return d;
 };
 
-CanvasGL.prototype.__mat33MultPre = function(m0,m1)
-{
-    var m = this.__makeMat33();
+CanvasGL.prototype._mat33MultPre = function(m0,m1){
+    var m = this._makeMat33();
 
 
    var m000 = m0[ 0],m001 = m0[ 1],m002 = m0[ 2],
@@ -3466,9 +3534,8 @@ CanvasGL.prototype.__mat33MultPre = function(m0,m1)
     return m;
 };
 
-CanvasGL.prototype.__mat33MultPost = function(mat0,mat1)
-{
-    return this.__mat33MultPre(mat1,mat0);
+CanvasGL.prototype._mat33MultPost = function(mat0,mat1){
+    return this._mat33MultPre(mat1,mat0);
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -3596,7 +3663,7 @@ CanvasGL.prototype.__nnp2 = function(n)
 
 CanvasGL.prototype.__fillBuffer = function(vertexArray,colorArray)
 {
-    var gl  = this.contex3d;
+    var gl  = this.context3d;
     var glArrayBuffer = gl.ARRAY_BUFFER,
         glDynamicDraw = gl.DYNAMIC_DRAW,
         glFloat       = gl.FLOAT;
@@ -3615,7 +3682,7 @@ CanvasGL.prototype.__fillBuffer = function(vertexArray,colorArray)
 
 CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordArray)
 {
-    var gl            = this.contex3d,
+    var gl            = this.context3d,
         glArrayBuffer = gl.ARRAY_BUFFER,
         glFloat       = gl.FLOAT;
 
@@ -3628,7 +3695,7 @@ CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordAr
         offSetC = vblen,
         offSetT = vblen + cblen;
 
-    //contex3d.bindBuffer(glArrayBuffer,this._vboShared);
+    //context3d.bindBuffer(glArrayBuffer,this._vboShared);
     gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
 
     gl.bufferSubData(glArrayBuffer,offSetV,vertexArray);
@@ -3876,7 +3943,7 @@ CanvasGL.prototype.text = function(string,x,y,width,height)
 
     this._setCurrTexture(this._context2DGetTexture());
 
-    var gl = this.contex3d;
+    var gl = this.context3d;
 
     var v = this._bufferVerticesQuad;
 
@@ -3903,7 +3970,7 @@ CanvasGL.prototype.text = function(string,x,y,width,height)
         offSetC = offSetV + vblen,
         offSetT = vblen + cblen;
 
-    //contex3d.bindBuffer(glArrayBuffer,this._vboShared);
+    //context3d.bindBuffer(glArrayBuffer,this._vboShared);
     gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
 
     gl.bufferSubData(glArrayBuffer,0,v);
@@ -4029,7 +4096,7 @@ CanvasGL.prototype._context2DSetImage = function(img)
 
 CanvasGL.prototype._context2DGetTexture = function()
 {
-    var gl            = this.contex3d,
+    var gl            = this.context3d,
         glTexture2d   = gl.TEXTURE_2D,
         glClampToEdge = gl.CLAMP_TO_EDGE,
         glLinear      = gl.LINEAR,
@@ -4047,7 +4114,7 @@ CanvasGL.prototype._context2DGetTexture = function()
 
 CanvasGL.prototype._context2DPrepareTexture = function()
 {
-    var gl            = this.contex3d,
+    var gl            = this.context3d,
         glTexture2d   = gl.TEXTURE_2D,
         glClampToEdge = gl.CLAMP_TO_EDGE,
         glLinear      = gl.LINEAR,
@@ -4055,7 +4122,7 @@ CanvasGL.prototype._context2DPrepareTexture = function()
 
     this._context2DSetSize(2,2);
 
-    var tex = this.contex3d.createTexture();
+    var tex = this.context3d.createTexture();
     tex.image = this._canvas2d;
 
     gl.bindTexture(glTexture2d,tex);
