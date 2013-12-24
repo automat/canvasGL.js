@@ -168,15 +168,30 @@ App.prototype.draw = function(){
     c.roundRect(0,475,150,150,50);
 
     c.setModeRect(c.CENTER);
-    c.pushMatrix();
-    c.translate(250,550);
-    c.rotate(sinTime * Math.PI);
-    c.scale(sinTime * 0.5 + 0.5,sinTime * 0.5 + 0.5);
-    c.stroke1f(1);
-    c.setLineWidth(40);
-    c.roundRect(0,0,150,150,50);
-    c.popMatrix();
+    var i,j;
+    var lenx = 100,
+        leny = 100;
+    i = -1;
+    while(++i < lenx){
+        j = -1;
+        while(++j < leny){
+            c.pushMatrix();
+            c.translate(i/lenx * 750,j/leny * 750);
+            c.rotate(sinTime * Math.PI);
+            c.scale(sinTime * 0.5 + 0.5,sinTime * 0.5 + 0.5);
+            //c.stroke1f(1);
+            c.setLineWidth(2);
+            c.circle(0,0,10);
+            //c.roundRect(0,0,20,20,3);
+            c.popMatrix();
+
+
+        }
+    }
+
     c.drawShapeOrigin(250,550);
+
+
 
 
 
@@ -245,7 +260,7 @@ App.prototype.drawShapeOrigin = function(x,y){
 };
 
 App.prototype.onKeyDown = function(e){
-    console.log('Key pressed: ' + c.getKeyStr() + ' / code: ' + c.getKeyCode());
+    console.log('Key pressed: ' + this.getKeyStr() + ' / code: ' + this.getKeyCode());
 };
 
 App.prototype.onMouseDown = function(e){
