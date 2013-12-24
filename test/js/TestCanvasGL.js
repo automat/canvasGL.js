@@ -170,7 +170,7 @@ TestCanvasGL.prototype.draw = function()
             c.translate(dcl[0]+rs,dcl[1]+rs);
             c.rotate(asint025*TWO_PI*2);
             c.setLineWidth(3+floor(asint025*15));
-            c.setEllipseDetail(3+floor(asint025*27));
+            c.setDetailEllipse(3+floor(asint025*27));
             c.strokeArrF([1.0,0.0,0.0,1.0,
                           0.0,0.0,1.0,1.0]);
 
@@ -186,7 +186,7 @@ TestCanvasGL.prototype.draw = function()
         {
             c.translate(dcl[2]+rs,dcl[3]+rs);
             c.rotate(QUARTER_PI+abs(sin(t*0.05))*4*PI);
-            c.setRectMode(CanvasGL.CENTER);
+            c.setModeRect(CanvasGL.CENTER);
             c.setLineWidth(3+floor(asint025*15));
 
             c.stroke(255);
@@ -196,7 +196,7 @@ TestCanvasGL.prototype.draw = function()
                         1.0,0.0,1.0,1.0]);
 
             c.rect(0,0,rs,rs);
-            c.setRectMode(CanvasGL.CORNER);
+            c.setModeRect(CanvasGL.CORNER);
             c.setLineWidth(1);
 
         }
@@ -205,7 +205,7 @@ TestCanvasGL.prototype.draw = function()
         c.pushMatrix();
         {
             c.translate(dcl[4],dcl[5]);
-            c.setEllipseDetail(8);
+            c.setDetailEllipse(8);
             c.fill(255);
             c.setLineWidth(2);
             c.strokeArrF([1.0,0.0,0.0,1.0,
@@ -286,7 +286,7 @@ TestCanvasGL.prototype.draw = function()
             c.rotate(TWO_PI*4*stepSmoothCubed(abs(sint025)));
             c.noStroke();
             c.fill(255,0,0,0.5);
-            c.setEllipseDetail(20);
+            c.setDetailEllipse(20);
             c.circle(-pp1*0.25,pp1*0.25,pp0);
             c.fill(0,0,255,0.5);
             c.circle(+pp1*0.25,pp1*0.25,pp0);
@@ -319,7 +319,7 @@ TestCanvasGL.prototype.draw = function()
             c.line(anchor1[0],anchor1[1],cntrl1[0],cntrl1[1]);
             c.noStroke();
             c.fill(80);
-            c.setEllipseDetail(10);
+            c.setDetailEllipse(10);
             c.circle(cntrl1[0],cntrl1[1],3);
             c.circle(cntrl0[0],cntrl0[1],3);
 
@@ -327,7 +327,7 @@ TestCanvasGL.prototype.draw = function()
             c.setLineWidth(2);
             c.strokeArrF([1.0,0.0,0.0,1.0,
                 0.0,0.0,1.0,1.0]);
-            c.setBezierDetail(20);
+            c.setDetailBezier(20);
 
             c.bezier(anchor0[0],anchor0[1],cntrl0[0], cntrl0[1],
                      cntrl1[0],  cntrl1[1],anchor1[0],anchor1[1]);
@@ -363,7 +363,7 @@ TestCanvasGL.prototype.draw = function()
 
         c.pushMatrix();
         {
-            c.setRectMode(CanvasGL.CORNER);
+            c.setModeRect(CanvasGL.CORNER);
             c.noStroke();
             c.translate(dcl[14],dcl[15]);
             c.blend(CanvasGL.SRC_COLOR,CanvasGL.ONE_MINUS_SRC_COLOR);
@@ -467,11 +467,11 @@ TestCanvasGL.prototype.draw = function()
             pp0 = [15,rs2-15,30,15,rs,rs,rs2-30,15,rs2-15,rs2-15];
             pp1 = stepSquared(abs(sin(t)));
 
-            c.setCurveDetail(20);
+            c.setDetailCurve(20);
             c.setLineWidth(20);
             c.strokeArrF([pp1,0.0,0.0,1.0,
                           0.0,0.0,1-pp1,1.0]);
-            c.setCurveDetail(20);
+            c.setDetailCurve(20);
             c.curve(pp0);
             c.noStroke();
             c.fill(255);
@@ -502,7 +502,7 @@ TestCanvasGL.prototype.draw = function()
             c.strokeArrF([1,0.1,0.1,1.0,
                           1.0,1.0,1,0.0]);
             c.setLineWidth(30);
-            c.setCurveDetail(30);
+            c.setDetailCurve(30);
             c.curve(pp0);
 
             c.noStroke();
@@ -601,7 +601,7 @@ TestCanvasGL.prototype.draw = function()
             c.translate(dcl[24]+pp5,dcl[25]);
             c.noStroke();
 
-            c.setEllipseDetail(12);
+            c.setDetailEllipse(12);
             pp1 = 30;
             pp0 = (rs2-pp5*2)/(pp1-1);
             pp2 = new Array(pp1);
@@ -642,11 +642,11 @@ TestCanvasGL.prototype.draw = function()
             c.translate(dcl[26],dcl[27]);
             c.noStroke();
             c.fill(100,0,0);
-            c.setEllipseDetail(20);
+            c.setDetailEllipse(20);
             i = -1;
             pa  = 2+ floor(10*stepSmooth(asint025));
             pp0 = rs2/ (pa);
-            c.setEllipseDetail(10);
+            c.setDetailEllipse(10);
             while(++i < pa)
             {
                 j = -1;
@@ -669,7 +669,7 @@ TestCanvasGL.prototype.draw = function()
             c.translate(dcl[28]+rs,dcl[29]+rs);
             c.rotate(TWO_PI*sin(t*0.1));
 
-            c.setEllipseDetail(3+(floor(abs(sin(t*0.05))*7)));
+            c.setDetailEllipse(3+(floor(abs(sin(t*0.05))*7)));
             c.noStroke();
             c.stroke(255);
             c.texture(img2);
@@ -685,7 +685,7 @@ TestCanvasGL.prototype.draw = function()
             c.translate(dcl[30]+rs,dcl[31]+rs);
             c.rotate(TWO_PI*sin(t*0.1));
 
-            c.setEllipseDetail(3+(floor(abs(sin(t*0.05))*7)));
+            c.setDetailEllipse(3+(floor(abs(sin(t*0.05))*7)));
             c.noStroke();
 
 
@@ -725,7 +725,7 @@ TestCanvasGL.prototype.draw = function()
             pp6 = [];
 
 
-            c.setRectMode(CanvasGL.CENTER);
+            c.setModeRect(CanvasGL.CENTER);
             c.translate(rs,rs);
             c.rotate(nn*PI);
 
@@ -773,11 +773,11 @@ TestCanvasGL.prototype.draw = function()
         {
 
             c.translate(dcl[34],dcl[35]);
-            c.setEllipseDetail(10);
+            c.setDetailEllipse(10);
 
             c.strokeArrF([1.0,0.0,0.0,1.0,
                 0.0,0.0,1.0,1.0]);
-            c.setBezierDetail(40);
+            c.setDetailBezier(40);
 
             pp1 = (rs2-20)*abs(sin(t*0.025))+10;
 
@@ -787,7 +787,7 @@ TestCanvasGL.prototype.draw = function()
             pp3 = 10;
             //pp0 = new Array(pp3);
 
-            c.setRectMode(CanvasGL.CENTER);
+            c.setModeRect(CanvasGL.CENTER);
             i = 0;
 
 
@@ -835,7 +835,7 @@ TestCanvasGL.prototype.draw = function()
             pp3 = 50;
             pp0 = new Array(pp3*2);
 
-            c.setRectMode(CanvasGL.CENTER);
+            c.setModeRect(CanvasGL.CENTER);
             i = 0;
 
             pp7 = 2*abs(sin(t*0.05));
@@ -875,10 +875,10 @@ TestCanvasGL.prototype.draw = function()
         {
             c.translate(dcl[38]+rs,dcl[39]+rs);
 
-            c.setRectMode(CanvasGL.CENTER);
+            c.setModeRect(CanvasGL.CENTER);
             c.noStroke();
             c.fill(255);
-            c.setCornerDetail(6);
+            c.setDetailCorner(6);
             pp0 = abs(sin(t*0.5))*(rs-10);
 
             c.fill4f(abs(sin(t)),0.0,abs(sin(t)),1.0);
@@ -959,7 +959,7 @@ TestCanvasGL.prototype.draw = function()
             c.stroke(40);
             c.fill(0,0.25);
             c.setLineWidth(1.0);
-            c.setRectMode(CanvasGL.CORNER);
+            c.setModeRect(CanvasGL.CORNER);
 
             //c.fill(0,0.25);
             //c.rect(0,0, c.width, c.height);

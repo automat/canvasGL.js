@@ -2,10 +2,11 @@ function App(element){
     CanvasGL.call(this,element);
     this.setSize(window.innerWidth,window.innerHeight);
 
+
     var self = this;
-
-
-
+    window.addEventListener('resize',function(){
+        self.setSize(window.innerWidth,window.innerHeight);
+    });
 }
 
 App.prototype = Object.create(CanvasGL.prototype);
@@ -21,9 +22,9 @@ App.prototype.draw = function(){
         lineWidth1 = 5 + (1 - (sinTime * 0.5 + 0.5)) * 5;
 
     c.backgroundfv(0.15,0,0.15);
-    c.setCircleDetail(20);
+    c.setDetailCircle(20);
 
-    //c.translate(c.getWidth() * 0.5 - 350,0);
+    c.translate(c.getWidth() * 0.5 - 350,0);
 
     /*
     c.fill1f(0);
@@ -69,18 +70,18 @@ App.prototype.draw = function(){
     c.noFill();
     c.stroke1f(1);
     c.setLineWidth(lineWidth0);
-    c.setRectMode(CanvasGL.CORNER);
+    c.setModeRect(CanvasGL.CORNER);
     c.rect(50,50,100,100);
     c.setLineWidth(lineWidth1);
-    c.setRectMode(CanvasGL.CENTER);
+    c.setModeRect(CanvasGL.CENTER);
     c.rect(50,50,100,100);
     c.drawShapeOrigin(50,50);
 
     c.setLineWidth(lineWidth0);
-    c.setEllipseMode(CanvasGL.CORNER);
+    c.setModeCircle(CanvasGL.CORNER);
     c.circle(200,50,50);
     c.setLineWidth(lineWidth1);
-    c.setEllipseMode(CanvasGL.CENTER);
+    c.setModeCircle(CanvasGL.CENTER);
     c.circle(200,50,50);
     c.drawShapeOrigin(200,50);
 
@@ -90,20 +91,20 @@ App.prototype.draw = function(){
     c.triangle(350,0,300,100,400,100);
 
 
-    c.setEllipseDetail(20);
+    c.setDetailEllipse(20);
     c.setLineWidth(lineWidth0);
-    c.setEllipseMode(CanvasGL.CORNER);
+    c.setModeEllipse(CanvasGL.CORNER);
     c.ellipse(500,50,50,25);
     c.setLineWidth(lineWidth1);
-    c.setEllipseMode(CanvasGL.CENTER);
+    c.setModeEllipse(CanvasGL.CENTER);
     c.ellipse(500,50,50,25);
     c.drawShapeOrigin(500,50);
 
     c.setLineWidth(lineWidth0);
-    c.setEllipseMode(CanvasGL.CORNER);
+    c.setModeEllipse(CanvasGL.CORNER);
     c.arc(650,50,50,50,0,(sinTime*0.5 + 0.5) * Math.PI );
     c.setLineWidth(lineWidth1);
-    c.setEllipseMode(CanvasGL.CENTER);
+    c.setModeEllipse(CanvasGL.CENTER);
     c.arc(650,50,50,50,0,(sinTime*0.5 + 0.5) * Math.PI );
     c.drawShapeOrigin(650,50);
 
@@ -112,21 +113,21 @@ App.prototype.draw = function(){
         1,0,0,1,
         0,1,0,1,
         0,0,1,1]);
-    c.setRectMode(CanvasGL.CORNER);
+    c.setModeRect(CanvasGL.CORNER);
     c.rect(0,150,150,150);
 
     /*
-    c.setCircleDetail(4);
+    c.setDetailCircle(4);
     c.fillfv([0,0,0,1,
               0,0,0,1,
               0,0,0,1,
               0,0,0,1]);
-    c.setRectMode(CanvasGL.CORNER);
+    c.setModeRect(CanvasGL.CORNER);
     c.circle(300,0,75);
     */
 
     c.stroke3f(1,0,0);
-    c.setCurveDetail(20);
+    c.setDetailCurve(20);
     c.setLineWidth(10);
     c.beginCurve();
     c.curveVertex(0,150);
@@ -161,6 +162,25 @@ App.prototype.draw = function(){
     c.popMatrix();
 
 
+    c.setDetailCorner(10);
+    c.noStroke();
+    c.fill3f(1,0,0);
+    c.roundRect(0,475,150,150,50);
+
+    c.setModeRect(c.CENTER);
+    c.pushMatrix();
+    c.translate(250,550);
+    c.rotate(sinTime * Math.PI);
+    c.scale(sinTime * 0.5 + 0.5,sinTime * 0.5 + 0.5);
+    c.stroke1f(1);
+    c.setLineWidth(40);
+    c.roundRect(0,0,150,150,50);
+    c.popMatrix();
+    c.drawShapeOrigin(250,550);
+
+
+
+
 
     /*
     c.pushMatrix();
@@ -185,7 +205,7 @@ App.prototype.draw = function(){
 
     /*
     c.setLineWidth(1);
-    c.setEllipseMode(CanvasGL.CENTER);
+    c.setModeEllipse(CanvasGL.CENTER);
     c.circle(200,50,50);
     c.drawShapeOrigin(200,50);
     */
@@ -196,12 +216,12 @@ App.prototype.draw = function(){
     c.setLineWidth(5);
     c.triangle(400,50,350,150,450,150);
 
-    c.setEllipseDetail(20);
+    c.setDetailEllipse(20);
     c.setLineWidth(1);
-    c.setEllipseMode(CanvasGL.CORNER);
+    c.setModeEllipse(CanvasGL.CORNER);
     c.ellipse(450,50,50,50);
     c.setLineWidth(5);
-    c.setEllipseMode(CanvasGL.CENTER);
+    c.setModeEllipse(CanvasGL.CENTER);
     c.ellipse(450,50,50,50);
     */
 
@@ -214,8 +234,8 @@ App.prototype.drawShapeOrigin = function(x,y){
 
     c.noStroke();
     c.fill3f(0,0,0);
-    c.setEllipseMode(CanvasGL.CENTER);
-    c.setEllipseDetail(10);
+    c.setModeCircle(CanvasGL.CENTER);
+    c.setDetailCircle(10);
     c.circle(x,y,7.5);
 
     if(oldStroke)c.strokefv(oldStroke);
