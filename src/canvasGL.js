@@ -77,27 +77,21 @@ function CanvasGL(element){
     /*------------------------------------------------------------------------------------------------------------*/
 
 
-    var glVertexShader       = gl.VERTEX_SHADER,
-        glFragmentShader     = gl.FRAGMENT_SHADER,
-        glTexture2d          = gl.TEXTURE_2D,
+    var glTexture2d          = gl.TEXTURE_2D,
         glRGBA               = gl.RGBA,
-        glFloat              = gl.FLOAT,
         glFrameBuffer        = gl.FRAMEBUFFER,
         glArrayBuffer        = gl.ARRAY_BUFFER,
         glElementArrayBuffer = gl.ELEMENT_ARRAY_BUFFER;
 
     // Setup 2d / post shader
 
-    this._vertShader     = this.loadShader(CanvasGL.__vertShader,     glVertexShader);
-    this._fragShader     = this.loadShader(CanvasGL.__fragShader,     glFragmentShader);
-    this._vertShaderPost = this.loadShader(CanvasGL.__vertShaderPost, glVertexShader);
-    this._fragShaderPost = this.loadShader(CanvasGL.__fragShaderPost, glFragmentShader);
-
     var Common  = CanvasGL.__Common;
 
-    this._program     = this.createProgram(this._vertShader,    this._fragShader);
-    this._programPost = this.createProgram(this._vertShaderPost,this._fragShaderPost);
-    gl.useProgram(this._program);
+    this._currProgram = null;
+    this._prevProgram = null;
+
+    this._program     = new CanvasGL.Program(this, CanvasGL.__vertShader,CanvasGL.__fragShader);
+    this._programPost = new CanvasGL.Program(this, CanvasGL.__vertShaderPost, CanvasGL.__fragShaderPost);
 
     this._bColorBg    = new Float32Array([1.0,1.0,1.0,1.0]);
     this._bColorBgOld = new Float32Array([-1.0,-1.0,-1.0,-1.0]);
@@ -126,12 +120,13 @@ function CanvasGL(element){
     this._iboShared = gl.createBuffer();
     this._vboSelected = null;
     this._iboSelected = null;
+
     gl.bindBuffer(glArrayBuffer,        this._vboShared);
     gl.bindBuffer(glElementArrayBuffer, this._iboShared);
 
 
     // shader locationss
-
+    /*
     this._uniformLocationResolution  = gl.getUniformLocation(this._program, "uResolution");
     this._uniformLocationUseTexture  = gl.getUniformLocation(this._program, "uUseTexture");
     this._uniformLocationImage       = gl.getUniformLocation(this._program, "uImage");
@@ -146,22 +141,28 @@ function CanvasGL(element){
     this._attribLocationPostVertPosition = gl.getAttribLocation( this._programPost, "aVerPosition");
     this._attribLocationPostTexCoord     = gl.getAttribLocation( this._programPost, "aTexCoord");
 
+
     gl.enableVertexAttribArray(this._attribLocationVertPosition);
     gl.enableVertexAttribArray(this._attribLocationTexCoord);
     gl.enableVertexAttribArray(this._attribLocationVertColor);
 
     gl.vertexAttribPointer(this._attribLocationVertPosition, 3, glFloat,false,0,0);
     gl.vertexAttribPointer(this._attribLocationTexCoord,     2, glFloat,false,0,0);
+    */
 
-    gl.uniform1f(this._uniformLocationFlipY,1.0); //set default flip y
+    var program = this._program;
+    var ShaderDict = CanvasGL.__SharedShaderDict;
+    gl.uniform1f(program[ShaderDict.uFlipY],1.0);
+
+    //gl.uniform1f(this._uniformLocationFlipY,1.0); //set default flip y
 
     // Create default blank texture and texture coords / use color & set alpha to 1.0
     this._currTint = Default.TINT;
     this._blankTexture = gl.createTexture();
     gl.bindTexture(glTexture2d,this._blankTexture);
     gl.texImage2D( glTexture2d, 0, glRGBA, 1, 1, 0, glRGBA, gl.UNSIGNED_BYTE, new Uint8Array([1,1,1,1]));
-    gl.uniform1f(this._uniformLocationUseTexture,0.0);
-
+    //gl.uniform1f(this._uniformLocationUseTexture,0.0);
+    gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
 
     // Create matrix stack and apply
     this._matrix      = this._mat33Make();
@@ -500,6 +501,17 @@ CanvasGL.__Common = {
     BUFFER_DEFAULT_RESERVE_AMOUNT : 50
 };
 
+CanvasGL.__SharedShaderDict = {
+    uMatrix:'uMatrix',
+    uResolution:'uResolution',
+    uFlipY:'uFlipY',
+    uImage:'uImage',
+    uUseTexture:'uUseTexture',
+    aVertPosition:'aVertPosition',
+    aVertColor:'aVertColor',
+    aTexCoord:'aTexCoord'
+};
+
 CanvasGL.CENTER = 0;
 CanvasGL.CORNER = 1;
 CanvasGL.WRAP   = 2;
@@ -550,10 +562,22 @@ CanvasGL.prototype.setSize = function(width,height){
 
     this._updateTex0Size();
 
-    gl.useProgram(this._programPost);
-    gl.uniform2f(this._uniformLocationPostResolution,width,height);
-    gl.useProgram(this._program);
-    gl.uniform2f(this._uniformLocationResolution,width,height);
+    var program     = this._program,
+        programPost = this._programPost;
+    var ShaderDict  = CanvasGL.__SharedShaderDict;
+
+    this.useProgram(programPost);
+    gl.uniform2f(programPost[ShaderDict.uResolution],width,height);
+
+   // gl.useProgram(this._programPost);
+   // gl.uniform2f(this._uniformLocationPostResolution,width,height);
+
+
+    this.useProgram(program);
+    gl.uniform2f(program[ShaderDict.uResolution],width,height);
+
+  //  gl.useProgram(this._program);
+  //  gl.uniform2f(this._uniformLocationResolution,width,height);
     gl.viewport(0,0,width,height);
 
     var i_255 = 1.0 / 255.0;
@@ -1022,26 +1046,26 @@ CanvasGL.prototype.noTint = function(){
 
 CanvasGL.prototype._applyTexture = function(){
     var gl = this._context3d;
-    gl.uniform1f(this._uniformLocationUseTexture,1.0);
+    var program = this._currProgram;
+    var ShaderDict = CanvasGL.__SharedShaderDict;
+    gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
+    //gl.uniform1f(this._uniformLocationUseTexture,1.0);
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-    gl.uniform1f(this._uniformLocationImage,0);
+    gl.uniform1f(program[ShaderDict.uUseImage],0);
+    //gl.uniform1f(this._uniformLocationImage,0);
 };
 
 CanvasGL.prototype._disableTexture = function(){
     var gl = this._context3d;
+    var program = this._currProgram;
+    var ShaderDict = CanvasGL.__SharedShaderDict;
     gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
-    gl.vertexAttribPointer(this._attribLocationTexCoord,CanvasGL.__Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
-    gl.uniform1f(this._uniformLocationUseTexture,0.0);
+    gl.vertexAttribPointer(program[ShaderDict.aTexCoord],CanvasGL.__Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
+    //gl.vertexAttribPointer(this._attribLocationTexCoord,CanvasGL.__Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
+    //gl.uniform1f(this._uniformLocationUseTexture,0.0);
+    gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
     this._texture = false;
 };
-
-/**
- * @method setUVOffset
- * @param {Number} offsetU
- * @param {Number} offsetV
- * @param {Number} textureWidth
- * @param {Number} textureHeight
- */
 
 CanvasGL.prototype.setUVOffset = function(offsetU,offsetV,textureWidth,textureHeight){
     this._textureOffsetX = offsetU;
@@ -1052,10 +1076,6 @@ CanvasGL.prototype.setUVOffset = function(offsetU,offsetV,textureWidth,textureHe
     this._textureOffset = true;
 };
 
-/**
- * @method resetUVOffset
- */
-
 CanvasGL.prototype.resetUVOffset = function(){
     this._textureOffsetX = 0;
     this._textureOffsetY = 0;
@@ -1064,18 +1084,6 @@ CanvasGL.prototype.resetUVOffset = function(){
 
     this._textureOffset = false;
 };
-
-/**
- * @method setUVQuad
- * @param {Number} u0 U-value of the first coordinate
- * @param {Number} v0 V-value of the first coordinate
- * @param {Number} u1 U-value of the second coordinate
- * @param {Number} v1 V-value of the second coordinate
- * @param {Number} u2 U-value of the third coordinate
- * @param {Number} v2 V-value of the third coordinate
- * @param {Number} u3 U-value of the fourth coordinate
- * @param {Number} v3 V-value of the fourth coordinate
- */
 
 CanvasGL.prototype.setUVQuad = function(u0,v0,u1,v1,u2,v2,u3,v3){
     var t = this._bTexCoordsQuad;
@@ -1090,24 +1098,9 @@ CanvasGL.prototype.setUVQuad = function(u0,v0,u1,v1,u2,v2,u3,v3){
     t[7] = v3;
 };
 
-/**
- * Resets all quad uv-values to default.
- * @method resetUVQuad
- */
-
 CanvasGL.prototype.resetUVQuad = function(){
     this.__setArr(this._bTexCoordsQuad,this._bTexCoordsQuadDefault);
 };
-
-/**
- * @method setUVTriangle
- * @param {Number} u0 U-value of the first coordinate
- * @param {Number} v0 V-value of the first coordinate
- * @param {Number} u1 U-value of the second coordinate
- * @param {Number} v1 V-value of the second coordinate
- * @param {Number} u2 U-value of the third coordinate
- * @param {Number} v2 V-value of the third coordinate
- */
 
 CanvasGL.prototype.setUVTriangle = function(u0,v0,u1,v1,u2,v2){
     var t = this._bTexCoordsTriangle;
@@ -1208,14 +1201,14 @@ CanvasGL.prototype.backgroundiv = function(){
 };
 
 CanvasGL.prototype._applyFBOTexToQuad = function(){
-    var gl = this._context3d,
-        lt = this._uniformLocationUseTexture,
-        lf = this._uniformLocationFlipY,
-        w  = this._twidth ,
+    var gl = this._context3d;
+    var w  = this._twidth ,
         h  = this._theight ,
         v  = this._bVertexQuad,
         c  = this._bColorQuad,
         t  = this._bTexCoordsQuad;
+    var program = this._currProgram;
+    var ShaderDict = CanvasGL.__SharedShaderDict;
 
     this.loadIdentity();
     this.setMatrixUniform();
@@ -1224,8 +1217,8 @@ CanvasGL.prototype._applyFBOTexToQuad = function(){
     //gl.useProgram(this._program);
     this._bindFBO(this._fboCanvas);
 
-    gl.uniform1f(lt,1.0);
-    gl.uniform1f(lf,-1.0);
+    gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
+    gl.uniform1f(program[ShaderDict.uFlipY],-1.0);
     this._bindTexture(this._tex0);
 
     v[0] = v[1] = v[3] = v[4] =0;
@@ -1235,9 +1228,10 @@ CanvasGL.prototype._applyFBOTexToQuad = function(){
     this.__fillBufferTexture(v,c,t);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
-    gl.useProgram(this._program);
-    gl.uniform1f(lt,0.0);
-    gl.uniform1f(lf,1.0);
+    this.useProgram(this._program);
+    program = this._currProgram;
+    gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
+    gl.uniform1f(program[ShaderDict.uFlipY],1.0);
     this._bindTexture(this._blankTexture);
     this._disableTexture();
 
@@ -1289,12 +1283,13 @@ CanvasGL.prototype.clearColorBuffer = function()
 
 CanvasGL.prototype._bindFBO = function(fbo)
 {
-    var gl = this._context3d,
-        w  = this._iwidth,
+    var gl = this._context3d;
+    var program = this._currProgram;
+    var w  = this._iwidth,
         h  = this._iheight;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
-    gl.uniform2f(this._uniformLocationResolution,w,h);
+    gl.uniform2f(program[CanvasGL.__SharedShaderDict.uResolution],w,h);
     gl.viewport(0,0,w,h);
 };
 
@@ -1359,7 +1354,7 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
             this._batchPush(v,this._bIndexQuad,c,null);
         }
         else {
-            this.bufferArrays(v,c);
+            this.bufferArrays(v,c,null);
             gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
         }
     }
@@ -1419,7 +1414,6 @@ CanvasGL.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 CanvasGL.prototype.rect = function(x,y,width,height){
     var cm = this._modeRect == CanvasGL.CENTER,
         rx,ry,rw,rh;
-
 
     if(cm){
         var w2 = width  * 0.5,
@@ -1583,11 +1577,14 @@ CanvasGL.prototype.roundRect = function(x,y,width,height,cornerRadius){
 
             this.setMatrixUniform();
 
+            var program = this._currProgram;
+            var ShaderDict = CanvasGL.__SharedShaderDict;
+
             gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
             gl.bufferSubData(glArrayBuffer,0,    vertices);
             gl.bufferSubData(glArrayBuffer,vblen,c);
-            gl.vertexAttribPointer(this._attribLocationVertPosition, Common.SIZE_OF_VERTEX,glFloat,false,0,0);
-            gl.vertexAttribPointer(this._attribLocationVertColor,    Common.SIZE_OF_COLOR, glFloat,false,0,vblen);
+            gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX,glFloat,false,0,0);
+            gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR, glFloat,false,0,vblen);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
             gl.drawElements(gl.TRIANGLES, il,gl.UNSIGNED_SHORT,0);
 
@@ -2352,7 +2349,10 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2){
                 offSetC = offSetV + vblen,
                 offSetT = vblen + cblen;
 
-            var Common = CanvasGL.__Common;
+            var Common     = CanvasGL.__Common,
+                ShaderDict = CanvasGL.__SharedShaderDict;
+
+            var program = this._currProgram;
 
             //_context3d.bindBuffer(glArrayBuffer,this._vboShared);
             gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
@@ -2361,13 +2361,13 @@ CanvasGL.prototype.triangle = function(x0,y0,x1,y1,x2,y2){
             gl.bufferSubData(glArrayBuffer,offSetC,c);
             gl.bufferSubData(glArrayBuffer,offSetT,t);
 
-            gl.vertexAttribPointer(this._attribLocationVertPosition, Common.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-            gl.vertexAttribPointer(this._attribLocationVertColor,    Common.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-            gl.vertexAttribPointer(this._attribLocationTexCoord,     Common.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
+            gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
+            gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
+            gl.vertexAttribPointer(program[ShaderDict.aTexCoord],     Common.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
 
-            gl.uniform1f(this._uniformLocationUseTexture,this._currTint);
+            gl.uniform1f(program[ShaderDict.uUseTexture],this._currTint);
             gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-            gl.uniform1f(this._uniformLocationImage,0);
+            gl.uniform1f(program[ShaderDict.uImage],0);
             gl.drawArrays(gl.TRIANGLES,0,1);
 
             this._disableTexture();
@@ -2433,7 +2433,8 @@ CanvasGL.prototype._polyline = function(joints,length,loop){
 
     var lineWidth = this._currLineWidth;
 
-    var Common = CanvasGL.__Common;
+    var Common     = CanvasGL.__Common,
+        ShaderDict = CanvasGL.__SharedShaderDict;
 
     var jointSize      = 2,
         jointLen       = (length || joints.length) + (loop ? jointSize : 0),
@@ -2634,18 +2635,20 @@ CanvasGL.prototype._polyline = function(joints,length,loop){
     }
     else
     {
+        var program = this._currProgram;
+
         if(this._texture)
         {
             gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
-            gl.vertexAttribPointer(this._attribLocationTexCoord,Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
-            gl.uniform1f(this._uniformLocationUseTexture,0.0);
+            gl.vertexAttribPointer(program[ShaderDict.aTexCoord],Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
+            gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
         }
 
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    vertices);
         gl.bufferSubData(glArrayBuffer,vblen,colors);
-        gl.vertexAttribPointer(this._attribLocationVertPosition, Common.SIZE_OF_VERTEX,glFloat,false,0,0);
-        gl.vertexAttribPointer(this._attribLocationVertColor,    Common.SIZE_OF_COLOR, glFloat,false,0,vblen);
+        gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX,glFloat,false,0,0);
+        gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR, glFloat,false,0,vblen);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
         gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
     }
@@ -2707,13 +2710,15 @@ CanvasGL.prototype.drawElements = function(vertices,indices,colors)
     else{
         this.setMatrixUniform();
 
-        var Common = CanvasGL._CGLC;
+        var Common = CanvasGL.__Common;
+        var ShaderDict = CanvasGL.__SharedShaderDict;
+        var program = this._currProgram;
 
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    v);
         gl.bufferSubData(glArrayBuffer,vblen,c);
-        gl.vertexAttribPointer(this._attribLocationVertPosition, Common.SIZE_OF_VERTEX,glFloat,false,0,0);
-        gl.vertexAttribPointer(this._attribLocationVertColor,    Common.SIZE_OF_COLOR, glFloat,false,0,vblen);
+        gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX,glFloat,false,0,0);
+        gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR, glFloat,false,0,vblen);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
         gl.drawElements(gl.TRIANGLES,i.length,gl.UNSIGNED_SHORT,0);
     }
@@ -2831,27 +2836,29 @@ CanvasGL.prototype.drawBatch = function()
 
     this.setMatrixUniform();
 
-    var Common = CanvasGL.__Common;
+    var Common     = CanvasGL.__Common,
+        ShaderDict = CanvasGL.__SharedShaderDict;
+    var program = this._currProgram;
 
     if(textured){
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    v);
         gl.bufferSubData(glArrayBuffer,vblen,c);
         gl.bufferSubData(glArrayBuffer,vblen+cblen,t);
-        gl.vertexAttribPointer(this._attribLocationVertPosition, Common.SIZE_OF_VERTEX, glFloat,false,0,0);
-        gl.vertexAttribPointer(this._attribLocationVertColor,    Common.SIZE_OF_COLOR,  glFloat,false,0,vblen);
-        gl.vertexAttribPointer(this._attribLocationTexCoord,     Common.SIZE_OF_T_COORD,glFloat,false,0,vblen + cblen);
-        gl.uniform1f(this._uniformLocationUseTexture,this._currTint);
+        gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX, glFloat,false,0,0);
+        gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR,  glFloat,false,0,vblen);
+        gl.vertexAttribPointer(program[ShaderDict.aTexCoord],     Common.SIZE_OF_T_COORD,glFloat,false,0,vblen + cblen);
+        gl.uniform1f(program[ShaderDict.uUseTexture],this._currTint);
         gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-        gl.uniform1f(this._uniformLocationImage,0);
+        gl.uniform1f(program[ShaderDict.uImage],0);
 
     }
     else{
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    v);
         gl.bufferSubData(glArrayBuffer,vblen,c);
-        gl.vertexAttribPointer(this._attribLocationVertPosition, Common.SIZE_OF_VERTEX, glFloat,false,0,0);
-        gl.vertexAttribPointer(this._attribLocationVertColor,    Common.SIZE_OF_COLOR,  glFloat,false,0,vblen);
+        gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX, glFloat,false,0,0);
+        gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR,  glFloat,false,0,vblen);
     }
 
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
@@ -2927,6 +2934,16 @@ CanvasGL.prototype.getImagePixel = function(img)
 // Shader loading
 /*---------------------------------------------------------------------------------------------------------*/
 
+CanvasGL.prototype.useProgram = function(program){
+    if(program == this._currProgram)return;
+    this._prevProgram = this._currProgram;
+    this._context3d.useProgram(program.program);
+    program.enableVertexAttribArrays(this);
+    this._currProgram = program;
+};
+
+CanvasGL.prototype.getProgram = function(){return this._currProgram;};
+
 CanvasGL.prototype.loadShader = function(source,type){
     var gl = this._context3d;
     var shader = gl.createShader(type);
@@ -2959,7 +2976,7 @@ CanvasGL.prototype.createProgram = function(vertexShader,fragmentShader)
 /*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.setMatrixUniform = function(){
-    this._context3d.uniformMatrix3fv(this._uniformLocationMatix,false,this._matrix);
+    this._context3d.uniformMatrix3fv(this._currProgram[CanvasGL.__SharedShaderDict.uMatrix],false,this._matrix);
 };
 
 CanvasGL.prototype.loadIdentity = function(){
@@ -3262,17 +3279,21 @@ CanvasGL.prototype._scaleVertices = function(src,scaleX,scaleY,out){
 };
 
 
-CanvasGL.prototype.bufferArrays = function(vertexFloat32Array,colorFloat32Array,texCoord32Array){
-    var gl = this._context3d;
+CanvasGL.prototype.bufferArrays = function(vertexFloat32Array,colorFloat32Array,texCoord32Array,glDrawMode){
     var ta = texCoord32Array ? true : false;
 
-    var paVertexPosition = this._attribLocationVertPosition,
-        paVertexColor    = this._attribLocationVertColor,
-        paVertexTexCoord = this._attribLocationTexCoord;
+    var program    = this._currProgram,
+        ShaderDict = CanvasGL.__SharedShaderDict;
 
-    var glArrayBuffer = gl.ARRAY_BUFFER,
-        glDynamicDraw = gl.DYNAMIC_DRAW,
+    var paVertexPosition = program[ShaderDict.aVertPosition],
+        paVertexColor    = program[ShaderDict.aVertColor],
+        paVertexTexCoord = program[ShaderDict.aTexCoord];
+
+    var gl            = this._context3d,
+        glArrayBuffer = gl.ARRAY_BUFFER,
         glFloat       = gl.FLOAT;
+
+    glDrawMode = glDrawMode || gl.STATIC_DRAW;
 
     var vblen = vertexFloat32Array.byteLength,
         cblen = colorFloat32Array.byteLength,
@@ -3282,15 +3303,13 @@ CanvasGL.prototype.bufferArrays = function(vertexFloat32Array,colorFloat32Array,
         offsetC = offsetV + vblen,
         offsetT = offsetC + cblen;
 
-    gl.bufferData(glArrayBuffer,vblen + cblen + tblen, glDynamicDraw);
+    gl.bufferData(glArrayBuffer,vblen + cblen + tblen, glDrawMode);
 
     gl.bufferSubData(glArrayBuffer,0, vertexFloat32Array);
     gl.vertexAttribPointer(paVertexPosition, 2, glFloat, false, 0, offsetV);
 
     gl.bufferSubData(glArrayBuffer,vblen,colorFloat32Array);
     gl.vertexAttribPointer(paVertexColor, 4, glFloat, false, 0, offsetC);
-
-
 
     /*
     if(!ta){
@@ -3300,6 +3319,7 @@ CanvasGL.prototype.bufferArrays = function(vertexFloat32Array,colorFloat32Array,
         gl.bufferSubData(glArrayBuffer, 2, glFloat, false, offsetT);
     }
     */
+
 };
 
 CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordArray)
@@ -3324,13 +3344,15 @@ CanvasGL.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordAr
     gl.bufferSubData(glArrayBuffer,offSetC,colorArray);
     gl.bufferSubData(glArrayBuffer,offSetT,coordArray);
 
-    var Common = CanvasGL.__Common;
+    var Common     = CanvasGL.__Common,
+        ShaderDict = CanvasGL.__SharedShaderDict;
+    var program = this._currProgram;
 
-    gl.vertexAttribPointer(this._attribLocationVertPosition, Common.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-    gl.vertexAttribPointer(this._attribLocationVertColor,    Common.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-    gl.vertexAttribPointer(this._attribLocationTexCoord,     Common.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
+    gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
+    gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
+    gl.vertexAttribPointer(program[ShaderDict.aTexCoord],     Common.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
 
-    gl.uniform1f(this._uniformLocationUseTexture,this._currTint);
+    gl.uniform1f(program[ShaderDict.uUseTexture],this._currTint);
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
 
 
@@ -3472,8 +3494,8 @@ CanvasGL.Image.loadImage = function(path,target,obj,callbackString)
 // Program
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.Program = function(ctx,vertexShader,fragmentShader){
-    var gl = ctx.getContext3d();
+CanvasGL.Program = function(cgl,vertexShader,fragmentShader){
+    var gl = cgl.getContext3d();
     var program    = this.program    = gl.createProgram(),
         vertShader = this.vertShader = gl.createShader(gl.VERTEX_SHADER),
         fragShader = this.fragShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -3498,16 +3520,14 @@ CanvasGL.Program = function(ctx,vertexShader,fragmentShader){
 
     //thanks plask
     var uniformsNum   = this._uniformsNum   = gl.getProgramParameter(program,gl.ACTIVE_UNIFORMS);
-    i = -1;while(++i < uniformsNum)
-    {
+    i = -1;while(++i < uniformsNum){
         paramName = gl.getActiveUniform(program,i).name;
         this[paramName] = gl.getUniformLocation(program,paramName);
     }
 
     var attributesNum = this._attributesNum = gl.getProgramParameter(program,gl.ACTIVE_ATTRIBUTES);
     var attributes    = this._attributes    = new Array(attributesNum);
-    i = -1;while(++i < attributesNum)
-    {
+    i = -1;while(++i < attributesNum){
         paramName = gl.getActiveAttrib(program,i).name;
         attributes[i] = this[paramName] = gl.getAttribLocation(program,paramName);
     }
@@ -3516,17 +3536,37 @@ CanvasGL.Program = function(ctx,vertexShader,fragmentShader){
 CanvasGL.Program.prototype.getUniformsNum   = function(){return this._uniformsNum;};
 CanvasGL.Program.prototype.getAttributesNum = function(){return this._attributesNum;};
 
-CanvasGL.Program.prototype.enableVertexAttribArrays = function(fgl)
-{
-    var i = -1,a = this._attributes,n = this._attributesNum, gl = fgl.gl;
+CanvasGL.Program.prototype.enableVertexAttribArrays = function(cgl){
+    var i = -1,a = this._attributes,n = this._attributesNum, gl = cgl.getContext3d();
     while(++i < n){gl.enableVertexAttribArray(a[i]);}
 };
 
-CanvasGL.Program.prototype.disableVertexAttribArrays = function(fgl)
-{
-    var i = -1,a = this._attributes,n = this._attributesNum, gl = fgl.gl;
+CanvasGL.Program.prototype.disableVertexAttribArrays = function(cgl){
+    var i = -1,a = this._attributes,n = this._attributesNum, gl = cgl.getContext3d();
     while(++i < n){gl.disableVertexAttribArray(a[i]);}
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+// Internal
+/*---------------------------------------------------------------------------------------------------------*/
+
+/*
+
+CanvasGL.__VBOPool = function(sizeVertex, sizeColor, sizeTexCoord, reserveSize){
+    this._reservedSize = reserveSize;
+    this._f32VertexArray   = new Float32Array(reserveSize * sizeVertex);
+    this._f32ColorArray    = new Float32Array(reserveSize * sizeColor);
+    this._f32TexCoordArray = new Float32Array(reserveSize * sizeTexCoord);
+    this._sizeUsed = 0;
+};
+
+CanvasGL.__VBOPool.prototype.get = function(objVertexSize, objColorSize, objTexCoordSize){
+
+};
+
+CanvasGL.__VBOPool.prototype.release = function(objIndex, objVertexSize, objColorSize, objTexCoordSize){
+
+}
+  */
 
 
