@@ -30,8 +30,9 @@ App.prototype.draw = function(){
     c.noStroke();
     c.fill3f(1,0,1);
 
+
     var i = -1;
-    var l = Math.floor((Math.sin(time*0.0025) * 0.5 + 0.5) * 1000);
+    var l = Math.floor((Math.sin(time*0.0025) * 0.5 + 0.5) * 3000);
     var s = Math.PI * 2 / l;
     var si;
     var r = 300;
@@ -51,11 +52,13 @@ App.prototype.draw = function(){
         //c.rect(0,0,10,10);
         c.rotate(time + si );
         c.setLineWidth((Math.sin(si * 128) * 0.5 + 0.5) * 50);
+        //c.circle(0,0,(Math.sin(si * 128) * 0.5 + 0.5) * 25);
         c.strokefv(strokeColor);
         c.line(0,0,100,0);
         c.noStroke();
         c.popMatrix();
     }
+
 };
 
 window.addEventListener("load",function(){
