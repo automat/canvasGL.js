@@ -1,7 +1,18 @@
 function App(element){
     CanvasGL.call(this,element);
+
     this.setSize(window.innerWidth,window.innerHeight);
 
+
+    /*
+    console.log(f32Array.size() + ' ' + f32Array.sizeAllocated());
+    f32Array.put2f(1,2);
+    console.log(f32Array.size() + ' ' + f32Array.sizeAllocated());
+    f32Array.put2f(3,4);
+    console.log(f32Array.size() + ' ' + f32Array.sizeAllocated());
+    */
+
+    this.runTick = 0;
 
     var self = this;
     window.addEventListener('resize',function(){
@@ -12,6 +23,8 @@ function App(element){
 App.prototype = Object.create(CanvasGL.prototype);
 
 App.prototype.draw = function(){
+    //if(this.runTick > 1)return;
+
     var c = this;
     var time      = c.getSecondsElapsed(),
         timeDelta = c.getTimeDelta();
@@ -24,15 +37,22 @@ App.prototype.draw = function(){
         width_2 = width * 0.5,
         height_2= height * 0.5;
 
-    c.translate(width_2,height_2);
-    //c.fill1f(1);
-    c.stroke1f(1);
+    var sin = Math.sin(time) * 0.5 + 0.5;
     c.fill3f(1,0,0);
-    //c.setModeRect(c.CORNER);
-    //c.rect(0,0,100,100);
-    //c.circle(0,0,100);
-    c.setModeRect(c.CENTER);
-    c.roundRect(0,0,100,100,20);
+
+    //c.circleSet([0,0],[10]);
+
+    var w_2 = 50;
+    c.translate(width_2,height_2);
+    c.drawElements(new Float32Array([-w_2,-w_2,
+                                      w_2,-w_2,
+                                      w_2, w_2,
+                                     -w_2, w_2]),new Uint16Array([0,1,2,0,2,3]));
+
+
+   // console.log('---');
+
+   this.runTick++;
 
 };
 
@@ -53,17 +73,6 @@ App.prototype.drawShapeOrigin = function(x,y){
     else c.noFill();
 };
 
-App.prototype.onKeyDown = function(e){
-    console.log('Key pressed: ' + this.getKeyStr() + ' / code: ' + this.getKeyCode());
-};
-
-App.prototype.onMouseDown = function(e){
-    console.log("Mouse down.")
-};
-
-App.prototype.onMouseMove = function(e){
-    console.log("Mouse position: " + this.getMousePos() + ' / last: ' + this.getMousePosLast());
-};
 
 window.addEventListener("load",function(){
    var app = new App(document.getElementById("container"));
