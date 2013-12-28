@@ -74,11 +74,11 @@ Texture.prototype.unbind = function(){
     this._glRef.bindTexture(this._glRef.TEXTURE_2D,null);
 };
 
-Texture.prototype.getWidth = function(){
+Texture.prototype._getWidth = function(){
     return this._width;
 };
 
-Texture.prototype.getHeight = function(){
+Texture.prototype._getHeight = function(){
     return this._height;
 };
 

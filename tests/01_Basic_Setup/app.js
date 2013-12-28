@@ -25,12 +25,13 @@ function App(element){
 App.prototype = Object.create(CanvasGL.prototype);
 
 App.prototype.draw = function(){
-    var c = this;
-    var time   = c.getSecondsElapsed();
-    var PI_4 = Math.PI * 0.25;
-    var width  = c.getWidth(),
-        height = c.getHeight();
 
+    var time   = this.getSecondsElapsed();
+    var PI_4 = Math.PI * 0.25;
+    var width  = this._getWidth(),
+        height = this._getHeight();
+
+    var c = this.getContext();
 
 
     c.backgroundfv(0.15,0,0.15);

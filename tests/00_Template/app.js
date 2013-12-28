@@ -27,15 +27,15 @@ App.prototype.draw = function(){
     c.backgroundfv(0.15,0,0.15);
     c.setDetailCircle(20);
 
-    c.translate(c.getWidth() * 0.5 - 350,0);
+    c.translate(c._getWidth() * 0.5 - 350,0);
 
     /*
     c.fill1f(0);
     var i = - 1;
     while(++i < 1000){
         c.fill3f(Math.random(),0, Math.random()*0.15);
-        c.circle(Math.random() * c.getWidth(),
-                 Math.random() * c.getHeight(),
+        c.circle(Math.random() * c._getWidth(),
+                 Math.random() * c._getHeight(),
                  5);
     }
       */
@@ -50,8 +50,8 @@ App.prototype.draw = function(){
     var fills     = new Array(l);
 
     while(++i < l){
-        positions[i] = [Math.random() * c.getWidth(),
-                        Math.random() * c.getHeight()];
+        positions[i] = [Math.random() * c._getWidth(),
+                        Math.random() * c._getHeight()];
         radii[i]     = 10.0;
         fills[i]     = [0,0,0,1];
     }

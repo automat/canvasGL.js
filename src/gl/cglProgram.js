@@ -1,8 +1,9 @@
-var Program = function(cgl,vertexShader,fragmentShader){
-    var gl = cgl.getContext3d();
+var Program = function(ctx,vertexShader,fragmentShader){
+    var gl = this._glRef = ctx._getContext3d();
+
     var program    = this.program    = gl.createProgram(),
-        vertShader = this.vertShader = gl.createShader(gl.VERTEX_SHADER),
-        fragShader = this.fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+        vertShader = gl.createShader(gl.VERTEX_SHADER),
+        fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 
     gl.shaderSource(vertShader,vertexShader);
     gl.compileShader(vertShader);
@@ -39,14 +40,18 @@ var Program = function(cgl,vertexShader,fragmentShader){
 Program.prototype.getUniformsNum   = function(){return this._uniformsNum;};
 Program.prototype.getAttributesNum = function(){return this._attributesNum;};
 
-Program.prototype.enableVertexAttribArrays = function(cgl){
-    var i = -1,a = this._attributes,n = this._attributesNum, gl = cgl.getContext3d();
+Program.prototype.enableVertexAttribArrays = function(){
+    var i = -1,a = this._attributes,n = this._attributesNum, gl = this._glRef;
     while(++i < n){gl.enableVertexAttribArray(a[i]);}
 };
 
-Program.prototype.disableVertexAttribArrays = function(cgl){
-    var i = -1,a = this._attributes,n = this._attributesNum, gl = cgl.getContext3d();
+Program.prototype.disableVertexAttribArrays = function(){
+    var i = -1,a = this._attributes,n = this._attributesNum, gl = this._glRef;
     while(++i < n){gl.disableVertexAttribArray(a[i]);}
+};
+
+Program.prototype.delete = function(){
+    this._glRef.deleteProgram(this._program);
 };
 
 module.exports = Program;

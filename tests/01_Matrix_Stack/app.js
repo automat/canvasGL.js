@@ -15,8 +15,8 @@ App.prototype.draw = function(){
     var c = this;
     var time   = c.getSecondsElapsed();
     var PI_4 = Math.PI * 0.25;
-    var width  = c.getWidth(),
-        height = c.getHeight();
+    var width  = c._getWidth(),
+        height = c._getHeight();
 
 
 
