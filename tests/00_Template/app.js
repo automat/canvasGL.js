@@ -1,3 +1,6 @@
+var CanvasGL = require('../../src/CanvasGL');
+
+
 function App(element){
     CanvasGL.call(this,element);
     this.setSize(window.innerWidth,window.innerHeight);

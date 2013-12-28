@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# IDE - shortcut
+# buildWeb - Browersify app.js, put bundle.js / index.html in clean temp folder,
+#            open in browser.
+
+((!$#)) && echo "PATH_TO_APP_JS PATH_TO_TEMP_DIR PATH_TO_BROWSER_APP(optional) missing" && exit 1
+
+args=("$@")
+
+((${#args[@]}<2)) && echo "Args missing. Must satisfy PATH_TO_APP_JS PATH_TO_TEMP_DIR PATH_TO_BROWSER_APP(optional)." && exit 1
+
+pathjs=${args[0]}
+filejs=$(basename "${pathjs}")
+patht=${args[1]}
+
+(("${filejs#*.}"!="js")) && echo "no .js file" && exit 1
+
+rm -rf "$patht"/*
+
+browserify "$pathjs" > $patht/bundle.js
+
+cat > $patht/index.html <<- _EOF_
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <script src="bundle.js"></script>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing:border-box;
+        }
+
+        canvas{
+            vertical-align: bottom;
+        }
+
+        #container{
+            background:#000;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+</body>
+</html>
+_EOF_
+
+((${#args[@]}==3)) && open -a "${args[2]}" "$patht"/index.html
