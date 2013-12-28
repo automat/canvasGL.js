@@ -1,6 +1,6 @@
 var Color = {};
 
-Color.color1fArr = function(k,length){
+Color.getColor1v = function(k,length){
     var a = new Array(length);
     var i = -1;
     while(++i < length){a[i]=k;}

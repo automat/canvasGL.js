@@ -38,9 +38,10 @@ var _Math               = require('./math/cglMath'),
     Value2State         = require('./utils/cglValue2State'),
     Mat33               = require('./math/cglMatrix');
 
-var Program    = require('./gl/cglProgram'),
-    Shader     = require('./gl/cglShader'),
-    ShaderDict = require('./gl/cglShaderDict');
+var Program     = require('./gl/cglProgram'),
+    Shader      = require('./gl/cglShader'),
+    ShaderDict  = require('./gl/cglShaderDict'),
+    Framebuffer = require('./gl/cglFramebuffer');
 
 var Warning  = require('./common/cglWarning'),
     Flags    = require('./common/cglFlags'),
@@ -98,10 +99,8 @@ function CanvasGL(element){
     //  Init
     /*------------------------------------------------------------------------------------------------------------*/
 
-
     var glTexture2d          = gl.TEXTURE_2D,
         glRGBA               = gl.RGBA,
-        glFrameBuffer        = gl.FRAMEBUFFER,
         glArrayBuffer        = gl.ARRAY_BUFFER,
         glElementArrayBuffer = gl.ELEMENT_ARRAY_BUFFER;
 
@@ -109,30 +108,24 @@ function CanvasGL(element){
 
     this._currProgram = null;
     this._prevProgram = null;
-
     this._program     = new Program(this, Shader.vert,     Shader.frag);
     this._programPost = new Program(this, Shader.vertPost, Shader.fragPost);
 
-    this._bColorBg    = new Float32Array([1.0,1.0,1.0,1.0]);
-    this._bColorBgOld = new Float32Array([-1.0,-1.0,-1.0,-1.0]);
-    this._backgroundClear  = Default.CLEAR_BACKGROUND;
+    this._bColorBg        = new Float32Array([1.0,1.0,1.0,1.0]);
+    this._bColorBgOld     = new Float32Array([-1.0,-1.0,-1.0,-1.0]);
+    this._backgroundClear = Default.CLEAR_BACKGROUND;
 
-    this._fbo0 = gl.createFramebuffer(); // main
-    this._tex0 = gl.createTexture(); // fbo0 texture target
+    this._width_internal  = null;
+    this._height_internal = null;
+    this._width  = null;
+    this._height = null;
+    this._ssaaf = Common.SSAA_FACTOR;
 
-    this._fboCanvas = null;
+    this._fboCanvas   = new Framebuffer(gl);
+    this._fboPingPong = new Framebuffer(gl);
+    this._fboRef      = new Value1State();
 
-    this._iwidth  = this._twidth  = this._width  = element.clientWidth;
-    this._iheight = this._theight = this._height = element.clientHeight;
-    this._ssaaf   = Common.SSAA_FACTOR;
-
-    this.setSize(this._width,this._height);
-
-    gl.bindFramebuffer(glFrameBuffer,this._fbo0);
-    gl.framebufferTexture2D(glFrameBuffer, gl.COLOR_ATTACHMENT0,glTexture2d,this._tex0,0);
-    gl.bindTexture(glTexture2d,null);
-
-    this._bindFBO(this._fbo0);
+    this.setSize(parseInt(parent.style.width),parseInt(parent.style.height));
 
     // VBO / IBO
 
@@ -271,6 +264,16 @@ function CanvasGL(element){
 
     this._cachedPointsBezier      = new Array(2 * 4);
 
+    this._bVertexFbo  = new Float32Array(8);
+    this._bColorFbo   = new Float32Array(4 * 4);
+    this._bTexCoordFbo= new Float32Array([0,0,1,0,0,1,1,1]);
+    //this._bTexCoordFbo= new Float32Array([0,1, 1,1, 1,0, 0,0]);
+    //this._bTexCoordFbo= new Float32Array([1,1, 0,1, 1,0, 0,0]);
+    //this._bTexCoordFbo = new Float32Array([0,1, 1,1, 0,0, 1,0]);
+    //this._bTexCoordFbo = new Float32Array([0,0, 1,0, 0,1, 1,1]);
+    //this._bTexCoordFbo= new Float32Array([0,1, 1,1, 1,0, 0,0]);
+
+
     this._bIndexTriangle = [0,1,2];
     this._bIndexQuad     = [0,1,2,1,2,3];
 
@@ -401,6 +404,7 @@ function CanvasGL(element){
     gl.enable(gl.BLEND);
 
 
+
     this._initDrawLoop();
 
     /*------------------------------------------------------------------------------------------------------------*/
@@ -475,52 +479,35 @@ CanvasGL.BOLD   = "bold";
 /*------------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.setSize = function(width,height){
-    var glc = this._canvas3d,
-        gl  = this._context3d,
-        s   = this._ssaaf,
-        c   = this._bColorBg;
+    var canvas3d = this._canvas3d;
+    var gl = this._context3d;
 
-    this._width      = width;
-    this._height     = height;
-    glc.style.width  = width  + 'px';
-    glc.style.height = height + 'px';
-    glc.width        = this._iwidth  = width  * s;
-    glc.height       = this._iheight = height * s;
+    var ssaaf = this._ssaaf;
 
-    this._updateTex0Size();
+    this._width  = width;
+    this._height = height;
+    canvas3d.style.width  = width  + 'px';
+    canvas3d.style.height = height + 'px';
 
-    var program     = this._program,
-        programPost = this._programPost;
+    var iwidth  = canvas3d.width  = this._width_internal  = width  * ssaaf,
+        iheight = canvas3d.height = this._height_internal = height * ssaaf;
 
-    this.useProgram(programPost);
-    gl.uniform2f(programPost[ShaderDict.uResolution],width,height);
+    this._fboCanvas.setSize(iwidth,iheight);
+    this._fboPingPong.setSize(iwidth,iheight);
 
-   // gl.useProgram(this._programPost);
-   // gl.uniform2f(this._uniformLocationPostResolution,width,height);
-
+    var program = this._program;
 
     this.useProgram(program);
-    gl.uniform2f(program[ShaderDict.uResolution],width,height);
+    gl.uniform2f(program[ShaderDict.uResolution],iwidth,iheight);
+    gl.viewport(0,0,iwidth,iheight);
 
-  //  gl.useProgram(this._program);
-  //  gl.uniform2f(this._uniformLocationResolution,width,height);
-    gl.viewport(0,0,width,height);
-
+    var colorBG = this._bColorBg;
     var i_255 = 1.0 / 255.0;
-    var c0 = c[0] * i_255,
-        c1 = c[1] * i_255,
-        c2 = c[2] * i_255;
 
-
-    this._bindFBO(this._fboCanvas);
-    gl.clearColor(c0,c1,c2,1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT );
-
-    /*
-    this._setFrameBuffer(this._fbo0);
-    _context3d.clearColor(c0,c1,c2,1.0);
-    _context3d.clear(_context3d.COLOR_BUFFER_BIT );
-    */
+    gl.clearColor(colorBG[0] * i_255,
+                  colorBG[1] * i_255,
+                  colorBG[2] * i_255,1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 };
 
 CanvasGL.prototype.getWidth  = function(){ return this._width; };
@@ -608,11 +595,22 @@ CanvasGL.prototype._resetDrawProperties = function(){
 CanvasGL.prototype._draw = function(){
     this._resetDrawProperties();
 
-    this._applyFBOTexToQuad();
-    this.clearColorBuffer();
+    var gl        = this._context3d;
+    var program   = this._program;
+    var fboCanvas = this._fboCanvas;
 
+    gl.uniform1f(program[ShaderDict.uFlipY],1.0);
+    this.loadIdentity();
+
+    fboCanvas.bind();
+    this.clearColorBuffer();
     this.scale(this._ssaaf,this._ssaaf);
     this.draw();
+    fboCanvas.unbind();
+
+    gl.uniform1f(program[ShaderDict.uFlipY],-1.0);
+    this.loadIdentity();
+    this.drawFbo(fboCanvas);
 };
 
 // Override in subclass
@@ -973,8 +971,6 @@ CanvasGL.prototype._disableTexture = function(){
     var program = this._currProgram;
     gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
     gl.vertexAttribPointer(program[ShaderDict.aTexCoord],Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
-    //gl.vertexAttribPointer(this._attribLocationTexCoord,CanvasGL.__Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
-    //gl.uniform1f(this._uniformLocationUseTexture,0.0);
     gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
     this._texture = false;
 };
@@ -1035,34 +1031,11 @@ CanvasGL.prototype.texture = function(img){
 
 CanvasGL.prototype._bindTexture = function(tex){
     this._textureCurr = tex;
-
-    var gl = this._context3d,
-        m  = this._modeTexture;
-
+    var gl = this._context3d;
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-
-    if(m == CanvasGL.REPEAT){
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-    }
-    else if(m == CanvasGL.CLAMP){
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-    }
-
     this._texture = true;
 };
 
-CanvasGL.prototype._createTexture = function(){
-    var gl = this._context3d;
-    var t  = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D,t);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    return t;
-};
 
 CanvasGL.prototype.noTexture = function(){
     this._disableTexture();
@@ -1112,45 +1085,37 @@ CanvasGL.prototype.backgroundiv = function(){
     this._backgroundClear = (col[3] == 1.0);
 };
 
-CanvasGL.prototype._applyFBOTexToQuad = function(){
-    var gl = this._context3d;
-    var w  = this._twidth ,
-        h  = this._theight ,
-        v  = this._bVertexQuad,
-        c  = this._bColorQuad,
-        t  = this._bTexCoordsQuad;
+CanvasGL.prototype.drawFbo = function(fbo,width,height){
+    var gl      = this._context3d;
     var program = this._currProgram;
 
-    this.loadIdentity();
-    this.setMatrixUniform();
-    this.resetUVQuad();
+    width = typeof width === 'undefined' ? fbo.getWidth() : width;
+    height= typeof height=== 'undefined' ? fbo.getHeight(): height;
 
-    //gl.useProgram(this._program);
-    this._bindFBO(this._fboCanvas);
+    var bVertex   = this._bVertexFbo,
+        bColor    = this._bColorFbo,
+        bTexCoord = this._bTexCoordFbo;
+
+    bVertex[0] = bVertex[1] = bVertex[3] = bVertex[4] =0;
+    bVertex[2] = bVertex[6] = width;
+    bVertex[5] = bVertex[7] = height;
+
+    this.setMatrixUniform();
+
+    this._bindTexture(fbo.getTexture().getGLTexture());
+    //fbo.getTexture().bind();
+    this.__fillBufferTexture(bVertex,bColor,bTexCoord);
 
     gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
-    gl.uniform1f(program[ShaderDict.uFlipY],-1.0);
-    this._bindTexture(this._tex0);
-
-    v[0] = v[1] = v[3] = v[4] =0;
-    v[2] = v[6] = w;
-    v[5] = v[7] = h;
-
-    this.__fillBufferTexture(v,c,t);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
-    this.useProgram(this._program);
-    program = this._currProgram;
     gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
-    gl.uniform1f(program[ShaderDict.uFlipY],1.0);
+    //fbo.getTexture().unbind();
     this._bindTexture(this._blankTexture);
-    this._disableTexture();
-
-    this._bindFBO(this._fbo0);
 };
 
-CanvasGL.prototype.clearColorBuffer = function()
-{
+
+CanvasGL.prototype.clearColorBuffer = function(){
     var gl = this._context3d;
 
     var c  = this._bColorBg,
@@ -1158,25 +1123,16 @@ CanvasGL.prototype.clearColorBuffer = function()
 
     var i_255 = 1.0 / 255.0;
 
-
     if(this._backgroundClear){
-
         gl.clearColor(c[0],c[1],c[2],1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT );
+        gl.clear(gl.COLOR_BUFFER_BIT  );
     }
-    else
-    {
-        if(c[0] != co[0] && c[1] != co[1] && c[2] != co[2] && c[3] != co[3])
-        {
+    else{
+        if(c[0] != co[0] && c[1] != co[1] && c[2] != co[2] && c[3] != co[3]){
             var c0 = c[0] * i_255,
                 c1 = c[1] * i_255,
                 c2 = c[2] * i_255;
 
-            this._bindFBO(this._fboCanvas);
-            gl.clearColor(c0,c1,c2,1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT );
-
-            this._bindFBO(this._fbo0);
             gl.clearColor(c0,c1,c2,1.0);
             gl.clear(gl.COLOR_BUFFER_BIT );
 
@@ -1187,37 +1143,9 @@ CanvasGL.prototype.clearColorBuffer = function()
         }
 
         this.fill(c[0],c[1],c[2],c[3]);
-        this.rect(0,0,this._iwidth,this._iheight);
+        this.rect(0,0,this._width_internal,this._height_internal);
         this.noFill();
     }
-};
-
-CanvasGL.prototype._bindFBO = function(fbo)
-{
-    var gl = this._context3d;
-    var program = this._currProgram;
-    var w  = this._iwidth,
-        h  = this._iheight;
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
-    gl.uniform2f(program[ShaderDict.uResolution],w,h);
-    gl.viewport(0,0,w,h);
-};
-
-CanvasGL.prototype._updateTex0Size = function()
-{
-    var gl = this._context3d,
-        glTexture2d = gl.TEXTURE_2D,
-        glNearest   = gl.NEAREST;
-
-    this._twidth  = _Math.np2(this._iwidth);
-    this._theight = _Math.np2(this._iheight);
-
-    gl.bindTexture(glTexture2d,this._tex0);
-    gl.texParameteri(glTexture2d, gl.TEXTURE_MIN_FILTER, glNearest);
-    gl.texParameteri(glTexture2d, gl.TEXTURE_MAG_FILTER, glNearest);
-    gl.texImage2D(glTexture2d,0,gl.RGBA,this._twidth,this._theight,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-    gl.bindTexture(glTexture2d,null);
 };
 
 

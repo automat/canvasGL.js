@@ -110,7 +110,7 @@ var _Math = {
     sqrt                  : function(value){return Math.sqrt(value);},
     GreatestCommonDivisor : function(a,b){return (b == 0) ? a : this.GreatestCommonDivisor(b, a % b);},
     isFloatEqual          : function(a,b){return (Math.abs(a-b)<this.EPSILON);},
-    isPowerOfTwo          : function(a){return (a&(a-1))==0;},
+    isPOT                 : function(a){return (a&(a-1))==0;},
     swap                  : function(a,b){var t = a;a = b; b = a;},
     pow                   : function(x,y){return Math.pow(x,y);},
     log                   : function(n){return Math.log(n);},
