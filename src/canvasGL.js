@@ -171,10 +171,7 @@ CanvasGL.prototype.__onKeyUp = function(e){
     this.__keyCode = e.keyCode;
     this.__keyStr  = String.fromCharCode(e.keyCode);
     this.onKeyUp(e);
-}
-
-
-
+};
 
 
 /*------------------------------------------------------------------------------------------------------------*/
@@ -185,8 +182,8 @@ CanvasGL.prototype.setSize = function(width,height){
     if(this.__context)this.__context._setSize(width,height);
 };
 
-CanvasGL.prototype._getWidth  = function(){ return this.__context ? this.__context._getWidth() : null; };
-CanvasGL.prototype._getHeight = function(){ return this.__context ? this.__context._getHeight(): null; };
+CanvasGL.prototype.getWidth  = function(){ return this.__context ? this.__context._getWidth() : null; };
+CanvasGL.prototype.getHeight = function(){ return this.__context ? this.__context._getHeight(): null; };
 
 
 /*------------------------------------------------------------------------------------------------------------*/
@@ -279,12 +276,42 @@ CanvasGL.prototype.saveToPNG = function(){
 
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype.getContext       = function(){return this.__context;};
-CanvasGL.prototype.getParent = function(){return this.__parent;};
+CanvasGL.prototype.getContext = function(){return this.__context;};
+CanvasGL.prototype.getParent  = function(){return this.__parent;};
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Exports
 /*---------------------------------------------------------------------------------------------------------*/
+
+CanvasGL.CENTER = Context.CENTER;
+CanvasGL.CORNER = Context.CORNER;
+CanvasGL.WRAP   = Context.WRAP;
+CanvasGL.CLAMP  = Context.CLAMP;
+CanvasGL.REPEAT = Context.REPEAT;
+
+CanvasGL.FUNC_ADD                = Context.FUNC_ADD;
+CanvasGL.FUNC_SUBSTRACT          = Context.FUNC_SUBSTRACT;
+CanvasGL.FUNC_REVERSER_SUBSTRACT = Context.FUNC_REVERSER_SUBSTRACT;
+
+CanvasGL.ZERO = Context.ZERO;
+CanvasGL.ONE  = Context.ONE;
+
+CanvasGL.SRC_ALPHA = Context.SRC_ALPHA;
+CanvasGL.SRC_COLOR = Context.SRC_COLOR;
+
+CanvasGL.ONE_MINUS_SRC_ALPHA = Context.ONE_MINUS_SRC_ALPHA;
+CanvasGL.ONE_MINUS_SRC_COLOR = Context.ONE_MINUS_SRC_COLOR;
+
+CanvasGL.TRIANGLE_STRIP = Context.TRIANGLE_STRIP;
+CanvasGL.TRIANGLE_FAN   = Context.TRIANGLE_FAN;
+
+CanvasGL.TOP    = Context.TOP;
+CanvasGL.MIDDLE = Context.MIDDLE;
+CanvasGL.BOTTOM = Context.BOTTOM;
+
+CanvasGL.THIN    = Context.THIN;
+CanvasGL.REGULAR = Context.REGULAR;
+CanvasGL.BOLD    = Context.BOLD;
 
 CanvasGL.Math          = require('./math/cglMath');
 CanvasGL.Program       = require('./gl/cglProgram');
@@ -292,6 +319,5 @@ CanvasGL.Framebuffer   = require('./gl/cglFramebuffer');
 CanvasGL.TextureFormat = require('./gl/cglTextureFormat');
 CanvasGL.Texture       = require('./gl/cglTexture');
 CanvasGL.Image         = require('./image/cglImage');
-
 
 module.exports = CanvasGL;

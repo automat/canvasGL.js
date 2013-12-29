@@ -16,7 +16,6 @@ ModelUtil.getFaceIndicesFan = function(verticesLen){
 
         i+=3;
     }
-
     return a;
 };
 
@@ -31,7 +30,6 @@ ModelUtil.getFaceIndicesLinearCW = function(vertices,limit){
         else{a[i]=a[i-2];a[i+1]=a[i-2]+1;a[i+2]=a[i-1];}
         i+=3;
     }
-
     return a;
 };
 
@@ -61,7 +59,6 @@ ModelUtil.getTexCoordsLinearCW = function(vertices,limit){
         }
         i+=6;
     }
-
     return a;
 };
 
@@ -74,8 +71,9 @@ ModelUtil.getFaceIndicesLinearCCW = function(vertices){
         else{a[i]=a[i-1];a[i+1]=a[i-2];a[i+2]=a[i-1]+1;}
         i+=3;
     }
-
     return a;
 };
+
+
 
 module.exports = ModelUtil;

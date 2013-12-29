@@ -2,8 +2,8 @@ var _Math               = require('../math/cglMath'),
     Utils               = require('../utils/cglUtils'),
     Float32ArrayMutable = require('../utils/cglFloat32ArrayMutable'),
     Uint16ArrayMutable  = require('../utils/cglUint16ArrayMutable'),
-    Value1State         = require('../utils/cglValue1State'),
-    Value2State         = require('../utils/cglValue2State'),
+    Value1Stack         = require('../utils/cglValue1Stack'),
+    Value2Stack         = require('../utils/cglValue2Stack'),
     Mat33               = require('../math/cglMatrix');
 
 var Program     = require('./cglProgram'),
@@ -17,6 +17,7 @@ var Warning   = require('../common/cglWarning'),
     Default   = require('../common/cglDefault');
 
 var ModelUtil     = require('../geom/cglModelUtil'),
+    VertexUtil    = require('../geom/cglVertexUtil'),
     PrimitiveUtil = require('../geom/cglPrimitiveUtil');
 
 var Color  = require('../style/cglColor'),
@@ -79,7 +80,7 @@ function Context(element,canvas3d,canvas2d){
 
     this._fboCanvas   = new Framebuffer(gl);
     this._fboPingPong = new Framebuffer(gl);
-    this._fboRef      = new Value1State();
+    this._fboRef      = new Value1Stack();
 
     this._setSize(parseInt(element.offsetWidth),parseInt(element.offsetHeight));
 
@@ -152,18 +153,18 @@ function Context(element,canvas3d,canvas2d){
     this._bVertexEllipse     = new Float32Array(bVertexEllipseLen); // ellipse vertices from unit
     this._bVertexEllipseS    = new Float32Array(bVertexEllipseLen); // ellipse vertices from unit scaled xy
     this._bVertexEllipseT    = new Float32Array(bVertexEllipseLen); // ellipse vertices from scaled translated
-    this._stateDetailEllipse = new Value1State();
-    this._stateRadiusEllipse = new Value2State();
-    this._stateOriginEllipse = new Value2State();
+    this._stackDetailEllipse = new Value1Stack();
+    this._stackRadiusEllipse = new Value2Stack();
+    this._stackOriginEllipse = new Value2Stack();
 
     // circle
 
     this._bVertexCircle     = new Float32Array(bVertexEllipseLen);  // circle vertices from detail
     this._bVertexCirlceS    = new Float32Array(bVertexEllipseLen);  // cirlce vertices from unit scaled
     this._bVertexCircleT    = new Float32Array(bVertexEllipseLen);  // circle vertices from scaled translated
-    this._stateDetailCircle = new Value1State();
-    this._stateRadiusCircle = new Value1State();
-    this._stateOriginCircle = new Value2State();
+    this._stackDetailCircle = new Value1Stack();
+    this._stackRadiusCircle = new Value1Stack();
+    this._stackOriginCircle = new Value2Stack();
 
     // circle set
 
@@ -177,8 +178,8 @@ function Context(element,canvas3d,canvas2d){
     this._bColorCircleSetArr    = new Float32ArrayMutable(bColorEllipseLen  * SET_ALLOCATE_SIZE,true);
     this._bIndexCircleSetArr    = new Uint16ArrayMutable( bIndexEllipseLen  * SET_ALLOCATE_SIZE,true);
     this._bTexCoordCircleSetArr = new Float32ArrayMutable(bVertexEllipseLen * SET_ALLOCATE_SIZE,true);
-    this._stateRadiusCircleSet  = new Value1State();
-    this._stateOriginCircleSet  = new Value2State();
+    this._stackRadiusCircleSet  = new Value1Stack();
+    this._stackOriginCircleSet  = new Value2Stack();
 
 
     //
@@ -186,12 +187,17 @@ function Context(element,canvas3d,canvas2d){
     var bVertexRoundRectLen = ELLIPSE_DETAIL_MAX * 2 + 8;
     this._bVertexRoundRect  = new Float32Array(bVertexRoundRectLen); // round rect from corner detail scaled
     this._bVertexRoundRectT = new Float32Array(bVertexRoundRectLen); // round rect from scaled translated
+    this._stackDetailRRect  = new Value1Stack();
+    this._stackRadiusRRect  = new Value1Stack();
+    this._stackOriginRRect  = new Value2Stack();
+
+    /*
     this._prevDetailRRect   = -1;
     this._currDetailRRect   = Default.CORNER_DETAIL;
     this._prevWidthRRect    = -1;
     this._prevHeightRRect   = -1;
     this._prevPosRRect      = [null,null];
-
+    */
 
     this._bVertexBezier    = new Float32Array(BEZIER_DETAIL_MAX  * 2);
     this._bVertexArc       = new Float32Array(ELLIPSE_DETAIL_MAX * 2 * 2);
@@ -271,8 +277,7 @@ function Context(element,canvas3d,canvas2d){
 
     this._batchTextureActive = false;
 
-
-    this._drawFuncLast = null;
+    this._stackDrawFunc = new Value1Stack();
 
     gl.enable(gl.BLEND);
 }
@@ -318,57 +323,28 @@ Context.prototype.getImageData = function(){};
 // Props
 /*------------------------------------------------------------------------------------------------------------*/
 
-Context.CENTER = 0;
-Context.CORNER = 1;
-Context.WRAP   = 2;
-Context.CLAMP  = 3;
-Context.REPEAT = 4;
-
-Context.FUNC_ADD = "";
-Context.FUNC_SUBSTRACT = "";
-Context.FUNC_REVERSER_SUBSTRACT = "";
-
-Context.ZERO = "";
-Context.ONE = "";
-
-Context.SRC_ALPHA = 770;
-Context.SRC_COLOR = 768;
-
-Context.ONE_MINUS_SRC_ALPHA = 771;
-Context.ONE_MINUS_SRC_COLOR = 769;
-
-Context.TRIANGLE_STRIP = 5;
-Context.TRIANGLE_FAN   = 6;
-
-Context.TOP    = "top";
-Context.MIDDLE = "middle";
-Context.BOTTOM = "bottom";
-
-Context.THIN   = "thin";
-Context.REGULAR= "normal";
-Context.BOLD   = "bold";
-
-
 Context.prototype._resetDrawProperties = function(){
     this.noStroke();
     this.noTexture();
     this.noFill();
     this.noTint();
 
+    this._stackDrawFunc.pushEmpty();
+
     // ellipse
 
-    this._stateDetailEllipse.writeEmpty();
-    this._stateOriginEllipse.writeEmpty();
-    this._stateRadiusEllipse.writeEmpty();
+    this._stackDetailEllipse.pushEmpty();
+    this._stackOriginEllipse.pushEmpty();
+    this._stackRadiusEllipse.pushEmpty();
     this.setDetailEllipse(Default.ELLIPSE_DETAIL);
     this.setModeEllipse(Context.CENTER);
 
 
     // circle
 
-    this._stateDetailCircle.writeEmpty();
-    this._stateOriginCircle.writeEmpty();
-    this._stateRadiusCircle.writeEmpty();
+    this._stackDetailCircle.pushEmpty();
+    this._stackOriginCircle.pushEmpty();
+    this._stackRadiusCircle.pushEmpty();
     this.setDetailCircle(Default.ELLIPSE_DETAIL);
     this.setModeCircle(Context.CENTER);
 
@@ -419,36 +395,75 @@ Context.prototype._endDraw = function(){
 
 
 
-Context.prototype.setModeEllipse = function(mode){ this._modeEllipse = mode;};
-Context.prototype.getModeEllipse = function()    {return this._modeEllipse;};
+Context.prototype.setModeEllipse = function(mode){
+    this._modeEllipse = mode;
+};
 
-Context.prototype.setModeCircle = function(mode){ this._modeCircle = mode;};
-Context.prototype.getModeCircle = function()    { return this._modeCircle;};
+Context.prototype.getModeEllipse = function(){
+    return this._modeEllipse;
+};
 
-Context.prototype.setModeRect    = function(mode){ this._modeRect = mode; };
-Context.prototype.getModeRect    = function()    { return this._modeRect;};
+Context.prototype.setModeCircle = function(mode){
+    this._modeCircle = mode;
+};
 
-Context.prototype.setTextureWrap = function(mode){this._modeTexture = mode;};
-Context.prototype.getTextureWrap = function()    { return this._modeTexture;};
+Context.prototype.getModeCircle = function(){
+    return this._modeCircle;
+};
+
+Context.prototype.setModeRect = function(mode){
+    this._modeRect = mode;
+};
+
+Context.prototype.getModeRect = function(){
+    return this._modeRect;
+};
+
+Context.prototype.setTextureWrap = function(mode){
+    this._modeTexture = mode;
+};
+
+Context.prototype.getTextureWrap = function(){
+    return this._modeTexture;
+};
 
 
 Context.prototype.setDetailEllipse = function(a){
-    var stateDetailEllipse = this._stateDetailEllipse;
-    if(stateDetailEllipse.a == a)return;
+    var stateDetailEllipse = this._stackDetailEllipse;
+    if(stateDetailEllipse.peek() == a)return;
     var max = Common.ELLIPSE_DETAIL_MAX;
-    stateDetailEllipse.write(a > max ? max : a);
+    stateDetailEllipse.push(a > max ? max : a);
 };
 
-Context.prototype.getDetailEllipse = function(){return this._currDetailEllipse;};
+Context.prototype.getDetailEllipse = function(){
+    return this._stackDetailEllipse.peek();
+};
 
 Context.prototype.setDetailCircle = function(a){
-    var stateDetailCircle = this._stateDetailCircle;
-    if(stateDetailCircle.a == a)return;
+    var stateDetailCircle = this._stackDetailCircle;
+    if(stateDetailCircle.peek() == a)return;
     var max = Common.ELLIPSE_DETAIL_MAX;
-    stateDetailCircle.write(a > max ? max : a);
+    stateDetailCircle.push(a > max ? max : a);
 };
 
-Context.prototype.getDetailCircle  = function(){return this._stateDetailCircle.a;};
+Context.prototype.getDetailCircle = function(){
+    return this._stackDetailCircle.peek();
+};
+
+Context.prototype.setDetailCorner = function(a){
+    var stateDetailRRect = this._stackDetailRRect;
+    if(stateDetailRRect.peek() == a)return;
+    var max = Common.CORNER_DETAIL_MAX;
+    stateDetailRRect.push(a > max ? max : a);
+};
+
+Context.prototype.getDetailCorner = function(){
+    return this._stackDetailRRect.peek();
+};
+
+
+
+
 
 Context.prototype.setDetailBezier = function(a){
     var md = Common.BEZIER_DETAIL_MAX;
@@ -464,13 +479,8 @@ Context.prototype.setDetailCurve = function(a){
 
 Context.prototype.getDetailCurve  = function(){return this._currDetailSpline;};
 
-Context.prototype.setDetailCorner = function(a){
-    var md = Common.CORNER_DETAIL_MAX;
-    this._prevDetailRRect = this._currDetailRRect;
-    this._currDetailRRect = a > md ? md : a;
-};
 
-Context.prototype.getDetailCorner = function(){return this._currDetailRRect;};
+
 
 Context.prototype.setLineWidth = function(a){ this._currLineWidth = a;};
 Context.prototype.getLineWidth = function() { return this._currLineWidth;};
@@ -992,7 +1002,7 @@ Context.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
         this._polyline(v, v.length, true);
     }
 
-    this._drawFuncLast = this.quad;
+    this._stackDrawFunc.push(this.quad);
 };
 
 
@@ -1019,15 +1029,33 @@ Context.prototype.rect = function(x,y,width,height){
 
     this.quad(rx,ry,rw,ry,rw,rh,rx,rh);
 
-    this._drawFuncLast = this.rect;
+    this._stackDrawFunc.push(this.rect);
 };
 
-Context.prototype._getRoundRectVertices = function(width,height,cornerRadius){
+Context.prototype.roundRect = function(x,y,width,height,radius){
+    if(!this._fill && !this._stroke && !this._texture)return;
 
+    var modeOrigin  = this._modeRect;
+    var stateOrigin = this._stackOriginRRect,
+        stateRadius = this._stackRadiusRRect,
+        stateDetail = this._stackDetailRRect;
+
+    var originX = modeOrigin == 0 ? x : x + radius,
+        originY = modeOrigin == 0 ? y : y + radius;
+
+    stateOrigin.push(originX,originY);
+    stateRadius.push(radius);
+
+    var stateOriginChanged = !stateOrigin.isEqual(),
+        stateRadiusChanged = !stateRadius.isEqual(),
+        stateDetailChanged = !stateDetail.isEqual();
+
+    stateDetail.push(stateDetail.a);
+
+    this._stackDrawFunc.push(this.roundRect);
 };
 
-
-
+/*
 Context.prototype.roundRect = function(x,y,width,height,cornerRadius){
     if(!this._fill && !this._stroke && !this._texture)return;
 
@@ -1206,6 +1234,7 @@ Context.prototype.roundRect = function(x,y,width,height,cornerRadius){
 
     this._drawFuncLast = this.roundRect;
 };
+*/
 
 
 
@@ -1215,15 +1244,15 @@ Context.prototype.ellipse = function(x,y,radiusX,radiusY){
     var gl = this._context3d;
 
     var modeOrigin  = this._modeEllipse;
-    var stateOrigin = this._stateOriginEllipse,
-        stateRadius = this._stateRadiusEllipse,
-        stateDetail = this._stateDetailEllipse;
+    var stateOrigin = this._stackOriginEllipse,
+        stateRadius = this._stackRadiusEllipse,
+        stateDetail = this._stackDetailEllipse;
 
     var originX = modeOrigin == 0 ? x : x + radiusX,
         originY = modeOrigin == 0 ? y : y + radiusY;
 
-    stateRadius.write(radiusX,radiusY);
-    stateOrigin.write(originX,originY);
+    stateRadius.push(radiusX,radiusY);
+    stateOrigin.push(originX,originY);
 
     var stateOriginChanged = !stateOrigin.isEqual(),
         stateRadiusChanged = !stateRadius.isEqual(),
@@ -1243,16 +1272,21 @@ Context.prototype.ellipse = function(x,y,radiusX,radiusY){
         PrimitiveUtil.getVerticesCircle(detail,bVertex);
     }
 
-    if(stateRadiusChanged){
-        this._scaleVertices(bVertex,radiusX,radiusY,bVertexS);
+    if(stateDetailChanged || stateRadiusChanged){
+        VertexUtil.scale(bVertex,radiusX,radiusY,bVertexS);
     }
 
-    //hm
-    //if(!stateRadiusChanged && !stateDetailChanged && !stateOriginChanged){
-    //    vertices = bVertexT;
-    //} else {
-    vertices = this._translateVertices(bVertexS,originX,originY,bVertexT);
-    //}
+    if(!stateDetailChanged && !stateRadiusChanged && !stateOriginChanged){
+        vertices = bVertexT;
+    } else {
+        vertices = VertexUtil.translate(bVertexS,originX,originY,bVertexT);
+    }
+
+    /*
+    console.log('detail: ' + stateDetailChanged  + '\n' +
+                'radius: ' + stateRadiusChanged  + '\n' +
+                'origin: ' + stateOriginChanged);
+    */
 
     this.setMatrixUniform();
 
@@ -1282,8 +1316,8 @@ Context.prototype.ellipse = function(x,y,radiusX,radiusY){
         this._polyline(vertices,length,true);
     }
 
-    stateDetail.write(stateDetail.a);
-    this._drawFuncLast = this.ellipse;
+    stateDetail.push(stateDetail.a);
+    this._stackDrawFunc.push(this.ellipse);
 };
 
 
@@ -1293,15 +1327,15 @@ Context.prototype.circle = function(x,y,radius){
     var gl = this._context3d;
 
     var modeOrigin  = this._modeCircle;
-    var stateOrigin = this._stateOriginCircle,
-        stateRadius = this._stateRadiusCircle,
-        stateDetail = this._stateDetailCircle;
+    var stateOrigin = this._stackOriginCircle,
+        stateRadius = this._stackRadiusCircle,
+        stateDetail = this._stackDetailCircle;
 
     var originX = modeOrigin == 0 ? x : x + radius,
         originY = modeOrigin == 0 ? y : y + radius;
 
-    stateOrigin.write(originX,originY);
-    stateRadius.write(radius);
+    stateOrigin.push(originX,originY);
+    stateRadius.push(radius);
 
     var stateOriginChanged = !stateOrigin.isEqual(),
         stateRadiusChanged = !stateRadius.isEqual(),
@@ -1319,20 +1353,17 @@ Context.prototype.circle = function(x,y,radius){
 
 
     if(stateDetailChanged){
-        vertices = PrimitiveUtil.getVerticesCircle(detail,bVertex);
+        PrimitiveUtil.getVerticesCircle(detail,bVertex);
     }
 
-    if(stateRadiusChanged){
-        vertices =  this._scaleVertices(bVertex,radius,radius,bVertexS);
-    } else {
-        vertices = bVertexS;
+    if(stateDetailChanged || stateRadiusChanged){
+        VertexUtil.scale(bVertex,radius,radius,bVertexS);
     }
 
     if(stateOriginChanged){
-        vertices = this._translateVertices(bVertexS,originX,originY,bVertexT);
+        vertices = VertexUtil.translate(bVertexS,originX,originY,bVertexT);
     } else {
         vertices = bVertexT;
-
     }
 
     this.setMatrixUniform();
@@ -1364,8 +1395,8 @@ Context.prototype.circle = function(x,y,radius){
     }
 
 
-    stateDetail.write(stateDetail.a);
-    this._drawFuncLast = this.circle;
+    stateDetail.push(stateDetail.a);
+    this._stackDrawFunc.push(this.ellipse);
 };
 
 
@@ -1375,12 +1406,12 @@ Context.prototype.circleSet = function(positions,radii){
     var gl = this._context3d;
 
     var modeOrigin  = this._modeCircle;
-    var stateOrigin = this._stateOriginCircleSet,
-        stateRadius = this._stateRadiusCircleSet,
-        stateDetail = this._stateDetailCircle;
+    var stateOrigin = this._stackOriginCircleSet,
+        stateRadius = this._stackRadiusCircleSet,
+        stateDetail = this._stackDetailCircle;
 
-    stateRadius.writeEmpty();
-    stateOrigin.writeEmpty();
+    stateRadius.pushEmpty();
+    stateOrigin.pushEmpty();
 
     var bVertex  = this._bVertexCircle,
         bVertexS = this._bVertexCircleSetS,
@@ -1441,8 +1472,8 @@ Context.prototype.circleSet = function(positions,radii){
         originX = modeOrigin == 0 ? x : x + radius;
         originY = modeOrigin == 0 ? y : y + radius;
 
-        stateOrigin.write(originX,originY);
-        stateRadius.write(radius);
+        stateOrigin.push(originX,originY);
+        stateRadius.push(radius);
 
         stateOriginChanged = !stateOrigin.isEqual();
         stateRadiusChanged = !stateRadius.isEqual();
@@ -1460,8 +1491,9 @@ Context.prototype.circleSet = function(positions,radii){
          }
          */
 
-        this._scaleVertices(bVertex,radius,radius,bVertexS);
-        this._translateVertices(bVertexS,originX,originY,bVertexT);
+        VertexUtil.scale(bVertex,radius,radius,bVertexS);
+        VertexUtil.translate(bVertexS,originX,originY,bVertexT);
+
         Mat33.applyVecfv(bVertexT,matrix,bVertexM);
 
         bVertexArr.putfv(bVertexM,length);
@@ -1489,8 +1521,8 @@ Context.prototype.circleSet = function(positions,radii){
 
 
 
-    stateDetail.write(stateDetail.a);
-    this._drawFuncLast = this.circleSet;
+    stateDetail.push(stateDetail.a);
+    this._stackDrawFunc.push(this.circleSet);
 };
 
 
@@ -1575,7 +1607,7 @@ Context.prototype.arc = function(centerX,centerY,radiusX,radiusY,startAngle,stop
         this._polyline(vo,l,false);
     }
 
-    this._drawFuncLast = this.arc;
+    this._stackDrawFunc.push(this.arc);
 };
 
 /**
@@ -1603,7 +1635,7 @@ Context.prototype.line = function(){
             break;
     }
 
-    this._drawFuncLast = this.line;
+    this._stackDrawFunc.push(this.line);
 };
 
 Context.prototype.lineSet = function(lines,strokeColors,lineWidths)
@@ -1628,7 +1660,7 @@ Context.prototype.lineSet = function(lines,strokeColors,lineWidths)
         this.line(lines[i]);
     }
 
-    this._drawFuncLast = this.lineSet;
+    this._stackDrawFunc.push(this.lineSet);
 };
 
 /**
@@ -1678,7 +1710,7 @@ Context.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3){
     }
 
     this._polyline(v,d,false);
-    this._drawFuncLast = this.bezier;
+    this._stackDrawFunc.push(this.bezier);
 };
 
 Context.prototype.bezierPoint = function(d)
@@ -1778,7 +1810,7 @@ Context.prototype.curve = function(points){
     }
 
     this._polyline(vertices);
-    this._drawFuncLast = this.curve;
+    this._stackDrawFunc.push(this.curve);
 };
 
 Context.prototype.beginCurve =  function(out){
@@ -1893,7 +1925,7 @@ Context.prototype.triangle = function(x0,y0,x1,y1,x2,y2){
         this._polyline(v, v.length,true);
     }
 
-    this._drawFuncLast = this.triangle;
+    this._stackDrawFunc.push(this.triangle);
 };
 
 
@@ -1911,7 +1943,7 @@ Context.prototype.point = function(x,y)
     this.bufferArrays(v,c);
     this._context3d.drawArrays(this._context3d.POINTS,0,1);
 
-    this._drawFuncLast = this.point;
+    this._stackDrawFunc.push(this.point);
 };
 
 
@@ -1923,7 +1955,8 @@ Context.prototype.pointSet = function(vertexArrOrFloat32Arr){
     this.bufferArrays(Utils.safeFloat32Array(vertexArrOrFloat32Arr),
         this.bufferColors(this._bColorFill,new Float32Array(vertexArrOrFloat32Arr.length*2)));
     gl.drawArrays(gl.POINTS,0,vertexArrOrFloat32Arr.length*0.5);
-    this._drawFuncLast = this.pointSet;
+
+    this._stackDrawFunc.push(this.pointSet);
 };
 
 Context.prototype._polyline = function(joints,length,loop){
@@ -2184,7 +2217,7 @@ Context.prototype.drawArrays = function(verticesArrOrFloat32Arr,
         gl.drawArrays(mode,0,vertices.length*0.5);
     }
 
-    this._drawFuncLast = this.drawArrays;
+    this._stackDrawFunc.push(this.drawArrays);
 };
 
 
@@ -2219,7 +2252,7 @@ Context.prototype.drawElements = function(vertices,indices,colors){
         gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
     }
 
-    this._drawFuncLast = this.drawElements;
+    this._stackDrawFunc.push(this.drawElements);
 };
 
 /**
@@ -2357,7 +2390,7 @@ Context.prototype.drawBatch = function()
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
     gl.drawElements(gl.TRIANGLES, i.length,gl.UNSIGNED_SHORT,0);
 
-    this._drawFuncLast = this.drawBatch;
+    this._stackDrawFunc.push(this.drawBatch);
 };
 
 Context.prototype.endBatch = function(){
@@ -2409,7 +2442,7 @@ Context.prototype.image = function(image, x, y, width, height)
     this.rect(xx,yy,xw,yh);
     this.noTexture();
 
-    this._drawFuncLast = this.image;
+    this._stackDrawFunc.push(this.image);
 };
 
 /**
@@ -2482,38 +2515,9 @@ Context.prototype.popMatrix = function(){
 };
 
 
-
-
-
-
 /*---------------------------------------------------------------------------------------------------------*/
 // Helper
 /*---------------------------------------------------------------------------------------------------------*/
-
-
-// Translate vertices
-Context.prototype._translateVertices = function(src,x,y,out){
-    var i = 0, l = src.length;
-    while(i < l){
-        out[i  ] = src[i  ] + x;
-        out[i+1] = src[i+1] + y;
-        i+=2;
-    }
-
-    return out;
-};
-
-Context.prototype._scaleVertices = function(src,scaleX,scaleY,out){
-    var i = 0, l = src.length;
-    while(i < l){
-        out[i  ] = src[i  ] * scaleX;
-        out[i+1] = src[i+1] * scaleY;
-        i+=2;
-    }
-
-    return out;
-};
-
 
 Context.prototype.bufferArrays = function(vertexFloat32Array,colorFloat32Array,texCoord32Array,glDrawMode){
     var ta = texCoord32Array ? true : false;
@@ -2610,6 +2614,42 @@ Context.prototype._getContext2d = function(){return this._context2d;};
 Context.prototype._getWidth  = function(){return this._width;};
 Context.prototype._getHeight = function(){return this._height;};
 
+/*---------------------------------------------------------------------------------------------------------*/
+//
+/*---------------------------------------------------------------------------------------------------------*/
 
+Context.CENTER = 0;
+Context.CORNER = 1;
+Context.WRAP   = 2;
+Context.CLAMP  = 3;
+Context.REPEAT = 4;
+
+Context.FUNC_ADD = "";
+Context.FUNC_SUBSTRACT = "";
+Context.FUNC_REVERSER_SUBSTRACT = "";
+
+Context.ZERO = "";
+Context.ONE = "";
+
+Context.SRC_ALPHA = 770;
+Context.SRC_COLOR = 768;
+
+Context.ONE_MINUS_SRC_ALPHA = 771;
+Context.ONE_MINUS_SRC_COLOR = 769;
+
+Context.TRIANGLE_STRIP = 5;
+Context.TRIANGLE_FAN   = 6;
+
+Context.TOP    = "top";
+Context.MIDDLE = "middle";
+Context.BOTTOM = "bottom";
+
+Context.THIN   = "thin";
+Context.REGULAR= "normal";
+Context.BOLD   = "bold";
+
+/*---------------------------------------------------------------------------------------------------------*/
+// Exports
+/*---------------------------------------------------------------------------------------------------------*/
 
 module.exports = Context;

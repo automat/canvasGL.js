@@ -29,6 +29,7 @@ PrimitiveUtil.getTexCoordsCircle = function(detail,
 
         i+=2;
     }
+    return out;
 };
 
 PrimitiveUtil.getVerticesCircle = function(detail,out){
@@ -49,9 +50,12 @@ PrimitiveUtil.getVerticesCircle = function(detail,out){
         oy = sin * t  + cos * oy;
         i+=2;
     }
-
     return out;
 };
 
+
+PrimitiveUtil.getVerticesRoundRect = function(width,height,radius,out){
+
+};
 
 module.exports = PrimitiveUtil;
