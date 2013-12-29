@@ -43,6 +43,7 @@ App.prototype.draw = function(){
     c.fill3f(1,1,1);
     c.circle(-300,-100,50);
 
+
     c.setDetailEllipse(30);
     c.fill3f(1,0,0.25);
     c.ellipse(-100,-100,25,50);
@@ -59,6 +60,39 @@ App.prototype.draw = function(){
     c.fill3f(1,1,1);
     c.rect(100,-100,100,100);
 
+    c.setModeRect(CanvasGL.CENTER);
+    c.fill3f(1,0,0.25);
+    c.roundRect(275,-125,100,100,10);
+    c.fill3f(1,1,1);
+    c.roundRect(300,-100,100,100,(Math.sin(time) * 0.5 + 0.5) * 30);
+
+
+    this.drawShapeOrigin(-325,-125);
+    this.drawShapeOrigin(-300,-100);
+
+    this.drawShapeOrigin(-100,-100);
+
+    this.drawShapeOrigin(100,-100);
+    this.drawShapeOrigin( 75,-125);
+
+    this.drawShapeOrigin(275,-125);
+    this.drawShapeOrigin(300,-100);
+};
+
+App.prototype.drawShapeOrigin = function(x,y){
+    var c = this.getContext();
+    var prevStroke = c.getStroke();
+    var prevFill   = c.getFill();
+    var prevMode   = c.getModeCircle();
+
+    c.setModeCircle(CanvasGL.CENTER);
+    c.noStroke();
+    c.fill3f(0.15,0,0.65);
+    c.circle(x,y,3,3);
+
+    c.setModeCircle(prevMode);
+    if(prevStroke)c.stroke(prevStroke);
+    if(prevFill)c.fill(prevFill);
 };
 
 

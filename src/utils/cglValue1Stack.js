@@ -1,19 +1,19 @@
-function Value1Stack(a,b){
-    this.a = typeof a === 'undefined' ? null : a;
-    this.b = typeof b === 'undefined' ? null : b;
+function Value1Stack(){
+    this._a = null;
+    this._b = null;
 }
 
 Value1Stack.prototype.push = function(a){
-    this.b=this.a;
-    this.a=a;
+    this._b=this._a;
+    this._a=a;
 };
 
 Value1Stack.prototype.peek = function(){
-    return this.a;
+    return this._a;
 };
 
 Value1Stack.prototype.isEqual = function(){
-    return this.a == this.b;
+    return this._a == this._b;
 };
 
 Value1Stack.prototype.pushEmpty = function(){
