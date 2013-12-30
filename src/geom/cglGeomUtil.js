@@ -1,6 +1,6 @@
-var PrimitiveUtil = {};
+var GeomUtil = {};
 
-PrimitiveUtil.getTexCoordsCircle = function(detail,
+GeomUtil.genTexCoordsCircle = function(detail,
                                             textureOffsetX,textureOffsetY,
                                             textureOffsetW,textureOffsetH,
                                             out){
@@ -32,7 +32,7 @@ PrimitiveUtil.getTexCoordsCircle = function(detail,
     return out;
 };
 
-PrimitiveUtil.getVerticesCircle = function(detail,out){
+GeomUtil.genVerticesCircle = function(detail,out){
     var l = detail * 2;
     var theta = 2 * Math.PI / detail,
         cos   = Math.cos(theta),
@@ -54,7 +54,7 @@ PrimitiveUtil.getVerticesCircle = function(detail,out){
 };
 
 
-PrimitiveUtil.getVerticesRoundRect = function(corners,radius,detail,out){
+GeomUtil.genVerticesRoundRect = function(corners,radius,detail,out){
     var detail2 = detail * 2;
     var m, m2, n,
         o, om, on,
@@ -94,7 +94,7 @@ PrimitiveUtil.getVerticesRoundRect = function(corners,radius,detail,out){
     return out;
 };
 
-PrimitiveUtil.getIndicesRoundRect = function(corners,radius,detail,out){
+GeomUtil.genIndicesRoundRect = function(corners,radius,detail,out){
     var d  = detail,
         d2 = d * 2,
         d3 = d2 + 2,
@@ -150,6 +150,47 @@ PrimitiveUtil.getIndicesRoundRect = function(corners,radius,detail,out){
     out[il-6] = out[il-1] = is*3;
 
     return out;
-}
+};
 
-module.exports = PrimitiveUtil;
+GeomUtil.genVerticesArc = function(radiusX,radiusY,
+                                   innerRadiusX,innerRadiusY,
+                                   startAngle,stopAngle,detail,
+                                   out){
+    var length = detail * 4;
+    var step   = (stopAngle - startAngle) / (detail * 2 - 2);
+    var s,coss,sins;
+    var cos = Math.cos,
+        sin = Math.sin;
+
+    var i = 0;
+    while(i < length){
+        s = startAngle + step * i;
+        coss = cos(s);
+        sins = sin(s);
+
+        out[i  ] = radiusX * coss;
+        out[i+1] = radiusY * sins;
+        out[i+2] = innerRadiusX * coss;
+        out[i+3] = innerRadiusY * sins;
+
+        i+=4;
+    }
+
+    return out;
+};
+
+GeomUtil.genVerticesArcStroke = function(src,detail,out){
+    var length = detail * 2;
+    var i,i2;
+    i = 0;
+    while(i < length){
+        i2 = i * 2;
+        out[i  ] = src[i2  ];
+        out[i+1] = src[i2+1];
+        i += 2;
+    }
+
+    return out;
+};
+
+module.exports = GeomUtil;
