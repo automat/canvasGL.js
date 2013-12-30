@@ -766,10 +766,8 @@ Context.prototype._applyTexture = function(){
     var gl = this._context3d;
     var program = this._stackProgram.peek();
     gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
-    //gl.uniform1f(this._uniformLocationUseTexture,1.0);
     gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
     gl.uniform1f(program[ShaderDict.uImage],0);
-    //gl.uniform1f(this._uniformLocationImage,0);
 };
 
 Context.prototype._disableTexture = function(){
@@ -1128,7 +1126,6 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
         indices,
         colors;
 
-
     if(sizeDiffers || radiusDiffers || detailDiffers){
         GeomUtil.genVerticesRoundRect(bCorner,radius,detail,bVertex);
     }
@@ -1158,17 +1155,9 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
         }
     }
 
-    if(this._texture)
-    {
-        if(this._batchActive)
-        {
-
-        }
-        else
-        {
-
-        }
-
+    if(this._texture){
+        if(this._batchActive){}
+        else{}
     }
 
     if(this._stroke)
@@ -2394,12 +2383,6 @@ Context.prototype.image = function(image, x, y, width, height)
 
     this._stackDrawFunc.push(this.image);
 };
-
-/**
- * @method getImagePixel
- * @param img
- * @return {*}
- */
 
 Context.prototype.getImagePixel = function(img)
 {
