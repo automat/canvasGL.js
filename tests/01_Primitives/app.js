@@ -66,6 +66,20 @@ App.prototype.draw = function(){
     c.fill3f(1,1,1);
     c.roundRect(300,-100,100,100,(Math.sin(time) * 0.5 + 0.5) * 30);
 
+    c.setModeRect(CanvasGL.CENTER);
+    var i = -1;
+    var l = 20;
+    var n;
+    var a;
+    while(++i < l){
+        n = i / (l - 1);
+        a = (Math.sin(time * 5 + n * Math.PI * 4) * 0.5 + 0.5);
+
+        c.fill3f(1, 1 - n , 0.25 * (1 - n) + n  );
+        c.roundRect(-375 + n * 750,0,10 + a * 10,10 + a * 40,5)
+    }
+
+
 
     this.drawShapeOrigin(-325,-125);
     this.drawShapeOrigin(-300,-100);
@@ -77,6 +91,8 @@ App.prototype.draw = function(){
 
     this.drawShapeOrigin(275,-125);
     this.drawShapeOrigin(300,-100);
+
+    //console.log('---');
 };
 
 App.prototype.drawShapeOrigin = function(x,y){

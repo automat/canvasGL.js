@@ -1053,6 +1053,8 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
         stackDetail = this._stackDetailRRect,
         stackSize   = this._stackSizeRRect;
 
+    var detail = stackDetail.peek();
+
     var originX = modeOrigin == 0 ? x - width  * 0.5 : x,
         originY = modeOrigin == 0 ? y - height * 0.5 : y;
 
@@ -1060,11 +1062,33 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
     stackSize.push(width,height);
     stackRadius.push(radius);
 
-    var radiusDiffers = !stackRadius.isEqual(),
-        sizeDiffers   = !stackDetail.isEqual();
+    var originDiffers = !stackOrigin.isEqual(),
+        radiusDiffers = !stackRadius.isEqual(),
+        detailDiffers = !stackDetail.isEqual(),
+        sizeDiffers   = !stackSize.isEqual();
 
+    /*
+    console.log('detail: ' + detailDiffers + '\n' +
+                'radius: ' + radiusDiffers + '\n' +
+                'origin: ' + originDiffers + '\n' +
+                'size:   ' + sizeDiffers);
+    */
+
+
+    if(radius == 0){
+        var ox = originX + radius,
+            oy = originY + radius,
+            ow = originX + width  - radius,
+            oh = originY + height - radius;
+        this.quad(ox,oy,ow,oy,ow,oh,ox,oh);
+        stackDetail.push(detail);
+        return;
+    }
+
+    var bVertex  = this._bVertexRoundRect,
+        bVertexT = this._bVertexRoundRectT;
+    var bIndex   = this._bIndexRoundRect;
     var bCorner  = this._bCornerRoundRect;
-
 
     if(sizeDiffers || radiusDiffers){
         bCorner[0] = bCorner[6] = width  - radius;
@@ -1073,152 +1097,39 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
         bCorner[5] = bCorner[7] = radius;
     }
 
-    if(radius == 0){
-        this.quad(bCorner[4],bCorner[5],
-                  bCorner[6],bCorner[7],
-                  bCorner[0],bCorner[1],
-                  bCorner[2],bCorner[3]);
-        stackDetail.push(stackDetail.peek());
-        return;
-    }
-
-    var originDiffers = !stackOrigin.isEqual(),
-        detailDiffers = !stackDetail.isEqual();
-
-    var bVertex  = this._bVertexRoundRect,
-        bVertexT = this._bVertexRoundRectT;
-    var bIndex   = this._bIndexRoundRect;
-
     var vertices,
         indices,
         colors;
 
 
-    var detail = stackDetail.peek();
-    //vertices = bVertex;
-    var cornerX,cornerY;
-
-
-    var d  = stackDetail.peek(),
-        d2 = d * Common.SIZE_OF_VERTEX,
-        d3 = d2 + 2,
-        i2 = (d  + 1) * Common.SIZE_OF_FACE,
-        i3 = (i2 - 6),
-        l  = d3 * 4,
-        is = d3 / 2,
-        il = (l  / 2  + 2) * Common.SIZE_OF_FACE;
-
-    var m, m2,n,o,om,on;
-
-    var pi2 = Math.PI * 0.5,
-        s   = pi2 / (d-1);
-
-    var a,as;
-    /*
-    m = 0;
-    while(m < 4){
-        om = m * (d2 + 2);
-        m2 = m * 2;
-
-        bVertex[om  ] = cornerX = bCorner[m2  ];
-        bVertex[om+1] = cornerY = bCorner[m2+1];
-
-        n  = om + 2;
-        on = n  + d2;
-        a  = m  * pi2;
-        o  = 0;
-
-        while(n < on){
-            as = a + s*o;
-            bVertex[n  ] = cornerX + Math.cos(as) * radius;
-            bVertex[n+1] = cornerY + Math.sin(as) * radius;
-            o++;
-            n+=2;
-        }
-
-        ++m;
+    if(sizeDiffers || radiusDiffers || detailDiffers){
+        PrimitiveUtil.getVerticesRoundRect(bCorner,radius,detail,bVertex);
     }
-    */
 
-    PrimitiveUtil.getVerticesRoundRect(bCorner,radius,detail,bVertex);
-    VertexUtil.translate(bVertex,originX,originY,bVertexT);
+    if(radiusDiffers || detailDiffers){
+        PrimitiveUtil.getIndicesRoundRect(bCorner,radius,detail,bIndex);
+    }
+
+    if(originDiffers){
+        VertexUtil.translate(bVertex,originX,originY,bVertexT);
+    }
+
     vertices = bVertexT;
+    indices  = bIndex;
 
-    //if(currDetail != prevDetail && !drawFuncLastIsThis){
-    /*
-        m = 0;
-        while(m<4){
-            om  = m * i2;
-            n   = om;
-            on  = n + i3;
-            o   = 1;
-            om /= 3;
-
-            while(n < on){
-                indices[n]   = om;
-                indices[n+1] = om + o ;
-                indices[n+2] = om + o + 1;
-
-                o++;
-                n+=3;
-            }
-
-            om = m * is;
-
-            if(m<3){
-                indices[n]   = indices[n+3] = om;
-                indices[n+1] = om + is;
-                indices[n+2] = indices[n+5] = indices[n+1] + 1 ;
-                indices[n+4] = om + d;
-            }
-            else if(m==3){
-                indices[n]   = om;
-                indices[n+1] = indices[n+4] = om +d;
-                indices[n+2] = indices[n+3] = 0;
-                indices[n+5] = 1;
-            }
-
-            ++m;
-        }
-
-        indices[il-4] = 0;
-        indices[il-2] = is*2;
-        indices[il-5] = indices[il-3] = is;
-        indices[il-6] = indices[il-1] = is*3;
-        */
-    //}
-
-    indices = PrimitiveUtil.getIndicesRoundRect(bCorner,radius,detail,bIndex);
-
+    var indicesLength = ((detail * 2 + 2) * 2 + 2) * 3;
     var gl = this._context3d;
-    var c;
 
     if(this._fill && !this._texture){
-        c = this.bufferColors(this._bColorFill4,this._bColorRoundRect);
-
+        colors = this.bufferColors(this._bColorFill4,this._bColorRoundRect);
         if(this._batchActive){
-            this._batchPush(vertices,indices,c,null);
+
         }
         else{
-            var glArrayBuffer = gl.ARRAY_BUFFER,
-                glDynamicDraw = gl.DYNAMIC_DRAW,
-                glFloat       = gl.FLOAT;
-
-            var vblen = vertices.byteLength,
-                cblen = c.byteLength,
-                tlen  = vblen + cblen;
-
+            this.bufferArrays(vertices,colors,null,gl.DYNAMIC_DRAW);
             this.setMatrixUniform();
-
-            var program = this._stackProgram.peek();
-
-            gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
-            gl.bufferSubData(glArrayBuffer,0,    vertices);
-            gl.bufferSubData(glArrayBuffer,vblen,c);
-            gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX,glFloat,false,0,0);
-            gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR, glFloat,false,0,vblen);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
-            gl.drawElements(gl.TRIANGLES, il,gl.UNSIGNED_SHORT,0);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.DYNAMIC_DRAW);
+            gl.drawElements(gl.TRIANGLES, indicesLength,gl.UNSIGNED_SHORT,0);
 
         }
     }
@@ -1254,192 +1165,9 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
         this._polyline(vertices,d2*4+8,true);
     }
 
-    stackDetail.push(stackDetail.peek());
+    stackDetail.push(detail);
     this._stackDrawFunc.push(this.roundRect);
 };
-
-/*
-Context.prototype.roundRect = function(x,y,width,height,cornerRadius){
-    if(!this._fill && !this._stroke && !this._texture)return;
-
-    var drawFuncLastIsThis = this._drawFuncLast == this.roundRect;
-
-    var prevDetail = this._currDetailRRect,
-        currDetail = this._prevDetailRRect;
-
-    var rm = this._modeRect;
-
-    var xx = x + (rm == 1 ? 0.0 : - width*0.5),
-        yy = y + (rm == 1 ? 0.0 : - height*0.5);
-
-
-    var xc  = xx + cornerRadius,
-        yc  = yy + cornerRadius,
-        xwc = xx + width  - cornerRadius,
-        yhc = yy + height - cornerRadius;
-
-    if(cornerRadius == 0){
-        this.quad(xc,yc,xwc,yc,xwc,yhc,xc,yhc);
-        return;
-    }
-
-    var e = [xwc,yhc,xc,yhc,xc,yc,xwc,yc],
-        ex,ey;
-
-    var vertices = this._bVertexRoundRect,
-        indices  = this._bIndexRoundRect;
-
-    var d  = this._currDetailRRect,
-        d2 = d * Common.SIZE_OF_VERTEX,
-        d3 = d2 + 2,
-        i2 = (d  + 1) * Common.SIZE_OF_FACE,
-        i3 = (i2 - 6),
-        l  = d3 * 4,
-        is = d3 / 2,
-        il = (l  / 2  + 2) * Common.SIZE_OF_FACE;
-
-    var m, m2,n,o,om,on;
-
-    var pi2 = Math.PI * 0.5,
-        s   = pi2 / (d-1);
-
-    var a,as;
-
-    m = 0;
-    while(m < 4){
-        om = m * (d2 + 2);
-        m2 = m * 2;
-
-        vertices[om  ] = ex = e[m2  ];
-        vertices[om+1] = ey = e[m2+1];
-
-        n  = om + 2;
-        on = n  + d2;
-        a  = m  * pi2;
-        o  = 0;
-
-        while(n < on){
-            as = a + s*o;
-            vertices[n  ] = ex + Math.cos(as) * cornerRadius;
-            vertices[n+1] = ey + Math.sin(as) * cornerRadius;
-            o++;
-            n+=2;
-        }
-
-        ++m;
-    }
-
-    if(currDetail != prevDetail && !drawFuncLastIsThis){
-        m = 0;
-        while(m<4){
-            om  = m * i2;
-            n   = om;
-            on  = n + i3;
-            o   = 1;
-            om /= 3;
-
-            while(n < on){
-                indices[n]   = om;
-                indices[n+1] = om + o ;
-                indices[n+2] = om + o + 1;
-
-                o++;
-                n+=3;
-            }
-
-            om = m * is;
-
-            if(m<3){
-                indices[n]   = indices[n+3] = om;
-                indices[n+1] = om + is;
-                indices[n+2] = indices[n+5] = indices[n+1] + 1 ;
-                indices[n+4] = om + d;
-            }
-            else if(m==3){
-                indices[n]   = om;
-                indices[n+1] = indices[n+4] = om +d;
-                indices[n+2] = indices[n+3] = 0;
-                indices[n+5] = 1;
-            }
-
-            ++m;
-        }
-
-        indices[il-4] = 0;
-        indices[il-2] = is*2;
-        indices[il-5] = indices[il-3] = is;
-        indices[il-6] = indices[il-1] = is*3;
-    }
-
-    var gl = this._context3d;
-    var c;
-
-    if(this._fill && !this._texture){
-        c = this.bufferColors(this._bColorFill4,this._bColorRoundRect);
-
-        if(this._batchActive){
-            this._batchPush(vertices,indices,c,null);
-        }
-        else{
-            var glArrayBuffer = gl.ARRAY_BUFFER,
-                glDynamicDraw = gl.DYNAMIC_DRAW,
-                glFloat       = gl.FLOAT;
-
-            var vblen = vertices.byteLength,
-                cblen = c.byteLength,
-                tlen  = vblen + cblen;
-
-            this.setMatrixUniform();
-
-            var program = this._currProgram;
-
-            gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
-            gl.bufferSubData(glArrayBuffer,0,    vertices);
-            gl.bufferSubData(glArrayBuffer,vblen,c);
-            gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX,glFloat,false,0,0);
-            gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR, glFloat,false,0,vblen);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
-            gl.drawElements(gl.TRIANGLES, il,gl.UNSIGNED_SHORT,0);
-
-        }
-    }
-
-    if(this._texture)
-    {
-        if(this._batchActive)
-        {
-
-        }
-        else
-        {
-
-        }
-
-    }
-
-    if(this._stroke)
-    {
-        vertices[0]      = vertices[2];
-        vertices[1]      = vertices[3];
-
-        vertices[d3]     = vertices[d3+2];
-        vertices[d3+1]   = vertices[d3+3];
-
-        vertices[d3*2]   = vertices[d3*2+2];
-        vertices[d3*2+1] = vertices[d3*2+3];
-
-        vertices[d3*3]   = vertices[d3*3+2];
-        vertices[d3*3+1] = vertices[d3*3+3];
-
-
-        this._polyline(vertices,d2*4+8,true);
-    }
-
-    this._drawFuncLast = this.roundRect;
-};
-*/
-
-
 
 
 Context.prototype.ellipse = function(x,y,radiusX,radiusY){

@@ -174,9 +174,9 @@ var _Math = {
 
     catmullrom : function(a,b,c,d,i){
         return a * ((-i + 2) * i - 1) * i * 0.5 +
-            b * (((3 * i - 5) * i) * i + 2) * 0.5 +
-            c * ((-3 * i + 4) * i + 1) * i * 0.5 +
-            d * ((i - 1) * i * i) * 0.5;
+               b * (((3 * i - 5) * i) * i + 2) * 0.5 +
+               c * ((-3 * i + 4) * i + 1) * i * 0.5 +
+               d * ((i - 1) * i * i) * 0.5;
     },
 
     np2 : function(n){
@@ -188,7 +188,7 @@ var _Math = {
 
     pp2 : function(n){
         var n2 = n>>1;
-        return n2>0 ? this.__np2(n2) : this.__np2(n);
+        return n2>0 ? this.np2(n2) : this.np2(n);
     },
 
     p2 : function(n){
@@ -197,8 +197,8 @@ var _Math = {
 
     nnp2 : function(n){
         if((n&(n-1))==0)return n;
-        var nn = this.__np2(n);
-        var pn = this.__pp2(n);
+        var nn = this.np2(n);
+        var pn = this.np2(n);
         return (nn-n)>Math.abs(n-pn) ? pn : nn;
     }
 
