@@ -10,7 +10,8 @@ var _Math               = require('../math/cglMath'),
 var Program     = require('./cglProgram'),
     Shader      = require('./cglShader'),
     ShaderDict  = require('./cglShaderDict'),
-    Framebuffer = require('./cglFramebuffer');
+    Framebuffer = require('./cglFramebuffer'),
+    Texture     = require('./cglTexture');
 
 var Warning   = require('../common/cglWarning'),
     Extension = require('../common/cglExtension'),
@@ -58,15 +59,19 @@ function Context(element,canvas3d,canvas2d){
     this._canvas2d  = document.createElement('canvas');
     this._context2d = this._canvas2d.getContext('2d');
 
-    var glTexture2d          = gl.TEXTURE_2D,
-        glRGBA               = gl.RGBA,
-        glArrayBuffer        = gl.ARRAY_BUFFER,
+   var  glArrayBuffer        = gl.ARRAY_BUFFER,
         glElementArrayBuffer = gl.ELEMENT_ARRAY_BUFFER;
 
     // Setup 2d / post shader
-    this._program      = new Program(this, Shader.vert,     Shader.frag);
+    var attributesToBind = {};
+        attributesToBind[ShaderDict.aVertPosition] = 0;
+        attributesToBind[ShaderDict.aVertColor]    = 1;
+        attributesToBind[ShaderDict.aTexCoord]     = 2;
+
+    this._program      = new Program(this, Shader.vert,     Shader.frag, attributesToBind);
     this._programPost  = new Program(this, Shader.vertPost, Shader.fragPost);
     this._stackProgram = new Value1Stack();
+
 
     this._width_internal  = null;
     this._height_internal = null;
@@ -79,10 +84,11 @@ function Context(element,canvas3d,canvas2d){
     this._bColorBg     = new Float32Array(4);
     this._stackColorBg = new Value4Stack();
 
+    this._fboCanvas   = new Framebuffer(this);
+    this._fboPingPong = new Framebuffer(this);
 
-    this._fboCanvas   = new Framebuffer(gl);
-    this._fboPingPong = new Framebuffer(gl);
-    this._fboRef      = new Value1Stack();
+
+
 
     this._setSize(parseInt(element.offsetWidth),parseInt(element.offsetHeight));
 
@@ -99,23 +105,22 @@ function Context(element,canvas3d,canvas2d){
     var program = this._program;
     gl.uniform1f(program[ShaderDict.uFlipY],1.0);
 
-
     // Create default blank texture and texture coords / use color & set alpha to 1.0
-    this._currTint     = Default.TINT;
-    this._blankTexture = gl.createTexture();
+    this._currTint          = Default.TINT;
 
-    gl.bindTexture(glTexture2d,this._blankTexture);
+    var glTexture2d          = gl.TEXTURE_2D,
+        glRGBA               = gl.RGBA;
+
+    this._blankTextureGL = gl.createTexture();
+    gl.bindTexture(glTexture2d, this._blankTextureGL);
     gl.texImage2D( glTexture2d, 0, glRGBA, 1, 1, 0, glRGBA, gl.UNSIGNED_BYTE, new Uint8Array([1,1,1,1]));
-    gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
+    gl.bindTexture(glTexture2d,null);
 
     // Create matrix stack and apply
     this._matrix      = Mat33.make();
     this._matrixTemp  = Mat33.make();
     this._matrixStack = [];
     this.setMatrixUniform();
-
-
-
 
     // Set draw modes
     this._modeEllipse = Context.CENTER;
@@ -137,7 +142,7 @@ function Context(element,canvas3d,canvas2d){
     var ELLIPSE_DETAIL_MAX = Common.ELLIPSE_DETAIL_MAX,
         SPLINE_DETAIL_MAX  = Common.SPLINE_DETAIL_MAX,
         BEZIER_DETAIL_MAX  = Common.BEZIER_DETAIL_MAX;
-    var ELLIPSE_DETAIL = Default.ELLIPSE_DETAIL;
+    var ELLIPSE_DETAIL     = Default.ELLIPSE_DETAIL;
 
     var SET_ALLOCATE_SIZE = Default.SET_ALLOCATE_SIZE;
 
@@ -145,6 +150,10 @@ function Context(element,canvas3d,canvas2d){
     this._bVertexLine      = new Float32Array(4);
     this._bVertexTriangle  = new Float32Array(6);
     this._bVertexQuad      = new Float32Array(8);
+
+    this._bVertexQuad_internal   = new Float32Array(8);
+    this._bColorQuad_internal    = new Float32Array(16);
+    this._bTexCoordQuad_internal = new Float32Array(8);
 
     var bVertexEllipseLen = ELLIPSE_DETAIL_MAX * 2,
         bColorEllipseLen  = ELLIPSE_DETAIL_MAX * 4,
@@ -262,6 +271,7 @@ function Context(element,canvas3d,canvas2d){
     this._bColorStroke4 = [1.0,1.0,1.0,1.0];
     this._bColorStroke  = this._bColorStroke4;
 
+    this._tempPoint2f = new Float32Array(2);
     this._tempScreenCoords  = new Array(2);
     this._tempCurveVertices = [];
 
@@ -718,36 +728,7 @@ Context.prototype.getFill = function(){
     return this._fill ? this._bColorFill : null;
 };
 
-Context.prototype.bufferColors = function(color,buffer){
-    var cl = color.length,
-        bl = buffer.length;
-    var i = 0;
 
-    if(cl == 4){
-        while(i < bl){
-            buffer[i]  =color[0];
-            buffer[i+1]=color[1];
-            buffer[i+2]=color[2];
-            buffer[i+3]=color[3];
-            i+=4;
-        }
-    }
-    else{
-        if(cl != bl){
-            throw Warning.UNEQUAL_ARR_LENGTH_COLOR_BUFFER;
-        }
-
-        while(i < bl){
-            buffer[i]   = color[i];
-            buffer[i+1] = color[i+1];
-            buffer[i+2] = color[i+2];
-            buffer[i+3] = color[i+3];
-            i+=4;
-        }
-    }
-
-    return buffer;
-};
 
 
 
@@ -770,14 +751,7 @@ Context.prototype._applyTexture = function(){
     gl.uniform1f(program[ShaderDict.uImage],0);
 };
 
-Context.prototype._disableTexture = function(){
-    var gl = this._context3d;
-    var program = this._stackProgram.peek();
-    gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
-    gl.vertexAttribPointer(program[ShaderDict.aTexCoord],Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
-    gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
-    this._texture = false;
-};
+
 
 Context.prototype.setUVOffset = function(offsetU,offsetV,textureWidth,textureHeight){
     this._textureOffsetX = offsetU;
@@ -829,21 +803,28 @@ Context.prototype.resetUVTriangle = function(){
     Utils.setArr(this._bTexCoordsTriangle,this._bTexCoordsTriangleDefault);
 };
 
+Context.prototype._bindTexture = function(tex){
+    this._textureCurr = tex;
+    var gl = this._context3d;
+    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr.getGLTexture());
+    this._texture = true;
+};
+
+Context.prototype._unbindTexture = function(){
+    var gl = this._context3d;
+    var program = this._stackProgram.peek();
+    gl.bindTexture(gl.TEXTURE_2D, this._blankTextureGL);
+    gl.vertexAttribPointer(2,2,gl.FLOAT,false,0,0);
+    gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
+    this._texture = false;
+};
+
 Context.prototype.texture = function(img){
     this._bindTexture(img._t);
 };
 
-Context.prototype._bindTexture = function(tex){
-    this._textureCurr = tex;
-    var gl = this._context3d;
-    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-    this._texture = true;
-};
-
-
 Context.prototype.noTexture = function(){
-    this._disableTexture();
-    this._texture = false;
+    this._unbindTexture();
 };
 
 
@@ -895,8 +876,8 @@ Context.prototype.drawFbo = function(fbo,width,height){
     var gl      = this._context3d;
     var program = this._stackProgram.peek();
 
-    width = typeof width === 'undefined' ? fbo._getWidth() : width;
-    height= typeof height=== 'undefined' ? fbo._getHeight(): height;
+    width = typeof width === 'undefined' ? fbo.getWidth() : width;
+    height= typeof height=== 'undefined' ? fbo.getHeight(): height;
 
     var bVertex   = this._bVertexFbo,
         bColor    = this._bColorFbo,
@@ -908,16 +889,14 @@ Context.prototype.drawFbo = function(fbo,width,height){
 
     this.setMatrixUniform();
 
-    this._bindTexture(fbo.getTexture().getGLTexture());
-    //fbo.getTexture().bind();
-    this.__fillBufferTexture(bVertex,bColor,bTexCoord);
+    fbo.getTexture().bind();
+    this.bufferArrays(bVertex,bColor,bTexCoord);
 
     gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
     gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
-    //fbo.getTexture().unbind();
-    this._bindTexture(this._blankTexture);
+    fbo.getTexture().unbind();
 };
 
 
@@ -936,7 +915,7 @@ Context.prototype.clearColorBuffer = function(){
 
     if(this._backgroundClear){
         gl.clearColor(color[0],color[1],color[2],1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT  );
+        gl.clear(gl.COLOR_BUFFER_BIT);
     }
     else{
         if(!stackColorBg.isEqual()){
@@ -972,7 +951,7 @@ Context.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 
 Context.prototype._quad_internal = function(x0,y0,x1,y1,x2,y2,x3,y3){
     var gl      = this._context3d;
-    var bVertex = this._bVertexQuad,
+    var bVertex = this._bVertexQuad_internal,
         bColor;
 
     bVertex[ 0] = x0;
@@ -985,7 +964,7 @@ Context.prototype._quad_internal = function(x0,y0,x1,y1,x2,y2,x3,y3){
     bVertex[ 7] = y2;
 
     if(this._fill && !this._texture){
-        bColor = this.bufferColors(this._bColorFill,this._bColorQuad);
+        bColor = this.bufferColors(this._bColorFill,this._bColorQuad_internal);
 
         if(this._batchActive){}
         else{
@@ -996,7 +975,7 @@ Context.prototype._quad_internal = function(x0,y0,x1,y1,x2,y2,x3,y3){
     }
 
     if(this._texture){
-        bColor = this.bufferColors(this._bColorFill,this._bColorQuad);
+        bColor = this.bufferColors(this._bColorFill,this._bColorQuad_internal);
 
         var bTexCoord = this._bTexCoordsQuad,
             bTexCoordD= this._bTexCoordsQuadDefault;
@@ -1022,7 +1001,7 @@ Context.prototype._quad_internal = function(x0,y0,x1,y1,x2,y2,x3,y3){
 
         if(this._batchActive){}
         else{
-            this.__fillBufferTexture(bTexCoord,bColor,bTexCoord);
+            this.bufferArrays(bTexCoord,bColor,bTexCoord);
             this.setMatrixUniform();
             gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
         }
@@ -1065,7 +1044,6 @@ Context.prototype.rect = function(x,y,width,height){
     }
 
     this._quad_internal(rx,ry,rw,ry,rw,rh,rx,rh);
-
     this._stackDrawFunc.push(this.rect);
 };
 
@@ -1252,7 +1230,7 @@ Context.prototype.ellipse = function(x,y,radiusX,radiusY){
                 texCoords);
         }
 
-        this.__fillBufferTexture(vertices,colors,texCoords);
+        this.bufferArrays(vertices,colors,texCoords);
         this.setMatrixUniform();
         gl.drawArrays(gl.TRIANGLE_FAN,0,detail);
     }
@@ -1310,11 +1288,6 @@ Context.prototype.circle = function(x,y,radius){
 
     vertices = bVertexT;
 
-    /*
-     console.log('detail: ' + stackDetailChanged  + '\n' +
-                 'radius: ' + stackRadiusChanged  + '\n' +
-                 'origin: ' + stackOriginChanged);
-     */
 
     if(this._fill && !this._texture){
         colors = this.bufferColors(this._bColorFill,this._bColorCircle);
@@ -1335,7 +1308,7 @@ Context.prototype.circle = function(x,y,radius){
                 texCoords);
         }
 
-        this.__fillBufferTexture(vertices,colors,texCoords);
+        this.bufferArrays(vertices,colors,texCoords);
         this.setMatrixUniform();
         gl.drawArrays(gl.TRIANGLE_FAN,0,detail);
     }
@@ -1510,7 +1483,6 @@ Context.prototype.arc = function(x,y,radiusX,radiusY,startAngle,stopAngle,innerR
     var bVertex  = this._bVertexArc,
         bVertexT = this._bVertexArcT;
 
-
     if(radiusIDiffers || radiusODiffers || angleDiffers || detailDiffers){
         GeomUtil.genVerticesArc(radiusX,radiusY,
                                 innerRadiusX,innerRadiusY,
@@ -1602,20 +1574,6 @@ Context.prototype.lineSet = function(lines,strokeColors,lineWidths)
     this._stackDrawFunc.push(this.lineSet);
 };
 
-/**
- * Draws a bezier curve.
- *
- * @method bezier
- * @param {Number} x0 X-value of the first anchor point
- * @param {Number} y0 Y-value of the first anchor point
- * @param {Number} x1 X-value of the first control point
- * @param {Number} y1 Y-value of the first control point
- * @param {Number} x2 X-value of the second control point
- * @param {Number} y2 Y-value of the second control point
- * @param {Number} x3 X-value of the second anchor point
- * @param {Number} y3 Y-value of the second anchor point
- */
-
 Context.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3){
     var d   = this._currDetailBezier,
         d_2 = d - 2,
@@ -1672,7 +1630,7 @@ Context.prototype.bezierPoint = function(d)
         y3 = p[7];
 
     return [nt3*x0+3*nt2*d*x1+3*nt*t2*x2+t3*x3,
-        nt3*y0+3*nt2*d*y1+3*nt*t2*y2+t3*y3];
+            nt3*y0+3*nt2*d*y1+3*nt*t2*y2+t3*y3];
 
 };
 
@@ -1709,13 +1667,6 @@ Context.prototype.bezierTangentAngle = function(d){
     return Math.atan2(p1y-p0y,p1x-p0x);
 };
 
-/**
- * Draws a bezier curve through a set of points.
- *
- * @method curve
- * @param {Array} points The x- and y-values of the points
- */
-
 Context.prototype.curve = function(points){
     var d = this._currDetailSpline,
         d_2 = d - 2;
@@ -1735,14 +1686,13 @@ Context.prototype.curve = function(points){
             ni = i+1;
 
             vertices.push(catmullrom(points[Math.max(0,i-2)],
-                points[i],
-                points[Math.min(i+2,pl-2)],
-                points[Math.min(i+4,pl-2)],
-                t),
-                catmullrom(points[Math.max(1,ni-2)],
-                    points[ni],
-                    points[Math.min(ni+2,pl-1)],
-                    points[Math.min(ni+4,pl-1)],t));
+                                     points[i],
+                                     points[Math.min(i+2,pl-2)],
+                                     points[Math.min(i+4,pl-2)],t),
+                          catmullrom(points[Math.max(1,ni-2)],
+                                     points[ni],
+                                     points[Math.min(ni+2,pl-1)],
+                                     points[Math.min(ni+4,pl-1)],t));
             j+=2;
         }
         i+=2;
@@ -1846,16 +1796,16 @@ Context.prototype.triangle = function(x0,y0,x1,y1,x2,y2){
             gl.bufferSubData(glArrayBuffer,offSetC,c);
             gl.bufferSubData(glArrayBuffer,offSetT,t);
 
-            gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-            gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-            gl.vertexAttribPointer(program[ShaderDict.aTexCoord],     Common.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
+            gl.vertexAttribPointer(0, 2, glFloat, false, 0, offSetV);
+            gl.vertexAttribPointer(1, 4, glFloat, false, 0, offSetC);
+            gl.vertexAttribPointer(2, 2, glFloat, false, 0, offSetT);
 
             gl.uniform1f(program[ShaderDict.uUseTexture],this._currTint);
             gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
             gl.uniform1f(program[ShaderDict.uImage],0);
             gl.drawArrays(gl.TRIANGLES,0,1);
 
-            this._disableTexture();
+            this._unbindTexture();
         }
     }
 
@@ -2118,37 +2068,38 @@ Context.prototype._polyline = function(joints,length,loop){
 
         if(this._texture)
         {
-            gl.bindTexture(gl.TEXTURE_2D, this._blankTexture);
-            gl.vertexAttribPointer(program[ShaderDict.aTexCoord],Common.SIZE_OF_T_COORD,gl.FLOAT,false,0,0);
-            gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
+            //this._blankTexture.bind();
         }
 
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    vertices);
         gl.bufferSubData(glArrayBuffer,vblen,colors);
-        gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX,glFloat,false,0,0);
-        gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR, glFloat,false,0,vblen);
+        gl.vertexAttribPointer(0, 2, glFloat, false, 0, 0);
+        gl.vertexAttribPointer(1, 4, glFloat, false, 0, vblen);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
         gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
     }
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+// drawArrays / drawELements
+/*---------------------------------------------------------------------------------------------------------*/
 
 
-Context.prototype.drawArrays = function(verticesArrOrFloat32Arr,
-                                         colorArrOrFloat32Arr,
-                                         mode){
+Context.prototype.drawArrays = function(verticesArrOrFloat32Arr, colorArrOrFloat32Arr, mode){
     if(!this._fill)return;
 
     var vertices = Utils.safeFloat32Array(verticesArrOrFloat32Arr),
         colors   = this.bufferColors((colorArrOrFloat32Arr || this._bColorFill4),
-            new Float32Array(verticesArrOrFloat32Arr.length * 2));
+                   new Float32Array(verticesArrOrFloat32Arr.length * 2));
 
     var gl  = this._context3d;
 
     if(this._batchActive){
         this._batchPush(vertices,
-            mode == 5 ? ModelUtil.genFaceIndicesLinearCW(vertices.length) : ModelUtil.genFaceIndicesFan(vertices.length),
+            mode == Context.TRIANGLE_STRIP ?
+            ModelUtil.genFaceIndicesLinearCW(vertices.length) :
+            ModelUtil.genFaceIndicesFan(vertices.length),
             colors,null);
 
     } else {
@@ -2161,42 +2112,43 @@ Context.prototype.drawArrays = function(verticesArrOrFloat32Arr,
 
 
 
-Context.prototype.drawElements = function(vertices,indices,colors){
+Context.prototype.drawElements = function(verticesArrOrFloat32Arr,indicesArrOrUint16Arr,colorsArrOrFloat32Arr){
     if(!this._fill)return;
 
-    vertices = Utils.safeFloat32Array(vertices);
-    indices  = indices ?
-        Utils.safeUint16Array(indices) :
-        new Uint16Array(ModelUtil.genFaceIndicesLinearCW(vertices.length));
+    verticesArrOrFloat32Arr = Utils.safeFloat32Array(verticesArrOrFloat32Arr);
+    indicesArrOrUint16Arr   = indicesArrOrUint16Arr ?
+                              Utils.safeUint16Array(indicesArrOrUint16Arr) :
+                              new Uint16Array(ModelUtil.genFaceIndicesLinearCW(verticesArrOrFloat32Arr.length));
 
-    var colorsExpLength = vertices.length * 2;
+    var colorsExpLength = verticesArrOrFloat32Arr.length * 2;
 
-    if(colors){
-        colors = colors.length == colorsExpLength ?
-            Utils.safeFloat32Array(colors) :
-            this.bufferColors(colors, new Float32Array(colorsExpLength));
+    if(colorsArrOrFloat32Arr){
+        colorsArrOrFloat32Arr = colorsArrOrFloat32Arr.length == colorsExpLength ?
+                                Utils.safeFloat32Array(colorsArrOrFloat32Arr) :
+                                this.bufferColors(colorsArrOrFloat32Arr, new Float32Array(colorsExpLength));
     } else {
-        colors = this.bufferColors(this._bColorFill4, new Float32Array(colorsExpLength));
+        colorsArrOrFloat32Arr = this.bufferColors(this._bColorFill4, new Float32Array(colorsExpLength));
     }
 
     var gl = this._context3d;
 
     if(this._batchActive){
-        this._batchPush(vertices,indices,colors,null);
+        this._batchPush(verticesArrOrFloat32Arr,indicesArrOrUint16Arr,colorsArrOrFloat32Arr,null);
     }
     else{
-        this.bufferArrays(vertices,colors,null,gl.DYNAMIC_DRAW);
+        this.bufferArrays(verticesArrOrFloat32Arr,colorsArrOrFloat32Arr,null,gl.DYNAMIC_DRAW);
         this.setMatrixUniform();
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.DYNAMIC_DRAW);
-        gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indicesArrOrUint16Arr,gl.DYNAMIC_DRAW);
+        gl.drawElements(gl.TRIANGLES,indicesArrOrUint16Arr.length,gl.UNSIGNED_SHORT,0);
     }
 
     this._stackDrawFunc.push(this.drawElements);
 };
 
-/**
- * @method beginBatch
- */
+
+/*---------------------------------------------------------------------------------------------------------*/
+// Batch internal
+/*---------------------------------------------------------------------------------------------------------*/
 
 Context.prototype.beginBatch = function()
 {
@@ -2310,9 +2262,9 @@ Context.prototype.drawBatch = function()
         gl.bufferSubData(glArrayBuffer,0,    v);
         gl.bufferSubData(glArrayBuffer,vblen,c);
         gl.bufferSubData(glArrayBuffer,vblen+cblen,t);
-        gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX, glFloat,false,0,0);
-        gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR,  glFloat,false,0,vblen);
-        gl.vertexAttribPointer(program[ShaderDict.aTexCoord],     Common.SIZE_OF_T_COORD,glFloat,false,0,vblen + cblen);
+        gl.vertexAttribPointer(0,2,glFloat,false,0,0);
+        gl.vertexAttribPointer(1,4,glFloat,false,0,vblen);
+        gl.vertexAttribPointer(2,2,glFloat,false,0,vblen + cblen);
         gl.uniform1f(program[ShaderDict.uUseTexture],this._currTint);
         gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
         gl.uniform1f(program[ShaderDict.uImage],0);
@@ -2322,8 +2274,8 @@ Context.prototype.drawBatch = function()
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
         gl.bufferSubData(glArrayBuffer,0,    v);
         gl.bufferSubData(glArrayBuffer,vblen,c);
-        gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX, glFloat,false,0,0);
-        gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR,  glFloat,false,0,vblen);
+        gl.vertexAttribPointer(0,2,glFloat,false,0,0);
+        gl.vertexAttribPointer(1,4,glFloat,false,0,vblen);
     }
 
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,i,glDynamicDraw);
@@ -2450,9 +2402,20 @@ Context.prototype.popMatrix = function(){
     return this._matrix;
 };
 
+Context.prototype.getPoint2fTransformed = function(x,y,out){
+    out = out || new Float32Array(2);
+    out[0] = x;
+    out[1] = y;
+    return Mat33.applyVec2f(out,this._matrix);
+};
+
+Context.prototype.getPoint2fvTransformed = function(p,out){
+    out = out || new Float32Array(2);
+    return  Mat33.applyVec2f(p,this._matrix,out);
+};
 
 /*---------------------------------------------------------------------------------------------------------*/
-// Helper
+// buffer arrays / colors
 /*---------------------------------------------------------------------------------------------------------*/
 
 Context.prototype.bufferArrays = function(vertexFloat32Array,colorFloat32Array,texCoord32Array,glDrawMode){
@@ -2482,7 +2445,7 @@ Context.prototype.bufferArrays = function(vertexFloat32Array,colorFloat32Array,t
     gl.bufferData(glArrayBuffer,vblen + cblen + tblen, glDrawMode);
 
     gl.bufferSubData(glArrayBuffer, offsetV, vertexFloat32Array);
-    gl.vertexAttribPointer(paVertexPosition, 2, glFloat, false, 0, offsetV);
+    gl.vertexAttribPointer(paVertexPosition,2,glFloat,false,0,offsetV);
 
     if(paVertexColor !== undefined){
         if(!ca){
@@ -2494,7 +2457,6 @@ Context.prototype.bufferArrays = function(vertexFloat32Array,colorFloat32Array,t
         }
     }
 
-    /*
     if(paVertexTexCoord !== undefined){
         if(!ta){
             gl.disableVertexAttribArray(paVertexTexCoord);
@@ -2504,61 +2466,51 @@ Context.prototype.bufferArrays = function(vertexFloat32Array,colorFloat32Array,t
             gl.vertexAttribPointer(paVertexTexCoord,2,glFloat,false,0,offsetT);
         }
     }
-    */
 };
 
-Context.prototype.__fillBufferTexture = function(vertexArray,colorArray,coordArray){
-    var gl            = this._context3d,
-        glArrayBuffer = gl.ARRAY_BUFFER,
-        glFloat       = gl.FLOAT;
+Context.prototype.bufferColors = function(color,buffer){
+    var cl = color.length,
+        bl = buffer.length;
+    var i = 0;
 
-    var vblen = vertexArray.byteLength,
-        cblen = colorArray.byteLength,
-        tblen = coordArray.byteLength,
-        tlen  = vblen + cblen + tblen;
+    if(cl == 4){
+        while(i < bl){
+            buffer[i]  =color[0];
+            buffer[i+1]=color[1];
+            buffer[i+2]=color[2];
+            buffer[i+3]=color[3];
+            i+=4;
+        }
+    }
+    else{
+        if(cl != bl){
+            throw Warning.UNEQUAL_ARR_LENGTH_COLOR_BUFFER;
+        }
 
-    var offSetV = 0,
-        offSetC = vblen,
-        offSetT = vblen + cblen;
+        while(i < bl){
+            buffer[i]   = color[i];
+            buffer[i+1] = color[i+1];
+            buffer[i+2] = color[i+2];
+            buffer[i+3] = color[i+3];
+            i+=4;
+        }
+    }
 
-    //_context3d.bindBuffer(glArrayBuffer,this._vboShared);
-    gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
-
-    gl.bufferSubData(glArrayBuffer,offSetV,vertexArray);
-    gl.bufferSubData(glArrayBuffer,offSetC,colorArray);
-    gl.bufferSubData(glArrayBuffer,offSetT,coordArray);
-
-    var program = this._stackProgram.peek();
-
-    gl.vertexAttribPointer(program[ShaderDict.aVertPosition], Common.SIZE_OF_VERTEX, glFloat,false,0,offSetV);
-    gl.vertexAttribPointer(program[ShaderDict.aVertColor],    Common.SIZE_OF_COLOR,  glFloat,false,0,offSetC);
-    gl.vertexAttribPointer(program[ShaderDict.aTexCoord],     Common.SIZE_OF_T_COORD,glFloat,false,0,offSetT);
-
-    gl.uniform1f(program[ShaderDict.uUseTexture],this._currTint);
-    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
+    return buffer;
 };
-
-Context.prototype.getScreenCoord = function(x,y){
-    x = x || 0;
-    y = y || 0;
-
-    var m = this._matrix;
-    var s = this._tempScreenCoords;
-
-    s[0] = m[ 0] * x + m[ 3] * y + m[6];
-    s[1] = m[ 1] * x + m[ 4] * y + m[7];
-
-    return s
-};
-
-Context.prototype._getContext3d = function(){return this._context3d;};
-Context.prototype._getContext2d = function(){return this._context2d;};
-
-Context.prototype._getWidth  = function(){return this._width;};
-Context.prototype._getHeight = function(){return this._height;};
 
 /*---------------------------------------------------------------------------------------------------------*/
-//
+// misc
+/*---------------------------------------------------------------------------------------------------------*/
+
+Context.prototype.getContext3d = function(){return this._context3d;};
+Context.prototype.getContext2d = function(){return this._context2d;};
+
+Context.prototype._getWidth_internal  = function(){return this._width;};
+Context.prototype._getHeight_internal = function(){return this._height;};
+
+/*---------------------------------------------------------------------------------------------------------*/
+// props
 /*---------------------------------------------------------------------------------------------------------*/
 
 Context.CENTER = 0;

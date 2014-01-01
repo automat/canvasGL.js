@@ -47,6 +47,7 @@ function CanvasGL(element){
     var canvas3d = document.createElement('canvas'),
         canvas2d = document.createElement('canvas');
 
+    /*
     //hmm
     try{
         this.__context = new Context(element,canvas3d,canvas2d);
@@ -54,6 +55,8 @@ function CanvasGL(element){
         this.onNotAvailable();
         return this;
     }
+    */
+    this.__context = new Context(element,canvas3d,canvas2d);
 
     /*
     canvas3d.addEventListener('webglcontextlost',    this.__onWebGLContextLost.bind(this));
@@ -182,8 +185,8 @@ CanvasGL.prototype.setSize = function(width,height){
     if(this.__context)this.__context._setSize(width,height);
 };
 
-CanvasGL.prototype.getWidth  = function(){ return this.__context ? this.__context._getWidth() : null; };
-CanvasGL.prototype.getHeight = function(){ return this.__context ? this.__context._getHeight(): null; };
+CanvasGL.prototype.getWidth  = function(){ return this.__context ? this.__context._getWidth_internal()  : null; };
+CanvasGL.prototype.getHeight = function(){ return this.__context ? this.__context._getHeight_internal() : null; };
 
 
 /*------------------------------------------------------------------------------------------------------------*/

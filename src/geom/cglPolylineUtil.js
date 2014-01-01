@@ -1,9 +1,7 @@
 var PolylineUtil = {};
 
-PolylineUtil.genPolylineGeom = function(joints,length,
-
-                                        loop,diameter,
-                                        outVertices,outColors,outIndices){
+PolylineUtil.genPolylineGeom = function(){
+    /*
     var pvcol = color.length != 4;
 
     var lineWidth = this._currLineWidth;
@@ -191,6 +189,7 @@ PolylineUtil.genPolylineGeom = function(joints,length,
         this.bufferColors(this._bColorStroke,colors);
     }
 
+    */
 
 
 

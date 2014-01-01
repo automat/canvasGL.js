@@ -3,7 +3,8 @@ var _Math         = require('../math/cglMath'),
     TextureFormat = require('./cglTextureFormat');
 
 function Texture(ctx,width,height,format){
-    var gl = this._glRef = ctx;
+    this._ctxRef = ctx;
+    var gl = ctx.getContext3d();
     this._format = format || new TextureFormat();
     this._width  = null;
     this._height = null;
@@ -13,7 +14,7 @@ function Texture(ctx,width,height,format){
 }
 
 Texture.prototype.setSize = function(width,height){
-    var gl = this._glRef,
+    var gl = this._ctxRef.getContext3d(),
         glTexture2d = gl.TEXTURE_2D;
 
     this._width  = width;
@@ -62,23 +63,21 @@ Texture.prototype.setSize = function(width,height){
         gl.texImage2D(glTexture2d,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
         gl.bindTexture(glTexture2d,null);
     }
-
-
 };
 
 Texture.prototype.bind = function(){
-    this._glRef.bindTexture(this._glRef.TEXTURE_2D,this._tex);
+    this._ctxRef._bindTexture(this);
 };
 
 Texture.prototype.unbind = function(){
-    this._glRef.bindTexture(this._glRef.TEXTURE_2D,null);
+    this._ctxRef._unbindTexture(this);
 };
 
-Texture.prototype._getWidth = function(){
+Texture.prototype.getWidth = function(){
     return this._width;
 };
 
-Texture.prototype._getHeight = function(){
+Texture.prototype.getHeight = function(){
     return this._height;
 };
 
@@ -98,5 +97,22 @@ Texture.prototype.delete = function(){
     this._glRef.deleteTexture(this._tex);
 };
 
-module.exports = Texture;
+/*------------------------------------------------------------------------------------------------------------*/
+//  gen
+/*------------------------------------------------------------------------------------------------------------*/
 
+Texture.genBlankTexture = function(ctx){
+    var gl  = ctx.getContext3d();
+    var tex = new Texture(ctx,1,1,null);
+    gl.bindTexture(gl.TEXTURE_2D, tex.getGLTexture());
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([1,1,1,1]));
+    gl.bindTexture(gl.TEXTURE_2D,null);
+
+    return tex;
+};
+
+/*------------------------------------------------------------------------------------------------------------*/
+//  exports
+/*------------------------------------------------------------------------------------------------------------*/
+
+module.exports = Texture;

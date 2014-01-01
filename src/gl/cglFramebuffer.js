@@ -3,7 +3,7 @@ var Default       = require('../common/cglDefault'),
     Texture       = require('./cglTexture');
 
 function Framebuffer(ctx,width,height,format){
-    this._glRef  = ctx;
+    this._glRef  = ctx.getContext3d();
     format = format || new TextureFormat().set(false,
                                                TextureFormat.LINEAR,
                                                TextureFormat.LINEAR,
@@ -26,16 +26,16 @@ Framebuffer.prototype.setSize = function(width,height){
     this._tex.setSize(width,height);
 };
 
-Framebuffer.prototype._getWidth = function(){
-    return this._tex._getWidth();
+Framebuffer.prototype.getWidth = function(){
+    return this._tex.getWidth();
 };
 
-Framebuffer.prototype._getHeight = function(){
-    return this._tex._getHeight();
+Framebuffer.prototype.getHeight = function(){
+    return this._tex.getHeight();
 };
 
 Framebuffer.prototype.getAspectRatio = function(){
-    return this._getWidth() / this._getHeight;
+    return this.getWidth() / this.getHeight;
 };
 
 Framebuffer.prototype.getTexture = function(){

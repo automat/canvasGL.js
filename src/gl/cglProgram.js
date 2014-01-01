@@ -1,21 +1,29 @@
-var Program = function(ctx,vertexShader,fragmentShader){
-    var gl = this._glRef = ctx._getContext3d();
+var Program = function(ctx,vertexShader,fragmentShader,bindAttribs){
+    var gl = this._glRef = ctx.getContext3d();
 
     var program    = this.program    = gl.createProgram(),
         vertShader = gl.createShader(gl.VERTEX_SHADER),
         fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 
+    bindAttribs = bindAttribs || {};
+
+    for(var a in bindAttribs){
+        gl.bindAttribLocation(program,bindAttribs[a],a);
+    }
+
     gl.shaderSource(vertShader,vertexShader);
     gl.compileShader(vertShader);
 
-    if(!gl.getShaderParameter(vertShader,gl.COMPILE_STATUS))
+    if(!gl.getShaderParameter(vertShader,gl.COMPILE_STATUS)){
         throw gl.getShaderInfoLog(vertShader);
+    }
 
     gl.shaderSource(fragShader,  fragmentShader);
     gl.compileShader(fragShader);
 
-    if(!gl.getShaderParameter(fragShader,gl.COMPILE_STATUS))
+    if(!gl.getShaderParameter(fragShader,gl.COMPILE_STATUS)){
         throw gl.getShaderInfoLog(fragShader);
+    }
 
     gl.attachShader(program, vertShader);
     gl.attachShader(program, fragShader);
@@ -23,7 +31,7 @@ var Program = function(ctx,vertexShader,fragmentShader){
 
     var i, paramName;
 
-    var uniformsNum   = this._uniformsNum   = gl.getProgramParameter(program,gl.ACTIVE_UNIFORMS);
+    var uniformsNum = this._uniformsNum = gl.getProgramParameter(program,gl.ACTIVE_UNIFORMS);
     i = -1;while(++i < uniformsNum){
         paramName = gl.getActiveUniform(program,i).name;
         this[paramName] = gl.getUniformLocation(program,paramName);
