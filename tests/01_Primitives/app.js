@@ -79,12 +79,12 @@ App.prototype.draw = function(){
     //    c.circle(-375 + Math.random() * 750, -375 + Math.random() * 750,10);
     }
     */
-
+    /*
     c.fill3f(1,1,1);
     c.setDetailArc(20);
     c.stroke3f(1,0,0);
     c.arc(100,0,100,100,0,Math.PI * (Math.sin(time) * 0.5 + 0.5),20,20);
-
+    */
     /*
     this.drawShapeOrigin(-325,-125);
     this.drawShapeOrigin(-300,-100);

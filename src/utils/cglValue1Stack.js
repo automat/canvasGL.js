@@ -16,10 +16,5 @@ Value1Stack.prototype.isEqual = function(){
     return this._a == this._b;
 };
 
-Value1Stack.prototype.pushEmpty = function(){
-    this.push(null);
-};
-
-//Value1Stack.prototype.toString   = function(){return this.a + ' ' + this.b;};
 
 module.exports = Value1Stack;

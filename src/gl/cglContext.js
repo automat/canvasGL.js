@@ -5,6 +5,7 @@ var _Math               = require('../math/cglMath'),
     Value1Stack         = require('../utils/cglValue1Stack'),
     Value2Stack         = require('../utils/cglValue2Stack'),
     Value4Stack         = require('../utils/cglValue4Stack'),
+    ValueStateStack     = require('../utils/cglValueStateStack'),
     Mat33               = require('../math/cglMatrix');
 
 var Program     = require('./cglProgram'),
@@ -20,7 +21,8 @@ var Warning   = require('../common/cglWarning'),
 
 var ModelUtil  = require('../geom/cglModelUtil'),
     VertexUtil = require('../geom/cglVertexUtil'),
-    GeomUtil   = require('../geom/cglGeomUtil');
+    GeomUtil   = require('../geom/cglGeomUtil'),
+    BezierUtil = require('../geom/cglBezierUtil');
 
 var Color  = require('../style/cglColor'),
     _Image = require('../image/cglImage');
@@ -77,12 +79,12 @@ function Context(element,canvas3d,canvas2d){
     this._height_internal = null;
     this._width  = null;
     this._height = null;
-    this._ssaaf = Common.SSAA_FACTOR;
+    this._ssaaf  = Common.SSAA_FACTOR;
 
     this._backgroundClear = Default.CLEAR_BACKGROUND;
-    this._bColorTemp   = new Array(4);
-    this._bColorBg     = new Float32Array(4);
-    this._stackColorBg = new Value4Stack();
+    this._bColorTemp      = new Array(4);
+    this._bColorBg        = new Float32Array(4);
+    this._stackColorBg    = new Value4Stack();
 
     this._fboCanvas   = new Framebuffer(this);
     this._fboPingPong = new Framebuffer(this);
@@ -106,10 +108,10 @@ function Context(element,canvas3d,canvas2d){
     gl.uniform1f(program[ShaderDict.uFlipY],1.0);
 
     // Create default blank texture and texture coords / use color & set alpha to 1.0
-    this._currTint          = Default.TINT;
+    this._currTint = Default.TINT;
 
-    var glTexture2d          = gl.TEXTURE_2D,
-        glRGBA               = gl.RGBA;
+    var glTexture2d = gl.TEXTURE_2D,
+        glRGBA      = gl.RGBA;
 
     this._blankTextureGL = gl.createTexture();
     gl.bindTexture(glTexture2d, this._blankTextureGL);
@@ -206,17 +208,19 @@ function Context(element,canvas3d,canvas2d){
     // arc
 
     var bVertexArcLen = ELLIPSE_DETAIL_MAX * 2 * 2;
-    this._bVertexArc      = new Float32Array(bVertexArcLen);
-    this._bVertexArcT     = new Float32Array(bVertexArcLen);
-    this._stackDetailArc  = new Value1Stack();
-    this._stackRadiusIArc = new Value2Stack();
-    this._stackRadiusOArc = new Value2Stack();
-    this._stackAngleArc   = new Value2Stack();
-    this._stackOriginArc  = new Value2Stack();
-
-
+    this._bVertexArc       = new Float32Array(bVertexArcLen);
+    this._bVertexArcT      = new Float32Array(bVertexArcLen);
+    this._stackDetailArc   = new Value1Stack();
+    this._stackRadiusIArc  = new Value2Stack();
+    this._stackRadiusOArc  = new Value2Stack();
+    this._stackAngleArc    = new Value2Stack();
+    this._stackOriginArc   = new Value2Stack();
     this._bVertexArcStroke = new Float32Array(ELLIPSE_DETAIL_MAX * 2);
 
+
+    this._bVertexBezier     = new Float32Array(BEZIER_DETAIL_MAX  * 2);
+    this._bPointsBezier     = new Array(2 * 4); // cache
+    this._stackDetailBezier = new Value1Stack();
 
 
     /*
@@ -227,7 +231,6 @@ function Context(element,canvas3d,canvas2d){
     this._prevPosRRect      = [null,null];
     */
 
-    this._bVertexBezier    = new Float32Array(BEZIER_DETAIL_MAX  * 2);
     this._bVertexSpline    = new Float32Array(SPLINE_DETAIL_MAX  * 4);
 
 
@@ -250,7 +253,6 @@ function Context(element,canvas3d,canvas2d){
     this._bColorEllipse      = new Float32Array(4 * ELLIPSE_DETAIL_MAX);
     this._bColorRoundRect    = new Float32Array(this._bVertexRoundRect.length * 2);
 
-    this._cachedPointsBezier      = new Array(2 * 4);
 
     this._bVertexFbo  = new Float32Array(8);
     this._bColorFbo   = new Float32Array(4 * 4);
@@ -352,51 +354,59 @@ Context.prototype._resetDrawProperties = function(){
     this.noFill();
     this.noTint();
 
+    var EMPTY1 = ValueStateStack.EMPTY1,
+        EMPTY2 = ValueStateStack.EMPTY2;
+
     //this._stackProgram.pushEmpty();
-    this._stackDrawFunc.pushEmpty();
+    this._stackDrawFunc.push(ValueStateStack.EMPTY1);
 
     // ellipse
 
-    this._stackDetailEllipse.pushEmpty();
-    this._stackOriginEllipse.pushEmpty();
-    this._stackRadiusEllipse.pushEmpty();
+    this._stackDetailEllipse.push(EMPTY1);
+    this._stackRadiusEllipse.push(EMPTY2);
+    this._stackOriginEllipse.push(EMPTY2);
     this.setDetailEllipse(Default.ELLIPSE_DETAIL);
 
     // circle
 
-    this._stackDetailCircle.pushEmpty();
-    this._stackOriginCircle.pushEmpty();
-    this._stackRadiusCircle.pushEmpty();
+    this._stackDetailCircle.push(EMPTY1);
+    this._stackRadiusCircle.push(EMPTY1);
+    this._stackOriginCircle.push(EMPTY2);
     this.setDetailCircle(Default.ELLIPSE_DETAIL);
 
     // round rect
-    this._stackDetailRRect.pushEmpty();
-    this._stackOriginRRect.pushEmpty();
-    this._stackRadiusRRect.pushEmpty();
-    this._stackSizeRRect.pushEmpty();
+    this._stackDetailRRect.push(EMPTY1);
+    this._stackOriginRRect.push(EMPTY2);
+    this._stackRadiusRRect.push(EMPTY1);
+    this._stackSizeRRect.push(EMPTY2);
     this.setDetailCorner(Default.CORNER_DETAIL);
 
 
     // arc
-    this._stackDetailArc.pushEmpty();
-    this._stackOriginArc.pushEmpty();
-    this._stackRadiusIArc.pushEmpty();
-    this._stackRadiusOArc.pushEmpty();
-    this._stackAngleArc.pushEmpty();
+    this._stackDetailArc.push(EMPTY1);
+    this._stackOriginArc.push(EMPTY2);
+    this._stackRadiusIArc.push(EMPTY2);
+    this._stackRadiusOArc.push(EMPTY2);
+    this._stackAngleArc.push(EMPTY2);
     this.setDetailArc(Default.ELLIPSE_DETAIL);
 
+    // bezier
+
+    this._stackDetailBezier.push(EMPTY1);
+    this.setDetailBezier(Default.BEZIER_DETAIL);
 
 
-    this.setModeRect(Context.CORNER);
-    this.setModeEllipse(Context.CENTER);
-    this.setModeCircle(Context.CENTER);
 
 
 
     this.setLineWidth(Default.LINE_WIDTH);
 
-    this.setDetailBezier(Default.BEZIER_DETAIL);
     this.setDetailCurve(Default.SPLINE_DETAIL);
+
+
+    this.setModeRect(Context.CORNER);
+    this.setModeEllipse(Context.CENTER);
+    this.setModeCircle(Context.CENTER);
 
 
 
@@ -508,16 +518,16 @@ Context.prototype.getDetailArc = function(){
     return this._stackDetailArc.peek();
 };
 
-
-
-
-
 Context.prototype.setDetailBezier = function(a){
-    var md = Common.BEZIER_DETAIL_MAX;
-    this._currDetailBezier = a > md ? md : a;
+    var stackDetailBezier = this._stackDetailBezier;
+    if(stackDetailBezier.peek() == a)return;
+    var max = Common.BEZIER_DETAIL_MAX;
+    stackDetailBezier.push(a > max ? max : a);
 };
 
-Context.prototype.getDetailBezier = function(){return this._currDetailBezier;};
+Context.prototype.getDetailBezier = function(){
+    return this._stackDetailBezier.peek();
+};
 
 Context.prototype.setDetailCurve = function(a){
     var md = Common.SPLINE_DETAIL_MAX;
@@ -537,7 +547,7 @@ Context.prototype.disableBlend = function(){this._context3d.disable(this._contex
 
 
 /*---------------------------------------------------------------------------------------------------------*/
-// Shape fill/stroke/texture
+// Shape fill/stroke
 /*---------------------------------------------------------------------------------------------------------*/
 
 Context.prototype.fill = function(){
@@ -741,7 +751,10 @@ Context.prototype.noTint = function(){
 };
 
 
-// Texture
+/*---------------------------------------------------------------------------------------------------------*/
+// texture
+/*---------------------------------------------------------------------------------------------------------*/
+
 
 Context.prototype._applyTexture = function(){
     var gl = this._context3d;
@@ -838,6 +851,43 @@ Context.prototype.resetBlend = function(){
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 };
 
+/*---------------------------------------------------------------------------------------------------------*/
+// fbo
+/*---------------------------------------------------------------------------------------------------------*/
+
+
+Context.prototype.drawFbo = function(fbo,width,height){
+    var gl      = this._context3d;
+    var program = this._stackProgram.peek();
+
+    width = typeof width === 'undefined' ? fbo.getWidth() : width;
+    height= typeof height=== 'undefined' ? fbo.getHeight(): height;
+
+    var bVertex   = this._bVertexFbo,
+        bColor    = this._bColorFbo,
+        bTexCoord = this._bTexCoordFbo;
+
+    bVertex[0] = bVertex[1] = bVertex[3] = bVertex[4] =0;
+    bVertex[2] = bVertex[6] = width;
+    bVertex[5] = bVertex[7] = height;
+
+    this.setMatrixUniform();
+
+    fbo.getTexture().bind();
+    this.bufferArrays(bVertex,bColor,bTexCoord);
+
+    gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+
+    gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
+    fbo.getTexture().unbind();
+};
+
+
+/*---------------------------------------------------------------------------------------------------------*/
+// clear / background
+/*---------------------------------------------------------------------------------------------------------*/
+
 
 Context.prototype.backgroundfv = function(){
     var col  = this._bColorTemp;
@@ -870,33 +920,6 @@ Context.prototype.backgroundiv = function(){
 
     this._backgroundClear = (col[3] == 1.0);
     this._stackColorBg.push(this._bColorTemp);
-};
-
-Context.prototype.drawFbo = function(fbo,width,height){
-    var gl      = this._context3d;
-    var program = this._stackProgram.peek();
-
-    width = typeof width === 'undefined' ? fbo.getWidth() : width;
-    height= typeof height=== 'undefined' ? fbo.getHeight(): height;
-
-    var bVertex   = this._bVertexFbo,
-        bColor    = this._bColorFbo,
-        bTexCoord = this._bTexCoordFbo;
-
-    bVertex[0] = bVertex[1] = bVertex[3] = bVertex[4] =0;
-    bVertex[2] = bVertex[6] = width;
-    bVertex[5] = bVertex[7] = height;
-
-    this.setMatrixUniform();
-
-    fbo.getTexture().bind();
-    this.bufferArrays(bVertex,bColor,bTexCoord);
-
-    gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
-    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-
-    gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
-    fbo.getTexture().unbind();
 };
 
 
@@ -1575,101 +1598,60 @@ Context.prototype.lineSet = function(lines,strokeColors,lineWidths)
 };
 
 Context.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3){
-    var d   = this._currDetailBezier,
-        d_2 = d - 2,
-        p   = this._cachedPointsBezier,
-        v   = this._bVertexBezier;
+    var detailBezier = this._stackDetailBezier;
 
-    p[0] = x0;
-    p[1] = y0;
-    p[2] = x2;
-    p[3] = y2;
-    p[4] = x1;
-    p[5] = y1;
-    p[6] = x3;
-    p[7] = y3;
+    var detail   = detailBezier.peek(),
+        bPoint   = this._bPointsBezier,
+        bVertex  = this._bVertexBezier;
 
-    var i = 0;
-    var t,nt,nt3,nt2,t3,t2;
+    bPoint[0] = x0;
+    bPoint[1] = y0;
+    bPoint[2] = x2;
+    bPoint[3] = y2;
+    bPoint[4] = x1;
+    bPoint[5] = y1;
+    bPoint[6] = x3;
+    bPoint[7] = y3;
 
-    while(i < d){
-        t   = i / d_2;
-        nt  = 1 - t;
-        nt3 = nt*nt*nt;
-        nt2 = nt*nt;
-        t3  = t*t*t;
-        t2  = t*t;
+    BezierUtil.genPoints(x0,y0,x1,y1,x2,y2,x3,y3,detail,bVertex);
+    this._polyline(bVertex,detail,false);
 
-        v[i  ] = nt3*x0+3*nt2*t*x1+3*nt*t2*x2+t3*x3;
-        v[i+1] = nt3*y0+3*nt2*t*y1+3*nt*t2*y2+t3*y3;
-
-        i+=2;
-    }
-
-    this._polyline(v,d,false);
+    detailBezier.push(detail);
     this._stackDrawFunc.push(this.bezier);
 };
 
-Context.prototype.bezierPoint = function(d)
-{
-    var nt  = 1 - d,
-        nt3 = nt * nt * nt,
-        nt2 = nt * nt,
-        t3  = d * d * d,
-        t2  = d * d;
+Context.prototype.bezierPoint = function(d,out){
+    var bPoint = this._bPointsBezier;
+    var x0 = bPoint[0],
+        y0 = bPoint[1],
+        x2 = bPoint[2],
+        y2 = bPoint[3],
+        x1 = bPoint[4],
+        y1 = bPoint[5],
+        x3 = bPoint[6],
+        y3 = bPoint[7];
 
-    var p = this._cachedPointsBezier;
-
-    var x0 = p[0],
-        y0 = p[1],
-        x2 = p[2],
-        y2 = p[3],
-        x1 = p[4],
-        y1 = p[5],
-        x3 = p[6],
-        y3 = p[7];
-
-    return [nt3*x0+3*nt2*d*x1+3*nt*t2*x2+t3*x3,
-            nt3*y0+3*nt2*d*y1+3*nt*t2*y2+t3*y3];
-
+    return BezierUtil.getPoint(x0,y0,x1,y1,x2,y2,x3,y3,d,out);
 };
 
 
 Context.prototype.bezierTangentAngle = function(d){
-    var nt1  = 1 - d,
-        nt31 = nt1 * nt1 * nt1,
-        nt21 = nt1 * nt1,
-        t31  = d * d * d,
-        t21  = d * d,
-        d2   = (d >= 1.0) ? d : (d+0.1),
-        nt2  = 1 - d2,
-        nt32 = nt2 * nt2 * nt2,
-        nt22 = nt2 * nt2,
-        t32  = d2 * d2 * d2,
-        t22  = d2 * d2;
+    var bPoint = this._bPointsBezier;
+    var x0 = bPoint[0],
+        y0 = bPoint[1],
+        x2 = bPoint[2],
+        y2 = bPoint[3],
+        x1 = bPoint[4],
+        y1 = bPoint[5],
+        x3 = bPoint[6],
+        y3 = bPoint[7];
 
-    var p = this._cachedPointsBezier;
-
-    var x0 = p[0],
-        y0 = p[1],
-        x2 = p[2],
-        y2 = p[3],
-        x1 = p[4],
-        y1 = p[5],
-        x3 = p[6],
-        y3 = p[7];
-
-    var p0x = nt31*x0+3*nt21*d*x1+3*nt1*t21*x2+t31*x3,
-        p0y = nt31*y0+3*nt21*d*y1+3*nt1*t21*y2+t31*y3,
-        p1x = nt32*x0+3*nt22*d2*x1+3*nt2*t22*x2+t32*x3,
-        p1y = nt32*y0+3*nt22*d2*y1+3*nt2*t22*y2+t32*y3;
-
-    return Math.atan2(p1y-p0y,p1x-p0x);
+    return BezierUtil.getTangentAngle(x0,y0,x1,y1,x2,y2,x3,y3,d);
 };
 
 Context.prototype.curve = function(points){
-    var d = this._currDetailSpline,
-        d_2 = d - 2;
+    var detail = this._currDetailSpline,
+        d_2 = detail - 2;
 
     var i = 0, j,t;
 
@@ -1681,7 +1663,7 @@ Context.prototype.curve = function(points){
 
     while(i < pl-2){
         j = 0;
-        while(j < d){
+        while(j < detail){
             t  = j / d_2;
             ni = i+1;
 

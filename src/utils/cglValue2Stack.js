@@ -39,9 +39,5 @@ Value2Stack.prototype.isEqual   = function(){
     return a[0] == b[0] && a[1] == b[1];
 };
 
-Value2Stack.prototype.pushEmpty = function(){
-    this.push(null,null);
-};
-//Value2Stack.prototype.toString = function(){return this.a0 + ' ' + this.a1 + ' ' + this.b0 + ' ' + this.b1;};
 
 module.exports = Value2Stack;
