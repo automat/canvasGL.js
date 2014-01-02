@@ -139,6 +139,9 @@ function Context(element,canvas3d,canvas2d){
     this._textureOffsetX = this._textureOffsetY = 0;
     this._textureOffsetW = this._textureOffsetH = 0;
 
+
+    this._drawSetDataType = Extension.UintTypeAvailable ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+
     /*------------------------------------------------------------------------------------------------------------*/
     //  Set vertices/color/texCoord temp buffers
     /*------------------------------------------------------------------------------------------------------------*/
@@ -163,14 +166,13 @@ function Context(element,canvas3d,canvas2d){
 
 
 
-    this._bVertexRectSet     = new Float32Array(4 * 2);
-    this._bColorRectSet      = new Float32Array(4);
-    this._bIndexRectSet      = new Uint16Array(6);
-    this._bMutVertexRectSet  = new Float32ArrayMutable(4 * 2 * SET_ALLOCATE_MIN_SIZE,true);
-    this._bMutColorRectSet   = new Float32ArrayMutable(4 * 4 * SET_ALLOCATE_MIN_SIZE,true);
-    this._bMutIndexRectSet   = new Uint16ArrayMutable( 3 * 2 * SET_ALLOCATE_MIN_SIZE,true);
-    this._stackSizeRectSet   = new Value2Stack();
-    this._stackOriginRectSet = new Value2Stack();
+
+    this._bVertexRectSet       = new Float32Array(6 * 2);
+    this._bColorRectSet        = new Float32Array(4);
+    this._bTexCoordsRectSet    = new Float32Array([0,0,0,1,1,1,1,1,1,0,0,0]);
+    this._bMutVertexRectSet    = new Float32ArrayMutable(4 * 2 * SET_ALLOCATE_MIN_SIZE,true);
+    this._bMutColorRectSet     = new Float32ArrayMutable(4 * 4 * SET_ALLOCATE_MIN_SIZE,true);
+    this._bMutTexCoordsRectSet = new Float32ArrayMutable(4 * 2 * SET_ALLOCATE_MIN_SIZE,true);
 
     var bVertexEllipseLen = ELLIPSE_DETAIL_MAX * 2,
         bColorEllipseLen  = ELLIPSE_DETAIL_MAX * 4,
@@ -1111,119 +1113,167 @@ Context.prototype.rect = function(x,y,width,height){
     this._stackDrawFunc.push(this.rect);
 };
 
-Context.prototype.rectSet = function(positions,dimensions,fills,strokes){
-    if(positions.length == 0)return;
+Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,texCoordsArr){
+    if(!fillColorArr   && !this._fill &&
+       !strokeColorArr && !this._stroke &&
+       !texCoordsArr   && !this._texture)return;
 
-    var length = positions.length * 0.5;
+    if(posArr.length == 0)return;
 
-    var gl = this._context3d;
+    var length = posArr.length * 0.5;
 
     var modeOrigin = this._modeRect;
-    var stackOrigin = this._stackOriginRectSet,
-        stackSize   = this._stackSizeRectSet;
 
     var shift = modeOrigin == Context.CENTER ? 0 : 1;
 
-    var originX, originY;
-    var originDiffers,
-        sizeDiffers;
-
-    stackOrigin.push(ValueStateStack.EMPTY2);
-    stackSize.push(ValueStateStack.EMPTY2);
-
     var bVertex    = this._bVertexRectSet,
         bColor     = this._bColorRectSet,
-        bIndex     = this._bIndexRectSet;
-    var bMutVertex = this._bMutVertexRectSet,
-        bMutColor  = this._bMutColorRectSet,
-        bMutIndex  = this._bMutIndexRectSet;
+        bTexCoord  = this._bTexCoordsRectSet;
 
-    bIndex[0] = 0;
-    bIndex[1] = 1;
-    bIndex[2] = 2;
-    bIndex[3] = 0;
-    bIndex[4] = 2;
-    bIndex[5] = 3;
+    var bMutVertex   = this._bMutVertexRectSet,
+        bMutColor    = this._bMutColorRectSet,
+        bMutTexCoord = this._bMutTexCoordsRectSet;
 
     bMutVertex.reset();
     bMutColor.reset();
-    bMutIndex.reset();
+    bMutTexCoord.reset();
 
     var posX,posY,width_2,height_2,shift_w,shift_h;
     var rx,ry,rw,rh;
 
+    var gl = this._context3d;
     var i,i2,i4;
     var j;
     i = -1;
-    while(++i < length){
-        i2 = i * 2;
-        i4 = i * 4;
 
-        posX     = positions[i2  ];
-        posY     = positions[i2+1];
-        width_2  = dimensions[i2  ] ;//* 0.5;
-        height_2 = dimensions[i2+1] ;//* 0.5;
-        shift_w  = width_2  * shift;
-        shift_h  = height_2 * shift;
+    if(!this._texture){
+        if(fillColorArr){
+            while(++i < length){
+                i2 = i * 2;
+                i4 = i * 4;
 
-        /*
-        rx = posX - width_2  + shift_w;
-        ry = posY - height_2 + shift_h;
-        rw = posX + width_2  + shift_w;
-        rh = posY + height_2 + shift_h;
-        */
+                posX     = posArr[i2  ];
+                posY     = posArr[i2+1];
+                width_2  = dimArr[i2  ] * 0.5;
+                height_2 = dimArr[i2+1] * 0.5;
+                shift_w  = width_2  * shift;
+                shift_h  = height_2 * shift;
 
-        rx = posX;
-        ry = posY;
-        rw = posX + dimensions[i2];
-        rh = posY + dimensions[i2+1];
+                rx = posX - width_2  + shift_w;
+                ry = posY - height_2 + shift_h;
+                rw = posX + width_2  + shift_w;
+                rh = posY + height_2 + shift_h;
 
-        bVertex[ 0] = rx;
-        bVertex[ 1] = ry;
-        bVertex[ 2] = rw;
-        bVertex[ 3] = ry;
-        bVertex[ 4] = rw;
-        bVertex[ 5] = rh;
-        bVertex[ 6] = rx;
-        bVertex[ 7] = rh;
+                // 0     5---4
+                // | \    \  |
+                // |  \    \ |
+                // 1---2     3
 
-        bColor[0] = 1;
-        bColor[1] = 1;
-        bColor[2] = 1;
-        bColor[3] = 1;
+                bVertex[ 0] = bVertex[ 2] = bVertex[10] = rx;
+                bVertex[ 1] = bVertex[ 9] = bVertex[11] = ry;
+                bVertex[ 4] = bVertex[ 6] = bVertex[ 8] = rw;
+                bVertex[ 3] = bVertex[ 5] = bVertex[ 7] = rh;
 
+                bColor[0] = fillColorArr[i4  ];
+                bColor[1] = fillColorArr[i4+1];
+                bColor[2] = fillColorArr[i4+2];
+                bColor[3] = fillColorArr[i4+3];
 
-        bMutVertex.set(bVertex,bMutVertex.size());
+                bMutVertex.set(bVertex,bMutVertex.size());
 
-        j = -1;
-        while(++j < 4){
-            bMutColor.set( bColor, bMutColor.size());
-        }
+                j = -1;
+                while(++j < 6){
+                    bMutColor.set( bColor, bMutColor.size());
+                }
 
-        if(i > 0){
-            j = -1;
-            while(++j < 6){
-                bIndex[j] += 4;
             }
+
+            this.bufferArrays(bMutVertex.array,bMutColor.array,null,gl.DYNAMIC_DRAW);
+            this.setMatrixUniform();
+            gl.drawArrays(gl.TRIANGLES,0,length * 6);
         }
+        else if(!fillColorArr && this._fill){
+            var bColor4f = this._bColorFill4;
 
+            bColor[0] = bColor4f[0];
+            bColor[1] = bColor4f[1];
+            bColor[2] = bColor4f[2];
+            bColor[3] = bColor4f[3];
 
-        bMutIndex.set( bIndex, bMutIndex.size());
+            while(++i < length){
+                i2 = i * 2;
+                i4 = i * 4;
 
+                posX     = posArr[i2  ];
+                posY     = posArr[i2+1];
+                width_2  = dimArr[i2  ] * 0.5;
+                height_2 = dimArr[i2+1] * 0.5;
+                shift_w  = width_2  * shift;
+                shift_h  = height_2 * shift;
 
+                rx = posX - width_2  + shift_w;
+                ry = posY - height_2 + shift_h;
+                rw = posX + width_2  + shift_w;
+                rh = posY + height_2 + shift_h;
+
+                bVertex[ 0] = bVertex[ 2] = bVertex[10] = rx;
+                bVertex[ 1] = bVertex[ 9] = bVertex[11] = ry;
+                bVertex[ 4] = bVertex[ 6] = bVertex[ 8] = rw;
+                bVertex[ 3] = bVertex[ 5] = bVertex[ 7] = rh;
+
+                bMutVertex.set(bVertex,bMutVertex.size());
+
+                j = -1;
+                while(++j < 6){
+                    bMutColor.set( bColor, bMutColor.size());
+                }
+            }
+
+            this.bufferArrays(bMutVertex.array,bMutColor.array,null,gl.DYNAMIC_DRAW);
+            this.setMatrixUniform();
+            gl.drawArrays(gl.TRIANGLES,0,length * 6);
+        }
+    } else {
+        if(this._currTint = 1.0){
+            while(++i < length){
+                i2 = i * 2;
+                i4 = i * 4;
+
+                posX     = posArr[i2  ];
+                posY     = posArr[i2+1];
+                width_2  = dimArr[i2  ] * 0.5;
+                height_2 = dimArr[i2+1] * 0.5;
+                shift_w  = width_2  * shift;
+                shift_h  = height_2 * shift;
+
+                rx = posX - width_2  + shift_w;
+                ry = posY - height_2 + shift_h;
+                rw = posX + width_2  + shift_w;
+                rh = posY + height_2 + shift_h;
+
+                bVertex[ 0] = bVertex[ 2] = bVertex[10] = rx;
+                bVertex[ 1] = bVertex[ 9] = bVertex[11] = ry;
+                bVertex[ 4] = bVertex[ 6] = bVertex[ 8] = rw;
+                bVertex[ 3] = bVertex[ 5] = bVertex[ 7] = rh;
+
+                bMutVertex.set(bVertex,bMutVertex.size());
+                bMutColor.set(bTexCoord,bMutTexCoord.size());
+            }
+
+            this.bufferArrays(bMutVertex.array,null,bMutTexCoord.array,gl.DYNAMIC_DRAW);
+            this.setMatrixUniform();
+            gl.drawArrays(gl.TRIANGLES,0,length * 6);
+
+        } else {
+
+        }
     }
 
-    //console.log(bMutIndex.array);
 
-    //this.drawArrays(bMutVertex.array,bMutColor.array,gl.TRIANGLE_STRIP);
 
-    var gl = this._context3d;
-    this.bufferArrays(bMutVertex.array,bMutColor.array,null,gl.DYNAMIC_DRAW);
-    this.setMatrixUniform();
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,bMutIndex.array,gl.DYNAMIC_DRAW);
-    gl.drawElements(gl.TRIANGLES,bMutIndex.size(),gl.UNSIGNED_SHORT,0);
 
-    //this.drawElements(bMutVertex.array,bMutIndex.array,bMutColor.array,bMutIndex.size());
+
+
 
 
 

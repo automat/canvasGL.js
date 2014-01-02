@@ -16,6 +16,8 @@ App.prototype.setup = function(){
     var ctx = this.getContext();
     this._texture = CanvasGL.Texture.genBlankTexture(ctx);
 
+
+
 };
 
 
@@ -38,23 +40,37 @@ App.prototype.draw = function(){
 
    // c.rectSet([0,0,100,0],[100,100,100,100]);
 
-    var num = 15000;
+    var num = 30000;
     var verticesSet = new Array(num * 2),
-        sizesSet    = new Array(num * 2);
+        sizesSet    = new Array(num * 2),
+        colorsSet   = new Array(num * 4);
+
+    var a, b, d;
+
+    b = Math.sin(time * Math.PI) * 0.5 + 0.5;
 
     var  i = 0;
     var n;
     while(i < num){
         n = i / (num - 1);
-        verticesSet[i * 2    ] = Math.cos(n * Math.PI * 32 + time * 2) * n * 500;
-        verticesSet[i * 2 + 1] = Math.sin(n * Math.PI * 32 + time * 2) * n * 500;
-        sizesSet[i * 2    ] = 2 + (Math.sin(n * Math.PI * 4) * 0.5 + 0.5) * 20;
-        sizesSet[i * 2 + 1] = 2 + (Math.sin(n * Math.PI * 4) * 0.5 + 0.5) * 20;
+        a = n * Math.PI * 128 + time * 2;
+        d = Math.sin(n * Math.PI * 4) * 0.5 + 0.5;
+        verticesSet[i * 2    ] = Math.cos(a) * n * (800 + b * 500);
+        verticesSet[i * 2 + 1] = Math.sin(a) * n * (800 + b * 500);
+        sizesSet[i * 2    ] = 2 + d * 20;
+        sizesSet[i * 2 + 1] = 2 + d * 20;
+        colorsSet[i*4 + 0] = n;
+        colorsSet[i*4 + 1] = 0;
+        colorsSet[i*4 + 2] = 1-n;
+        colorsSet[i*4 + 3] = Math.sin(n*Math.PI * (Math.sin(time) * 0.5 + 0.5) * 128) * 0.5 + 0.5;
         ++i;
     }
 
-    c.rectSet(verticesSet,sizesSet);
 
+    c.setModeRect(CanvasGL.CENTER);
+    c.rectSet(verticesSet,sizesSet,colorsSet);
+    //c.rectSet([0,0,100,0],[100,100,10,10]);
+    //c.rectSet([0,0],[100,100]);
     //c.drawElements([-50,-50,50,-50]);
 
 
