@@ -67,11 +67,11 @@ Texture.prototype.setSize = function(width,height){
 };
 
 Texture.prototype.bind = function(){
-    this._ctxRef._bindTexture(this);
+    this._ctxRef._enableTextureObj(this);
 };
 
 Texture.prototype.unbind = function(){
-    this._ctxRef._unbindTexture(this);
+    this._ctxRef._disableTextureObj();
 };
 
 Texture.prototype.getWidth = function(){
@@ -106,13 +106,21 @@ Texture.prototype.setData = function(data,dataWidth,dataHeight,dataFormat,dataTy
         throw Warning.TEX_FLOAT_NOT_SUPPORTED;
     }
 
+    var format = this._format;
+    format.dataFormat = dataFormat;
+    format.dataType = dataType;
+
     gl.bindTexture(gl.TEXTURE_2D, this._tex);
-    gl.texImage2D( gl.TEXTURE_2D, 0, dataFormat, dataWidth, dataHeight, 0, dataFormat, dataType, data);
+    gl.texImage2D( gl.TEXTURE_2D, 0, format.dataFormat, dataWidth, dataHeight, 0, format.dataFormat, format.dataType, data);
     gl.bindTexture(gl.TEXTURE_2D, prevTex ? prevTex.getGLTexture() : ctx.getNullTexture());
 };
 
+Texture.prototype.readPixels = function(out){
+    this._ctxRef._readPixelsFromTex(this,out);
+};
+
 Texture.prototype.delete = function(){
-    this._glRef.deleteTexture(this._tex);
+    this._ctxRef.getContext3d().deleteTexture(this._tex);
 };
 
 /*------------------------------------------------------------------------------------------------------------*/

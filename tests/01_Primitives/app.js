@@ -12,8 +12,14 @@ function App(element){
 
 App.prototype = Object.create(CanvasGL.prototype);
 
-App.prototype.draw = function(){
+App.prototype.setup = function(){
+    var ctx = this.getContext();
+    this._texture = CanvasGL.Texture.genBlankTexture(ctx);
 
+};
+
+
+App.prototype.draw = function(){
     var time   = this.getSecondsElapsed();
     var width  = this.getWidth(),
         height = this.getHeight();
@@ -63,11 +69,19 @@ App.prototype.draw = function(){
     c.fill3f(1,1,1);
     c.roundRect(300,-100,100,100,(Math.sin(time) * 0.5 + 0.5) * 30);
 
+    c.setModeRect(CanvasGL.CENTER);
+    c.fill3f(1,0,0);
+    //c._enableTextureObj(this._texture);
+    this._texture.bind();
+    c.rect(-300,100,100,100);
+    this._texture.unbind();
+    //c._disableTextureObj();
 
-    /*
+
+
     c.setModeRect(CanvasGL.CENTER);
     var i = -1;
-    var l = 80;
+    var l = 2000;
     var n;
     var a;
     while(++i < l){
@@ -78,14 +92,14 @@ App.prototype.draw = function(){
         c.rect(-375 + n * 750,0,10 + a * 10,10 + a * 40);
     //    c.circle(-375 + Math.random() * 750, -375 + Math.random() * 750,10);
     }
-    */
+
     /*
     c.fill3f(1,1,1);
     c.setDetailArc(20);
     c.stroke3f(1,0,0);
     c.arc(100,0,100,100,0,Math.PI * (Math.sin(time) * 0.5 + 0.5),20,20);
     */
-    /*
+
     this.drawShapeOrigin(-325,-125);
     this.drawShapeOrigin(-300,-100);
 
@@ -96,7 +110,7 @@ App.prototype.draw = function(){
 
     this.drawShapeOrigin(275,-125);
     this.drawShapeOrigin(300,-100);
-    */
+
 
     //console.log('---');
 };

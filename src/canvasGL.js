@@ -136,6 +136,42 @@ CanvasGL.prototype.onWebGLContextRestored = function(){
 */
 
 /*------------------------------------------------------------------------------------------------------------*/
+// Context cache
+/*------------------------------------------------------------------------------------------------------------*/
+
+/*
+CanvasGL.prototype.setCacheCircleSet = function(size,resize){};
+
+CanvasGL.prototype.setCacheRectSet = function(size,resize){};
+
+CanvasGL.prototype.setCacheRoundRectSet = function(size,resize){};
+
+CanvasGL.prototype.setCacheEllipseSet = function(size,resize){};
+
+CanvasGL.prototype.setCacheLineSet = function(size,resize){};
+
+CanvasGL.prototype.freeCacheCircleSet = function(){};
+
+CanvasGL.prototype.freeCacheRectSet = function(){};
+
+CanvasGL.prototype.freeCacheRoundRectSet = function(){};
+
+CanvasGL.prototype.freeCacheEllipseSet = function(){};
+
+CanvasGL.prototype.freeCacheLineSet = function(){};
+
+CanvasGL.prototype.resizeCacheCircleSet = function(size){};
+
+CanvasGL.prototype.resizeCacheRectSet = function(size){};
+
+CanvasGL.prototype.resizeCacheRoundRectSet = function(size){};
+
+CanvasGL.prototype.resizeCacheEllipseSet = function(size){};
+
+CanvasGL.prototype.resizeCacheLineSet = function(size){};
+*/
+
+/*------------------------------------------------------------------------------------------------------------*/
 // input
 /*------------------------------------------------------------------------------------------------------------*/
 
@@ -182,7 +218,15 @@ CanvasGL.prototype.__onKeyUp = function(e){
 /*------------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.prototype.setSize = function(width,height){
-    if(this.__context)this.__context._setSize(width,height);
+    var ctx = this.__context;
+    if(ctx){
+        ctx._setSize(width,height);
+        if(this.__noLoop){
+            ctx._beginDraw();
+            this.draw();
+            ctx._endDraw();
+        }
+    }
 };
 
 CanvasGL.prototype.getWidth  = function(){ return this.__context ? this.__context._getWidth_internal()  : null; };
@@ -199,6 +243,7 @@ CanvasGL.prototype.noLoop = function(){
 
 CanvasGL.prototype.__initDrawLoop = function(){
     this.__timeStart = Date.now();
+    this.setup();
     var context = this.__context;
     if(!this.__noLoop){
         var time, timeDelta;
@@ -231,6 +276,8 @@ CanvasGL.prototype.__initDrawLoop = function(){
     }
 };
 
+// Override in subclass
+CanvasGL.prototype.setup = function(){};
 
 // Override in subclass
 CanvasGL.prototype.draw = function(){};
@@ -328,6 +375,9 @@ CanvasGL.Program       = require('./gl/cglProgram');
 CanvasGL.Framebuffer   = require('./gl/cglFramebuffer');
 CanvasGL.TextureFormat = require('./gl/cglTextureFormat');
 CanvasGL.Texture       = require('./gl/cglTexture');
+CanvasGL.ImageState    = require('./image/cglImageState');
 CanvasGL.Image         = require('./image/cglImage');
+
+/*---------------------------------------------------------------------------------------------------------*/
 
 module.exports = CanvasGL;

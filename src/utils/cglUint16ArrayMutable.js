@@ -9,6 +9,15 @@ function Uint16ArrayMutable(reserveSize,autoresize){
 Uint16ArrayMutable.__RESIZE_F = 1.5;
 Uint16ArrayMutable.MAX = 134217728;
 
+Uint16ArrayMutable.prototype.set = function(uint16Array,offset){
+    var size = this._reservedSize;
+    if(this._autoresize && (offset + uint16Array.length >= size)){
+        this.resize(Math.floor((offset + uint16Array.length) * Uint16ArrayMutable.__RESIZE_F));
+    }
+    this.array.set(uint16Array,offset);
+    this._index = offset + uint16Array.length;
+};
+
 Uint16ArrayMutable.prototype.put1f = function(a){
     var size = this._reservedSize;
     if(this._autoresize && (this._index + 1 >= size)){

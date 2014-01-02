@@ -10,6 +10,15 @@ function Float32ArrayMutable(reserveSize,autoresize){
 Float32ArrayMutable.__RESIZE_F = 1.5;
 Float32ArrayMutable.MAX = 134217728;
 
+Float32ArrayMutable.prototype.set = function(float32Array,offset){
+    var size = this._reservedSize;
+    if(this._autoresize && (offset + float32Array.length >= size)){
+        this.resize(Math.floor((offset + float32Array.length) * Float32ArrayMutable.__RESIZE_F));
+    }
+    this.array.set(float32Array,offset);
+    this._index = offset + float32Array.length;
+};
+
 Float32ArrayMutable.prototype.put1f = function(a){
     var size = this._reservedSize;
     if(this._autoresize && (this._index + 1 >= size)){

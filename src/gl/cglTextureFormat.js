@@ -4,6 +4,9 @@ function TextureFormat(){
     this.minFilter = TextureFormat.LINEAR_MIPMAP_NEAREST;
     this.wrapMode  = TextureFormat.CLAMP_TO_EDGE;
     this.flipY     = false;
+
+    this.dataFormat = TextureFormat.RGBA;
+    this.dataType   = TextureFormat.UNSIGNED_BYTE;
 }
 
 TextureFormat.prototype.set = function(mipmap,magFilter,minFilter,wrapMode,flipY){
@@ -16,6 +19,10 @@ TextureFormat.prototype.set = function(mipmap,magFilter,minFilter,wrapMode,flipY
     return this;
 };
 
+TextureFormat.RGB  = WebGLRenderingContext.RGB;
+TextureFormat.RGBA = WebGLRenderingContext.RGBA;
+TextureFormat.UNSIGNED_BYTE = WebGLRenderingContext.UNSIGNED_BYTE;
+TextureFormat.FLOAT = WebGLRenderingContext.FLOAT;
 
 TextureFormat.NEAREST = WebGLRenderingContext.NEAREST;
 TextureFormat.LINEAR = WebGLRenderingContext.LINEAR;
