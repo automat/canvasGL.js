@@ -7,7 +7,8 @@ var Warning = {
 
     TEX_NP2_MIPMAP : "Texture size is non-power-of-2. Can't generate mipmap.",
     TEX_NP2_WRAP_MODE_INIT: "Size is non-power-of-2. Using wrapMode CLAMP_TO_EDGE.",
-    TEX_NP2_WRAP_MODE_RESIZE: "'Texture is non-power-of-2. WrapMode REPEAT is not valid."
+    TEX_NP2_WRAP_MODE_RESIZE: "'Texture is non-power-of-2. WrapMode REPEAT is not valid.",
+    TEX_FLOAT_NOT_SUPPORTED : 'Floating point textures not supported.'
 };
 
 module.exports = Warning;

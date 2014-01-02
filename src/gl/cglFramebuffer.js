@@ -3,7 +3,8 @@ var Default       = require('../common/cglDefault'),
     Texture       = require('./cglTexture');
 
 function Framebuffer(ctx,width,height,format){
-    this._glRef  = ctx.getContext3d();
+    this._ctxRef = ctx;
+    var gl = this._ctxRef.getContext3d();
     format = format || new TextureFormat().set(false,
                                                TextureFormat.LINEAR,
                                                TextureFormat.LINEAR,
@@ -15,7 +16,6 @@ function Framebuffer(ctx,width,height,format){
     this.setSize(width  || Default.RENDERBUFFER_WIDTH,
                  height || Default.RENDERBUFFER_HEIGHT);
 
-    var gl = this._glRef;
     this._fbo = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER,this._fbo);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,this._tex.getGLTexture(),0);
@@ -35,7 +35,7 @@ Framebuffer.prototype.getHeight = function(){
 };
 
 Framebuffer.prototype.getAspectRatio = function(){
-    return this.getWidth() / this.getHeight;
+    return this._tex.getAspectRatio();
 };
 
 Framebuffer.prototype.getTexture = function(){
@@ -43,18 +43,22 @@ Framebuffer.prototype.getTexture = function(){
 };
 
 Framebuffer.prototype.delete = function(){
-    var gl = this._glRef;
+    var gl = this._ctxRef.getContext3d();
     gl.deleteTexture(this._tex);
     gl.deleteFramebuffer(this._fbo);
 };
 
 Framebuffer.prototype.bind = function(){
-    this._glRef.bindFramebuffer(this._glRef.FRAMEBUFFER,this._fbo);
+    if(this._ctxRef.getCurrFramebuffer() == this)return;
+    this._ctxRef._bindFramebuffer(this);
 };
 
 Framebuffer.prototype.unbind = function(){
-    this._glRef.bindFramebuffer(this._glRef.FRAMEBUFFER,null);
+    this._ctxRef._unbindFramebuffer();
 };
 
+Framebuffer.prototype.getGLFramebuffer = function(){
+    return this._fbo;
+};
 
 module.exports = Framebuffer;

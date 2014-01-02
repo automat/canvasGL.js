@@ -54,7 +54,8 @@ function Context(element,canvas3d,canvas2d){
     canvas3d.tabIndex = '1';
 
     if(!Extension.Initialized){
-        Extension.UintTypeAvailable = gl.getExtension('OES_element_index_uint');
+        Extension.UintTypeAvailable     = gl.getExtension('OES_element_index_uint') ? true : false;
+        Extension.FloatTextureAvailable = gl.getExtension('OES_texture_float') ? true : false;
         Extension.Initialized = true;
     }
 
@@ -88,6 +89,7 @@ function Context(element,canvas3d,canvas2d){
 
     this._fboCanvas   = new Framebuffer(this);
     this._fboPingPong = new Framebuffer(this);
+    this._stackFbo    = new Value1Stack();
 
 
 
@@ -129,6 +131,8 @@ function Context(element,canvas3d,canvas2d){
     this._modeCircle  = Context.CENTER;
     this._modeRect    = Context.CORNER;
 
+    this._stackTexture          = new Value1Stack();
+    this._stackTexture_internal = new Value1Stack();
     this._texture     = false;
     this._textureCurr = null;
 
@@ -756,15 +760,6 @@ Context.prototype.noTint = function(){
 /*---------------------------------------------------------------------------------------------------------*/
 
 
-Context.prototype._applyTexture = function(){
-    var gl = this._context3d;
-    var program = this._stackProgram.peek();
-    gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
-    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
-    gl.uniform1f(program[ShaderDict.uImage],0);
-};
-
-
 
 Context.prototype.setUVOffset = function(offsetU,offsetV,textureWidth,textureHeight){
     this._textureOffsetX = offsetU;
@@ -817,27 +812,41 @@ Context.prototype.resetUVTriangle = function(){
 };
 
 Context.prototype._bindTexture = function(tex){
-    this._textureCurr = tex;
+    var stackTexture_internal = this._stackTexture_internal;
+    stackTexture_internal.push(tex);
     var gl = this._context3d;
-    gl.bindTexture(gl.TEXTURE_2D,this._textureCurr.getGLTexture());
+    gl.bindTexture(gl.TEXTURE_2D,stackTexture_internal.peek().getGLTexture());
     this._texture = true;
 };
 
 Context.prototype._unbindTexture = function(){
-    var gl = this._context3d;
     var program = this._stackProgram.peek();
+    var stackTexture_internal = this._stackTexture_internal;
+    stackTexture_internal.push(ValueStateStack.EMPTY1);
+
+    var gl = this._context3d;
     gl.bindTexture(gl.TEXTURE_2D, this._blankTextureGL);
     gl.vertexAttribPointer(2,2,gl.FLOAT,false,0,0);
     gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
     this._texture = false;
 };
 
-Context.prototype.texture = function(img){
-    this._bindTexture(img._t);
+Context.prototype.getCurrTexture = function(){
+    return this._stackTexture.peek();
+};
+
+Context.prototype.getNullTexture = function(){
+    return this._blankTextureGL;
+}
+
+Context.prototype.texture = function(textureObj){
+    this._bindTexture(textureObj);
+    this._stackTexture.push(textureObj);
 };
 
 Context.prototype.noTexture = function(){
     this._unbindTexture();
+    this._stackTexture.push(ValueStateStack.EMPTY1);
 };
 
 
@@ -881,6 +890,22 @@ Context.prototype.drawFbo = function(fbo,width,height){
 
     gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
     fbo.getTexture().unbind();
+};
+
+Context.prototype._bindFramebuffer = function(fbo){
+    var gl = this._context3d;
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fbo.getGLFramebuffer());
+    this._stackFbo.push(fbo);
+};
+
+Context.prototype._unbindFramebuffer = function(){
+    var gl = this._context3d;
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    this._stackFbo.push(ValueStateStack.EMPTY1);
+};
+
+Context.prototype.getCurrFramebuffer = function(){
+    return this._stackFbo.peek();
 };
 
 
@@ -1604,16 +1629,14 @@ Context.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3){
         bPoint   = this._bPointsBezier,
         bVertex  = this._bVertexBezier;
 
-    bPoint[0] = x0;
-    bPoint[1] = y0;
-    bPoint[2] = x2;
-    bPoint[3] = y2;
-    bPoint[4] = x1;
-    bPoint[5] = y1;
-    bPoint[6] = x3;
-    bPoint[7] = y3;
+    if(bPoint[0] != x0 || bPoint[1] != y0 ||
+       bPoint[2] != x2 || bPoint[3] != y2 ||
+       bPoint[4] != x1 || bPoint[5] != y1 ||
+       bPoint[6] != x3 || bPoint[7] != y3 ||
+       !detailBezier.isEqual()){
+        BezierUtil.genPoints(x0,y0,x1,y1,x2,y2,x3,y3,detail,bVertex);
+    }
 
-    BezierUtil.genPoints(x0,y0,x1,y1,x2,y2,x3,y3,detail,bVertex);
     this._polyline(bVertex,detail,false);
 
     detailBezier.push(detail);
@@ -2318,10 +2341,9 @@ Context.prototype.image = function(image, x, y, width, height)
     this._stackDrawFunc.push(this.image);
 };
 
-Context.prototype.getImagePixel = function(img)
-{
-    this._context2DSetImage(img);
-    return this._context2DGetPixelData();
+Context.prototype.getImagePixel = function(img){
+    var prevFrameBuffer = this._stackFbo.peek();
+
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -2501,21 +2523,26 @@ Context.WRAP   = 2;
 Context.CLAMP  = 3;
 Context.REPEAT = 4;
 
-Context.FUNC_ADD = "";
-Context.FUNC_SUBSTRACT = "";
-Context.FUNC_REVERSER_SUBSTRACT = "";
+Context.FUNC_ADD = WebGLRenderingContext.FUNC_ADD;
+Context.FUNC_SUBSTRACT = WebGLRenderingContext.FUNC_SUBTRACT;
+Context.FUNC_REVERSER_SUBSTRACT = WebGLRenderingContext.FUNC_REVERSE_SUBTRACT;
 
-Context.ZERO = "";
-Context.ONE = "";
+Context.ZERO = WebGLRenderingContext.ZERO;
+Context.ONE = WebGLRenderingContext.ONE;
 
-Context.SRC_ALPHA = 770;
-Context.SRC_COLOR = 768;
+Context.SRC_ALPHA = WebGLRenderingContext.SRC_ALPHA;
+Context.SRC_COLOR = WebGLRenderingContext.SRC_COLOR;
 
-Context.ONE_MINUS_SRC_ALPHA = 771;
-Context.ONE_MINUS_SRC_COLOR = 769;
+Context.ONE_MINUS_SRC_ALPHA = WebGLRenderingContext.ONE_MINUS_SRC_ALPHA;
+Context.ONE_MINUS_SRC_COLOR = WebGLRenderingContext.ONE_MINUS_SRC_COLOR;
 
-Context.TRIANGLE_STRIP = 5;
-Context.TRIANGLE_FAN   = 6;
+Context.TRIANGLE_STRIP = WebGLRenderingContext.TRIANGLE_STRIP;
+Context.TRIANGLE_FAN   = WebGLRenderingContext.TRIANGLE_FAN;
+
+Context.RGBA = WebGLRenderingContext.RGBA;
+Context.RGB = WebGLRenderingContext.RGB;
+Context.UNSIGNED_BYTE = WebGLRenderingContext.UNSIGNED_BYTE;
+Context.FLOAT = WebGLRenderingContext.FLOAT;
 
 Context.TOP    = "top";
 Context.MIDDLE = "middle";

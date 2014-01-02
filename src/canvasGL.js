@@ -316,6 +316,13 @@ CanvasGL.THIN    = Context.THIN;
 CanvasGL.REGULAR = Context.REGULAR;
 CanvasGL.BOLD    = Context.BOLD;
 
+CanvasGL.RGBA          = Context.RGBA;
+CanvasGL.RGB           = Context.RGB;
+CanvasGL.FLOAT         = Context.FLOAT;
+CanvasGL.UNSIGNED_BYTE = Context.UNSIGNED_BYTE;
+
+/*---------------------------------------------------------------------------------------------------------*/
+
 CanvasGL.Math          = require('./math/cglMath');
 CanvasGL.Program       = require('./gl/cglProgram');
 CanvasGL.Framebuffer   = require('./gl/cglFramebuffer');

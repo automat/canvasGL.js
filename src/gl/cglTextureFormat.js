@@ -17,12 +17,12 @@ TextureFormat.prototype.set = function(mipmap,magFilter,minFilter,wrapMode,flipY
 };
 
 
-TextureFormat.NEAREST = 0x2600;
-TextureFormat.LINEAR = 0x2601;
-TextureFormat.NEAREST_MIPMAP_NEAREST = 0x2700;
-TextureFormat.LINEAR_MIPMAP_NEAREST = 0x2701;
-TextureFormat.NEAREST_MIPMAP_LINEAR = 0x2702;
-TextureFormat.LINEAR_MIPMAP_LINEAR = 0x2703;
-TextureFormat.CLAMP_TO_EDGE = 0x812F;
+TextureFormat.NEAREST = WebGLRenderingContext.NEAREST;
+TextureFormat.LINEAR = WebGLRenderingContext.LINEAR;
+TextureFormat.NEAREST_MIPMAP_NEAREST = WebGLRenderingContext.NEAREST_MIPMAP_NEAREST;
+TextureFormat.LINEAR_MIPMAP_NEAREST = WebGLRenderingContext.LINEAR_MIPMAP_NEAREST;
+TextureFormat.NEAREST_MIPMAP_LINEAR = WebGLRenderingContext.NEAREST_MIPMAP_LINEAR;
+TextureFormat.LINEAR_MIPMAP_LINEAR = WebGLRenderingContext.LINEAR_MIPMAP_LINEAR;
+TextureFormat.CLAMP_TO_EDGE = WebGLRenderingContext.CLAMP_TO_EDGE;
 
 module.exports = TextureFormat;

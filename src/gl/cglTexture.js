@@ -1,5 +1,6 @@
 var _Math         = require('../math/cglMath'),
     Warning       = require('../common/cglWarning'),
+    Extension     = require('../common/cglExtension'),
     TextureFormat = require('./cglTextureFormat');
 
 function Texture(ctx,width,height,format){
@@ -93,6 +94,23 @@ Texture.prototype.getFormat = function(){
     return this._format;
 };
 
+Texture.prototype.setData = function(data,dataWidth,dataHeight,dataFormat,dataType){
+    var ctx = this._ctxRef;
+    var gl  = ctx.getContext3d();
+    var prevTex = ctx.getCurrTexture();
+
+    dataFormat = dataFormat || gl.RGBA;
+    dataType   = dataType   || gl.UNSIGNED_BYTE;
+
+    if(dataType == gl.FLOAT && !Extension.FloatTextureAvailable){
+        throw Warning.TEX_FLOAT_NOT_SUPPORTED;
+    }
+
+    gl.bindTexture(gl.TEXTURE_2D, this._tex);
+    gl.texImage2D( gl.TEXTURE_2D, 0, dataFormat, dataWidth, dataHeight, 0, dataFormat, dataType, data);
+    gl.bindTexture(gl.TEXTURE_2D, prevTex ? prevTex.getGLTexture() : ctx.getNullTexture());
+};
+
 Texture.prototype.delete = function(){
     this._glRef.deleteTexture(this._tex);
 };
@@ -102,12 +120,12 @@ Texture.prototype.delete = function(){
 /*------------------------------------------------------------------------------------------------------------*/
 
 Texture.genBlankTexture = function(ctx){
-    var gl  = ctx.getContext3d();
-    var tex = new Texture(ctx,1,1,null);
-    gl.bindTexture(gl.TEXTURE_2D, tex.getGLTexture());
-    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([1,1,1,1]));
-    gl.bindTexture(gl.TEXTURE_2D,null);
+    return Texture.genFromData(ctx,new Uint8Array([1,1,1,1]),1,1);
+};
 
+Texture.genFromData = function(ctx,data,width,height){
+    var tex = new Texture(ctx,width,height);
+    tex.setData(data,width,height);
     return tex;
 };
 
