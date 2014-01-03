@@ -38,35 +38,30 @@ App.prototype.draw = function(){
     c.line(-width_2,0,width_2,0);
     c.line(0,-height_2,0,height_2);
 
+    c.setDetailCircle(10);
+    c.fill3f(1,1,1);
+    //c.circleSet([0,0,100,0],[50,10]);
 
-    var num = 30000;
-    var posArr     = new Array(num * 2),
-        dimArr     = new Array(num * 2),
-        fillColArr = new Array(num * 4);
+    var w = 50,h = 50;
+    var posArr    = new Array(w * h * 2),
+        radiusArr = new Array(w * h);
+    var i, j,ij;
+    i = -1;
+    while(++i < w){
+        j = -1;
+        while(++j < h){
+            ij = i * w + j;
 
-    var a, b, d;
+            posArr[ij*2  ] = (-0.5 + i/(w-1)) * 2 * 300;
+            posArr[ij*2+1] = (-0.5 + j/(h-1)) * 2 * 300;
+            radiusArr[ij]  = 10;
 
-    b = Math.sin(time * Math.PI) * 0.5 + 0.5;
-
-    var  i = 0;
-    var n;
-    while(i < num){
-        n = i / (num - 1);
-        a = n * Math.PI * 128 + time * 2;
-        d = Math.sin(n * Math.PI * 4) * 0.5 + 0.5;
-        posArr[i * 2    ]   = Math.cos(a) * n * (800 + b * 500);
-        posArr[i * 2 + 1]   = Math.sin(a) * n * (800 + b * 500);
-        dimArr[i * 2    ]   = 2 + d * 20;
-        dimArr[i * 2 + 1]   = 2 + d * 20;
-        fillColArr[i*4 + 0] = n;
-        fillColArr[i*4 + 1] = 0;
-        fillColArr[i*4 + 2] = 1-n;
-        fillColArr[i*4 + 3] = Math.sin(n*Math.PI * (Math.sin(time) * 0.5 + 0.5) * 128) * 0.5 + 0.5;
-        ++i;
+        }
     }
 
-    c.rectSet(posArr,dimArr,fillColArr);
+    c.circleSet(posArr,radiusArr);
 };
+
 
 App.prototype.drawShapeOrigin = function(x,y){
     var c = this.getContext();

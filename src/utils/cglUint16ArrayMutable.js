@@ -1,80 +1,63 @@
 function Uint16ArrayMutable(reserveSize,autoresize){
-    this._reservedSize = reserveSize;
-    this.array         = new Uint16Array(this._reservedSize);
-    this._autoresize   = typeof autoresize === 'undefined' ? false : autoresize;
-
-    this._index = 0;
+    this._size   = reserveSize;
+    this._resize = typeof autoresize === 'undefined' ? false : autoresize;
+    this._index  = 0;
+    this.array   = new Uint16Array(this._size);
 }
 
 Uint16ArrayMutable.__RESIZE_F = 1.5;
 Uint16ArrayMutable.MAX = 134217728;
 
-Uint16ArrayMutable.prototype.set = function(uint16Array,offset){
-    var size = this._reservedSize;
-    if(this._autoresize && (offset + uint16Array.length >= size)){
-        this.resize(Math.floor((offset + uint16Array.length) * Uint16ArrayMutable.__RESIZE_F));
+// just forward
+Uint16ArrayMutable.prototype.set = function(array,offset,limit){
+    offset = typeof offset === 'undefined' ? 0 : offset;
+    limit  = typeof limit  === 'undefined' ? array.length : limit;
+
+    var offsetSize = offset + limit;
+
+    if(this._resize && (offsetSize >= this._size)){
+        this.resize(Math.floor(offsetSize * Float32ArrayMutable.__RESIZE_F));
     }
-    this.array.set(uint16Array,offset);
-    this._index = offset + uint16Array.length;
+
+    this.array.set(array,offset);
+    this._index = Math.max(this._index,offsetSize);
 };
 
-Uint16ArrayMutable.prototype.put1f = function(a){
-    var size = this._reservedSize;
-    if(this._autoresize && (this._index + 1 >= size)){
-        this.resize(Math.floor((size + 1) * Uint16ArrayMutable.__RESIZE_F));
-    }
-    var array = this.array;
-    array[this._index++] = a;
+Uint16ArrayMutable.prototype.at = function(index){
+    if(index > this._index)throw new RangeError('Index out of bounds.');
+    return this.array[index];
 };
 
-Uint16ArrayMutable.prototype.put2f = function(a,b){
-    var size  = this._reservedSize;
-    if(this._autoresize && (this._index + 2 >= size)){
-        this.resize(Math.round((size + 2) * Uint16ArrayMutable.__RESIZE_F));
-    }
-    var array = this.array;
-    array[this._index++] = a;
-    array[this._index++] = b;
+Uint16ArrayMutable.prototype.setAt = function(val,index){
+    if(index > this._index)throw new RangeError('Index out of bounds.');
+    this.array[index] = val;
 };
 
-Uint16ArrayMutable.prototype.put3f = function(a,b,c){
-    var size  = this._reservedSize;
-    if(this._autoresize && (this._index + 3 >= size)){
-        this.resize(Math.round((size + 3) * Uint16ArrayMutable.__RESIZE_F));
-    }
-    var array = this.array;
-    array[this._index++] = a;
-    array[this._index++] = b;
-    array[this._index++] = c;
-};
+Uint16ArrayMutable.prototype.push = function(){
+    var argsLen = arguments.length;
+    if(argsLen == 0)return;
 
-Uint16ArrayMutable.prototype.put4f = function(a,b,c,d){
-    var size  = this._reservedSize;
-    if(this._autoresize && (this._index + 4 >= size)){
-        this.resize(Math.round((size + 4) * Uint16ArrayMutable.__RESIZE_F));
-    }
+    var size  = this._size;
     var array = this.array;
-    array[this._index++] = a;
-    array[this._index++] = b;
-    array[this._index++] = c;
-    array[this._index++] = d;
-};
 
-Uint16ArrayMutable.prototype.putiv = function(arr,limit,offset){
-    offset = offset ? offset : 0;
-    var l      = limit  ? arr.length : limit;
-    var size   = this._reservedSize;
-    if(this._autoresize && (this._index + l >= size)){
-        this.resize(Math.round((size + l) * Uint16ArrayMutable.__RESIZE_F));
+    if(this._resize && (this._index + argsLen + 1) >= size){
+        this.resize(Math.floor((this._index + argsLen + 1) * Float32ArrayMutable.__RESIZE_F));
     }
-    var array = this.array;
+
     var i = -1;
-    while(++i < l){array[this._index++] = offset + arr[i];}
+    while(++i < arguments.length){
+        array[this._index++] = arguments[i];
+    }
+};
+
+Uint16ArrayMutable.prototype.pop = function(){
+    if(this._index == 0)return null;
+    return this.array[this.index--];
 };
 
 Uint16ArrayMutable.prototype.resize = function(size){
-    this._reservedSize = size;
-    var array = new Uint16Array(this._reservedSize);
+    this._size = size;
+    var array = new Uint16Array(this._size);
     array.set(this.array);
     this.array = array;
 };
