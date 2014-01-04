@@ -62,7 +62,7 @@ function Context(element,canvas3d,canvas2d){
     this._canvas2d  = document.createElement('canvas');
     this._context2d = this._canvas2d.getContext('2d');
 
-   var  glArrayBuffer        = gl.ARRAY_BUFFER,
+    var glArrayBuffer        = gl.ARRAY_BUFFER,
         glElementArrayBuffer = gl.ELEMENT_ARRAY_BUFFER;
 
     // Setup 2d / post shader
@@ -249,7 +249,10 @@ function Context(element,canvas3d,canvas2d){
     this._stackDetailSpline = new Value1Stack();
 
     // polyline
-    this._stackWidthPolyline = new Value1Stack();
+    this._bVertexPolylineCapRound = new Float32Array(2 * Common.LINE_ROUND_CAP_DETAIL_MAX)
+    this._stackWidthPolyline      = new Value1Stack();
+
+
 
 
 
@@ -290,10 +293,6 @@ function Context(element,canvas3d,canvas2d){
     this._bColorStroke  = this._bColorStroke4;
 
     this._tempCurveVertices = [];
-
-    this._bPolylineCacheLimit = 1000;
-    this._bPolylineCache      = null;
-
 
     this._modeTexture = Context.CLAMP;
 
@@ -358,6 +357,8 @@ Context.prototype._setSize = function(width, height){
 Context.prototype._setDrawPropertiesInitial = function(){
     var gl = this._context3d;
     gl.enable(gl.BLEND);
+    gl.uniform1f(this._program[ShaderDict.uFlipY],-1.0);
+    this._resetDrawProperties();
 };
 
 Context.prototype._resetDrawProperties = function(){
@@ -365,6 +366,10 @@ Context.prototype._resetDrawProperties = function(){
     this._disableTextureObj();
     this.noFill();
     this.noTint();
+
+    this.setModeRect(Context.CORNER);
+    this.setModeEllipse(Context.CENTER);
+    this.setModeCircle(Context.CENTER);
 
     var EMPTY1 = ValueStateStack.EMPTY1,
         EMPTY2 = ValueStateStack.EMPTY2;
@@ -415,12 +420,6 @@ Context.prototype._resetDrawProperties = function(){
 
 
 
-    this.setModeRect(Context.CORNER);
-    this.setModeEllipse(Context.CENTER);
-    this.setModeCircle(Context.CENTER);
-
-
-
     this.resetBlend();
 
     this.resetUVOffset();
@@ -432,8 +431,8 @@ Context.prototype._resetDrawProperties = function(){
 Context.prototype._beginDraw = function(){
     this._resetDrawProperties();
 
-    this._context3d.uniform1f(this._program[ShaderDict.uFlipY],1.0);
     this.loadIdentity();
+    this._context3d.uniform1f(this._program[ShaderDict.uFlipY],-1.0);
 
     this._fboCanvas.bind();
     this.clearColorBuffer();
@@ -445,7 +444,7 @@ Context.prototype._endDraw = function(){
     var fboCanvas = this._fboCanvas;
     fboCanvas.unbind();
 
-    this._context3d.uniform1f(this._program[ShaderDict.uFlipY],-1.0);
+    this._context3d.uniform1f(this._program[ShaderDict.uFlipY],1.0);
     this.loadIdentity();
     this.drawFbo(fboCanvas);
 };
@@ -929,6 +928,18 @@ Context.prototype._readPixelsFromTex = function(tex,out){
 
     gl.bindFramebuffer(gl.FRAMEBUFFER,this._stackFbo.peek());
 };
+
+Context.prototype._writePixelsToTex = function(tex,x,y,width,height,format,type,pixels){
+    var gl = this._context3d;
+    var stackTexture = this._stackTexture;
+    gl.bindTexture(gl.TEXTURE_2D,tex.getGLTexture());
+    gl.texSubImage2D(gl.TEXTURE_2D,0,x,y,width,height,format,type,pixels);
+    gl.bindTexture(gl.TEXTURE_2D,stackTexture.peek() ? stackTexture.peek().getGLTexture() : this._blankTextureGL);
+};
+
+Context.prototype.bindDefaultFramebuffer = function(){
+    this._bindFramebuffer(this._fboCanvas);
+}
 
 Context.prototype.getCurrFramebuffer = function(){
     return this._stackFbo.peek();
@@ -1762,6 +1773,8 @@ Context.prototype._polyline = function(joints,length,loop){
         widthPolyline      = stackWidthPolyline.peek();
     if(!this._stroke || widthPolyline <= 0.0)return;
 
+    var widthPolyLineDiffers = !stackWidthPolyline.isEqual();
+
     var color    = this._bColorStroke,
         colorLen = color.length;
 
@@ -1771,11 +1784,11 @@ Context.prototype._polyline = function(joints,length,loop){
 
     loop = Boolean(loop);
 
+
+
+
+
     var pvcol = color.length != 4;
-
-
-
-
     var jointSize      = 2,
         jointLen       = (length || joints.length) + (loop ? jointSize : 0),
         jointCapResMax = Common.LINE_ROUND_CAP_DETAIL_MAX,
@@ -1990,6 +2003,8 @@ Context.prototype._polyline = function(joints,length,loop){
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
         gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
     }
+
+    stackWidthPolyline.push(widthPolyline);
 };
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -2793,6 +2808,10 @@ Context.prototype._getHeight_internal = function(){return this._height;};
 /*---------------------------------------------------------------------------------------------------------*/
 // props
 /*---------------------------------------------------------------------------------------------------------*/
+
+Context.prototype._getSSAAFactor = function(){
+    return this._ssaaf;
+}
 
 Context.CENTER = 0;
 Context.CORNER = 1;

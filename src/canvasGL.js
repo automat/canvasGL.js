@@ -329,6 +329,8 @@ CanvasGL.prototype.saveToPNG = function(){
 CanvasGL.prototype.getContext = function(){return this.__context;};
 CanvasGL.prototype.getParent  = function(){return this.__parent;};
 
+CanvasGL.prototype.getSSAAFactor = function(){return this.__context._getSSAAFactor();};
+
 /*---------------------------------------------------------------------------------------------------------*/
 // Exports
 /*---------------------------------------------------------------------------------------------------------*/

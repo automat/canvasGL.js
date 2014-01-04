@@ -61,4 +61,15 @@ Framebuffer.prototype.getGLFramebuffer = function(){
     return this._fbo;
 };
 
+Framebuffer.prototype.readPixels = function(x,y,width,height,format,type,out){
+    var gl = this._ctxRef.getContext3d();
+    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE){
+        gl.readPixels(x,y,width,height,format,type,out);
+    }
+};
+
+Framebuffer.prototype.writePixels = function(x,y,width,height,format,type,pixels){
+    this._tex.writePixels(x,y,width,height,format,type,pixels);
+};
+
 module.exports = Framebuffer;

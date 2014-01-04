@@ -119,6 +119,10 @@ Texture.prototype.readPixels = function(out){
     this._ctxRef._readPixelsFromTex(this,out);
 };
 
+Texture.prototype.writePixels = function(x,y,width,height,format,type,pixels){
+    this._ctxRef._writePixelsToTex(this,x,y,width,height,format,type,pixels);
+};
+
 Texture.prototype.delete = function(){
     this._ctxRef.getContext3d().deleteTexture(this._tex);
 };

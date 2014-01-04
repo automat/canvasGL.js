@@ -31,10 +31,11 @@ App.prototype.draw = function(){
     c.translate(width * 0.5, height * 0.5);
 
     c.setModeEllipse(c.CENTER);
-    c.setDetailCircle(20);
 
-    c.fill3f(0.65,0,0.75);
-    c.circle(0,0,50 + (Math.sin(time) * 0.5 + 0.5) * 50);
+
+    c.stroke1f(1);
+    c.setLineWidth(10);
+    c.line([-100,-100,0,0,-100,100,0,200]);
 };
 
 

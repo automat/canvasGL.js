@@ -1,7 +1,7 @@
-var Flags = {
+var Extensions = {
     Initialized : false,
     UintTypeAvailable : false,
     FloatTextureAvailable : false
 };
 
-module.exports = Flags;
+module.exports = Extensions;
