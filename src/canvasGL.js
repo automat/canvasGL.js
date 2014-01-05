@@ -103,6 +103,8 @@ function CanvasGL(element){
                                    window.mozRequestAnimationFrame;
 
 
+
+    this.__setup();
     this.__initDrawLoop();
 
     /*------------------------------------------------------------------------------------------------------------*/
@@ -222,10 +224,9 @@ CanvasGL.prototype.setSize = function(width,height){
     if(ctx){
         ctx._setSize(width,height);
         if(this.__noLoop){
-            ctx._beginDraw();
-            this.draw();
-            ctx._endDraw();
+            this.__draw();
         }
+
     }
 };
 
@@ -242,9 +243,6 @@ CanvasGL.prototype.noLoop = function(){
 };
 
 CanvasGL.prototype.__initDrawLoop = function(){
-    this.__timeStart = Date.now();
-    this.setup();
-    var context = this.__context;
     if(!this.__noLoop){
         var time, timeDelta;
         var timeInterval = this.__timeInterval;
@@ -259,9 +257,8 @@ CanvasGL.prototype.__initDrawLoop = function(){
 
             if(timeDelta > timeInterval){
                 timeNext = self.__timeNext = time - (timeDelta % timeInterval);
-                context._beginDraw();
-                self.draw();
-                context._endDraw();
+
+                self.__draw();
 
                 self.__timeElapsed = (timeNext - self.__timeStart) / 1000.0;
                 self.__frameNum++;
@@ -270,10 +267,20 @@ CanvasGL.prototype.__initDrawLoop = function(){
 
         drawLoop();
     } else {
-        context._beginDraw();
-        this.draw();
-        context._endDraw();
+        this.__draw();
     }
+};
+
+CanvasGL.prototype.__setup = function(){
+    this.__timeStart = Date.now();
+    this.setup();
+};
+
+CanvasGL.prototype.__draw = function(){
+    var ctx = this.__context;
+    ctx._beginDraw();
+    this.draw();
+    ctx._endDraw();
 };
 
 // Override in subclass
@@ -369,6 +376,9 @@ CanvasGL.RGBA          = Context.RGBA;
 CanvasGL.RGB           = Context.RGB;
 CanvasGL.FLOAT         = Context.FLOAT;
 CanvasGL.UNSIGNED_BYTE = Context.UNSIGNED_BYTE;
+
+CanvasGL.CAP_NONE  = Context.CAP_NONE;
+CanvasGL.CAP_ROUND = Context.CAP_ROUND;
 
 /*---------------------------------------------------------------------------------------------------------*/
 

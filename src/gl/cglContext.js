@@ -19,10 +19,11 @@ var Warning   = require('../common/cglWarning'),
     Common    = require('../common/cglCommon'),
     Default   = require('../common/cglDefault');
 
-var ModelUtil  = require('../geom/cglModelUtil'),
-    VertexUtil = require('../geom/cglVertexUtil'),
-    GeomUtil   = require('../geom/cglGeomUtil'),
-    BezierUtil = require('../geom/cglBezierUtil');
+var ModelUtil    = require('../geom/cglModelUtil'),
+    VertexUtil   = require('../geom/cglVertexUtil'),
+    GeomUtil     = require('../geom/cglGeomUtil'),
+    PolylineUtil = require('../geom/cglPolylineUtil'),
+    BezierUtil   = require('../geom/cglBezierUtil');
 
 var Color  = require('../style/cglColor'),
     _Image = require('../image/cglImage');
@@ -125,9 +126,10 @@ function Context(element,canvas3d,canvas2d){
     this.setMatrixUniform();
 
     // Set draw modes
-    this._modeEllipse = Context.CENTER;
-    this._modeCircle  = Context.CENTER;
-    this._modeRect    = Context.CORNER;
+    this._modeEllipse     = Context.CENTER;
+    this._modeCircle      = Context.CENTER;
+    this._modeRect        = Context.CORNER;
+    this._modePolylineCap = Context.CAP_ROUND;
 
     this._stackTexture          = new Value1Stack();
     this._stackTexture_internal = new Value1Stack();
@@ -249,8 +251,19 @@ function Context(element,canvas3d,canvas2d){
     this._stackDetailSpline = new Value1Stack();
 
     // polyline
-    this._bVertexPolylineCapRound = new Float32Array(2 * Common.LINE_ROUND_CAP_DETAIL_MAX)
-    this._stackWidthPolyline      = new Value1Stack();
+    var lineCap0Length = 2 * Common.LINE_ROUND_CAP_DETAIL_MAX;
+    this._bVertexLineCap0  = new Float32Array(lineCap0Length);
+    this._bVertexLineCap0S = new Float32Array(lineCap0Length);
+    this._bVertexLineCap0T = new Float32Array(lineCap0Length);
+
+
+    this._bLineCap0Res    = 0;
+    this._bIndexLineCap0  = [];
+
+    this._stackWidthLine  = new Value1Stack();
+    this._bMutVertexLine  = new Float32ArrayMutable(2 * 100,true);
+    this._bMutColorLine   = new Float32ArrayMutable(4 * 100,true);
+    this._bMutIndexLine   = new Float32ArrayMutable((100 - 2) * 3,true);
 
 
 
@@ -345,8 +358,8 @@ Context.prototype._setSize = function(width, height){
     var i_255 = 1.0 / 255.0;
 
     gl.clearColor(colorBG[0] * i_255,
-        colorBG[1] * i_255,
-        colorBG[2] * i_255,1.0);
+                  colorBG[1] * i_255,
+                  colorBG[2] * i_255,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 };
 
@@ -415,7 +428,7 @@ Context.prototype._resetDrawProperties = function(){
     this.setDetailCurve(Default.SPLINE_DETAIL);
 
     // polyline
-    this._stackWidthPolyline.push(EMPTY1);
+    this._stackWidthLine.push(EMPTY1);
     this.setLineWidth(Default.LINE_WIDTH);
 
 
@@ -474,6 +487,14 @@ Context.prototype.setModeRect = function(mode){
 Context.prototype.getModeRect = function(){
     return this._modeRect;
 };
+
+Context.prototype.setModeLineCap = function(mode){
+    this._modePolylineCap = mode;
+};
+
+Context.prototype.getModeLineCap = function(){
+    return this._modePolylineCap;
+}
 
 Context.prototype.setTextureWrap = function(mode){
     this._modeTexture = mode;
@@ -551,13 +572,13 @@ Context.prototype.getDetailCurve  = function(){
 };
 
 Context.prototype.setLineWidth = function(a){
-    var stackWidthPolyline = this._stackWidthPolyline;
+    var stackWidthPolyline = this._stackWidthLine;
     if(stackWidthPolyline.peek() == a)return;
     stackWidthPolyline.push(a < 0 ? 0 : a);
 };
 
 Context.prototype.getLineWidth = function(){
-    return this._stackWidthPolyline.peek();
+    return this._stackWidthLine.peek();
 };
 
 Context.prototype.enableBlend  = function(){
@@ -1768,130 +1789,148 @@ Context.prototype.pointSet = function(vertexArrOrFloat32Arr){
     this._stackDrawFunc.push(this.pointSet);
 };
 
-Context.prototype._polyline = function(joints,length,loop){
-    var stackWidthPolyline = this._stackWidthPolyline,
-        widthPolyline      = stackWidthPolyline.peek();
-    if(!this._stroke || widthPolyline <= 0.0)return;
 
-    var widthPolyLineDiffers = !stackWidthPolyline.isEqual();
+Context.prototype._polyline = function(points,pointsLength,loop){
+    var stackWidthLine = this._stackWidthLine,
+        lineWidth      = stackWidthLine.peek();
+    if(!this._stroke || lineWidth <= 0.0)return;
 
-    var color    = this._bColorStroke,
-        colorLen = color.length;
+    var widthPolyLineDiffers = !stackWidthLine.isEqual();
 
-    if(colorLen!= 4 && colorLen!=8){
-        throw ("Color array length not valid.");
+    var bColorStroke    = this._bColorStroke,
+        bColorStrokeLen = bColorStroke.length;
+
+    if(bColorStrokeLen != 4 &&
+       bColorStrokeLen != 8 &&
+       bColorStrokeLen != pointsLength * 2){
+        throw Warning.POLYLINE_INVALID_COLOR_RANGE;
     }
 
-    loop = Boolean(loop);
+    loop = Utils.isUndefined(loop) ? false : loop;
 
 
 
 
 
-    var pvcol = color.length != 4;
-    var jointSize      = 2,
-        jointLen       = (length || joints.length) + (loop ? jointSize : 0),
-        jointCapResMax = Common.LINE_ROUND_CAP_DETAIL_MAX,
-        jointCapResMin = Common.LINE_ROUND_CAP_DETAIL_MIN,
-        jointCapRes    = (widthPolyline <= 2.0 ) ? 0 : Math.round(widthPolyline)*4 ,
-        jointRad       = widthPolyline * 0.5,
-        jointNum       = jointLen  * 0.5,
-        jointNum_1     = jointNum - 1,
-        jointNum_2     = jointNum - 2;
+    var lineWidth_2 = lineWidth * 0.5;
 
-    var d = Math.max(jointCapResMin,Math.min(jointCapRes,jointCapResMax));
+    var pointSize   = 2,
+        pointLen    = (pointsLength || points.length) + (loop ? pointSize : 0),
+        pointNum    = pointLen  * 0.5,
+        pointNum_1  = pointNum - 1,
+        pointNum_2  = pointNum - 2;
 
-    var vbLen = 8,
-        cbLen = vbLen * 2,
-        ibLen = (vbLen - 2) * 3;
+    var capDetail = Math.max(Common.LINE_ROUND_CAP_DETAIL_MIN,
+                             Math.min((lineWidth <= 2.0 ) ? 0 : Math.round(lineWidth)*4,
+                                       Common.LINE_ROUND_CAP_DETAIL_MAX));
 
-    var verticesBLen = vbLen * jointNum_1,
-        colorsBLen   = cbLen * jointNum_1,
-        indicesBLen  = ibLen * jointNum_1;
 
-    var vjLen = d * 2,
-        cjLen = d * 4,
-        ijLen = (d-2) * 3;
 
-    var verticesJLen = vjLen * jointNum,
-        colorsJLen   = cjLen * jointNum,
-        indicesJLen  = ijLen * jointNum;
+    var edgeVertexLen = 8,
+        edgeColorLen  = 16,
+        edgeIndexLen  = 18;
 
-    var vtLen = vbLen + vjLen,
-        ctLen = cbLen + cjLen,
-        itLen = ibLen + ijLen;
+    var edgeVertexLenTotal = edgeVertexLen * pointNum_1,
+        edgeColorLenTotal  = edgeColorLen  * pointNum_1,
+        edgeIndexLenTotal  = edgeIndexLen  * pointNum_1;
 
-    var vertices = new Float32Array(verticesBLen + verticesJLen),
-        colors   = new Float32Array(colorsBLen   + colorsJLen),
-        indices  = new Uint16Array( indicesBLen  + indicesJLen);
+    var capVertexLen = capDetail * 2,
+        capColorLen  = capDetail * 4,
+        capIndexLen  = capDetail == 0 ? 0 : (capDetail-2) * 3;
+
+    var capVertexLenTotal = capVertexLen * pointNum,
+        capColorLenTotal  = capColorLen * pointNum,
+        capIndexLenTotal  = capIndexLen * pointNum;
+
+    var edgeCapVertexLen = edgeVertexLen + capVertexLen,
+        edgeCapColorLen  = edgeColorLen + capColorLen,
+        edgeCapIndexLen  = edgeIndexLen + capIndexLen;
+
+    var bVertex  = new Float32Array(edgeVertexLenTotal + capVertexLenTotal),
+        bColor   = new Float32Array(edgeColorLenTotal  + capColorLenTotal),
+        bIndex   = new Uint16Array( edgeIndexLenTotal  + capIndexLenTotal);
+
+
+    if(!stackWidthLine.isEqual()){
+        GeomUtil.genVerticesCircle(capDetail, this._bVertexLineCap0);
+        VertexUtil.scale(this._bVertexLineCap0,lineWidth_2,lineWidth_2,this._bVertexLineCap0S);
+        ModelUtil.genFaceIndicesFan(this._bVertexLineCap0.length,this._bIndexLineCap0);
+    }
+
+    var bVertexCapS = this._bVertexLineCap0S,
+        bVertexCapT = this._bVertexLineCap0T,
+        bIndexCap   = this._bIndexLineCap0;
+
 
     var i, j, k;
 
-    var vertexIndex,
+
+    var i2,
         faceIndex;
 
-    var offsetV,
-        offsetI;
+    var offsetVertex,
+        offsetIndex;
 
-    var theta = 2 * Math.PI / d,
+    var theta = 2 * Math.PI / capDetail,
         c     = Math.cos(theta),
         s     = Math.sin(theta),
         t;
+
+    var VertexTranslate = VertexUtil.translate;
 
     var x, y, cx, cy, nx, ny;
 
     var slopex,slopey,slopelen,temp;
 
-    i = 0;
+    i = -1;
+    while(++i < pointNum){
+        i2 = i * 2;
 
-    while(i < jointNum){
-        vertexIndex = i * 2;
+        x = points[i2    ];
+        y = points[i2 + 1];
 
-        x = joints[vertexIndex];
-        y = joints[vertexIndex+1];
-
-        if(loop && (i == jointNum_1)){
-            x = joints[0];
-            y = joints[1];
+        if(loop && (i == pointNum_1)){
+            x = points[0];
+            y = points[1];
         }
 
-        cx = jointRad;
-        cy = 0;
+        // Set cap
+        VertexTranslate(bVertexCapS,x,y,bVertexCapT);
 
-        offsetV = j = vtLen * i;
+        offsetVertex = j = edgeCapVertexLen * i;
 
-        while(j < offsetV + vjLen){
-            vertices[j  ] = cx + x;
-            vertices[j+1] = cy + y;
-
-            t  = cx;
-            cx = c * cx - s * cy;
-            cy = s * t  + c * cy;
+        k = 0;
+        while(j < offsetVertex + capVertexLen){
+            bVertex[j  ] = bVertexCapT[k  ];
+            bVertex[j+1] = bVertexCapT[k+1];
 
             j+=2;
+            k+=2;
         }
 
-        offsetI = j = itLen * i;
-        faceIndex =  offsetV / jointSize;
+        offsetIndex = j = edgeCapIndexLen * i;
+        faceIndex =  offsetVertex / pointSize;
 
         k = 1;
 
-        while(j < offsetI + ijLen){
-            indices[j ]  = faceIndex;
-            indices[j+1] = faceIndex + k;
-            indices[j+2] = faceIndex + k + 1;
+        while(j < offsetIndex + capIndexLen){
+            bIndex[j    ] = faceIndex;
+            bIndex[j + 1] = faceIndex + k;
+            bIndex[j + 2] = faceIndex + k + 1;
 
             j+=3;
             k++;
         }
 
-        if(i < jointNum - 1){
-            nx = joints[vertexIndex+2];
-            ny = joints[vertexIndex+3];
+        // Set edge
 
-            if(loop && (i == jointNum_2)){
-                nx = joints[0];
-                ny = joints[1];
+        if(i < pointNum_1){
+            nx = points[i2 + 2];
+            ny = points[i2 + 3];
+
+            if(loop && (i == pointNum_2)){
+                nx = points[0];
+                ny = points[1];
             }
 
             slopex = nx - x;
@@ -1906,69 +1945,69 @@ Context.prototype._polyline = function(joints,length,loop){
             slopex = slopey;
             slopey = -temp;
 
-            temp = jointRad * slopex;
+            temp = lineWidth_2 * slopex;
 
-            offsetV = j = vtLen * i + vjLen;
+            offsetVertex = j = edgeCapVertexLen * i + capVertexLen;
 
-            vertices[j  ] = x  + temp;
-            vertices[j+2] = x  - temp;
-            vertices[j+4] = nx + temp;
-            vertices[j+6] = nx - temp;
+            bVertex[j  ] = x  + temp;
+            bVertex[j+2] = x  - temp;
+            bVertex[j+4] = nx + temp;
+            bVertex[j+6] = nx - temp;
 
-            temp = jointRad * slopey;
+            temp = lineWidth_2 * slopey;
 
-            vertices[j+1] = y  + temp;
-            vertices[j+3] = y  - temp;
-            vertices[j+5] = ny + temp;
-            vertices[j+7] = ny - temp;
+            bVertex[j+1] = y  + temp;
+            bVertex[j+3] = y  - temp;
+            bVertex[j+5] = ny + temp;
+            bVertex[j+7] = ny - temp;
 
-            faceIndex =  offsetV / jointSize;
-            j = offsetI + ijLen;
+            faceIndex =  offsetVertex / pointSize;
+            j = offsetIndex + capIndexLen;
 
-            indices[j  ] = faceIndex;
-            indices[j+1] = indices[j+3] = faceIndex + 1;
-            indices[j+2] = indices[j+4] = faceIndex + 2;
-            indices[j+5] = faceIndex + 3;
+            bIndex[j  ] = faceIndex;
+            bIndex[j+1] = bIndex[j+3] = faceIndex + 1;
+            bIndex[j+2] = bIndex[j+4] = faceIndex + 2;
+            bIndex[j+5] = faceIndex + 3;
         }
 
-        i++;
+
     }
 
-    if(pvcol){
-        var colIArr = Color.colorvLerped(color,new Array(jointNum*4));
-        var colorsTLen = colorsJLen + colorsJLen;
+    if( bColorStroke.length != 4){
+        var colIArr = Color.colorvLerped(bColorStroke,new Array(pointNum*4));
+        var colorsTLen = capColorLenTotal + capColorLenTotal;
 
         i = 0;
 
         while(i <  colorsTLen)
         {
             j = i;
-            k = i/ctLen * 4;
+            k = i/edgeCapColorLen * 4;
 
-            while(j < i + cjLen)
+            while(j < i + capColorLen)
             {
-                colors[j  ] = colIArr[k  ];
-                colors[j+1] = colIArr[k+1];
-                colors[j+2] = colIArr[k+2];
-                colors[j+3] = colIArr[k+3];
+                bColor[j  ] = colIArr[k  ];
+                bColor[j+1] = colIArr[k+1];
+                bColor[j+2] = colIArr[k+2];
+                bColor[j+3] = colIArr[k+3];
                 j+=4;
             }
 
-            colors[j   ] = colors[j+4 ] = colIArr[k  ];
-            colors[j+1 ] = colors[j+5 ] = colIArr[k+1];
-            colors[j+2 ] = colors[j+6 ] = colIArr[k+2];
-            colors[j+3 ] = colors[j+7 ] = colIArr[k+3];
+            bColor[j   ] = bColor[j+4 ] = colIArr[k  ];
+            bColor[j+1 ] = bColor[j+5 ] = colIArr[k+1];
+            bColor[j+2 ] = bColor[j+6 ] = colIArr[k+2];
+            bColor[j+3 ] = bColor[j+7 ] = colIArr[k+3];
 
-            colors[j+8 ] = colors[j+12] = colIArr[k+4];
-            colors[j+9 ] = colors[j+13] = colIArr[k+5];
-            colors[j+10] = colors[j+14] = colIArr[k+6];
-            colors[j+11] = colors[j+15] = colIArr[k+7];
+            bColor[j+8 ] = bColor[j+12] = colIArr[k+4];
+            bColor[j+9 ] = bColor[j+13] = colIArr[k+5];
+            bColor[j+10] = bColor[j+14] = colIArr[k+6];
+            bColor[j+11] = bColor[j+15] = colIArr[k+7];
 
-            i+=ctLen;
+            i+=edgeCapColorLen;
         }
     }
     else{
-        this.bufferColors(this._bColorStroke,colors);
+        this.bufferColors(bColorStroke,bColor);
     }
 
     this.setMatrixUniform();
@@ -1978,13 +2017,13 @@ Context.prototype._polyline = function(joints,length,loop){
         glDynamicDraw = gl.DYNAMIC_DRAW,
         glFloat       = gl.FLOAT;
 
-    var vblen = vertices.byteLength,
-        cblen = colors.byteLength,
+    var vblen = bVertex.byteLength,
+        cblen = bColor.byteLength,
         tlen  = vblen + cblen;
 
     if(this._batchActive)
     {
-        this._batchPush(vertices,indices,colors,null);
+        this._batchPush(bVertex,bIndex,bColor,null);
     }
     else
     {
@@ -1996,16 +2035,17 @@ Context.prototype._polyline = function(joints,length,loop){
         }
 
         gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
-        gl.bufferSubData(glArrayBuffer,0,    vertices);
-        gl.bufferSubData(glArrayBuffer,vblen,colors);
+        gl.bufferSubData(glArrayBuffer,0,    bVertex);
+        gl.bufferSubData(glArrayBuffer,vblen,bColor);
         gl.vertexAttribPointer(0, 2, glFloat, false, 0, 0);
         gl.vertexAttribPointer(1, 4, glFloat, false, 0, vblen);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,glDynamicDraw);
-        gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_SHORT,0);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,bIndex,glDynamicDraw);
+        gl.drawElements(gl.TRIANGLES,bIndex.length,gl.UNSIGNED_SHORT,0);
     }
 
-    stackWidthPolyline.push(widthPolyline);
+    stackWidthLine.push(lineWidth);
 };
+
 
 /*---------------------------------------------------------------------------------------------------------*/
 // sets
@@ -2847,6 +2887,9 @@ Context.BOTTOM = "bottom";
 Context.THIN   = "thin";
 Context.REGULAR= "normal";
 Context.BOLD   = "bold";
+
+Context.CAP_NONE = 5;
+Context.CAP_ROUND = 6;
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Exports

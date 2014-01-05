@@ -5,6 +5,8 @@ var Warning = {
     WEBGL_CONTEXT_LOST: "WebGL context lost.",
     WEBGL_CONTEXT_RESTORED: "WebGL context restored.",
 
+    POLYLINE_INVALID_COLOR_RANGE: "Polyline invalid color range.",
+
     TEX_NP2_MIPMAP : "Texture size is non-power-of-2. Can't generate mipmap.",
     TEX_NP2_WRAP_MODE_INIT: "Size is non-power-of-2. Using wrapMode CLAMP_TO_EDGE.",
     TEX_NP2_WRAP_MODE_RESIZE: "'Texture is non-power-of-2. WrapMode REPEAT is not valid.",

@@ -15,6 +15,7 @@ App.prototype = Object.create(CanvasGL.prototype);
 
 App.prototype.setup = function(){
     // Init stuff goes here
+    this.noLoop();
 };
 
 App.prototype.draw = function(){
@@ -34,7 +35,8 @@ App.prototype.draw = function(){
 
 
     c.stroke1f(1);
-    c.setLineWidth(10);
+    c.setLineWidth(50);
+
     c.line([-100,-100,0,0,-100,100,0,200]);
 };
 

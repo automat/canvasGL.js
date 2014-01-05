@@ -1,21 +1,21 @@
 var ModelUtil = {};
 
-ModelUtil.genFaceIndicesFan = function(length){
-    var a  = new Array((length / 2 - 2) * 3),
-        al = a.length;
+ModelUtil.genFaceIndicesFan = function(length,out){
+    out = out || [];
+    var len = out.length = (length / 2 - 2) * 3;
 
     var i,j;
     i = 0;
-    while(i < al){
+    while(i < len){
         j = i / 3;
 
-        a[i]   = 0;
-        a[i+1] = j+1;
-        a[i+2] = j+2;
+        out[i]   = 0;
+        out[i+1] = j+1;
+        out[i+2] = j+2;
 
         i+=3;
     }
-    return a;
+    return out;
 };
 
 ModelUtil.genFaceIndicesLinearCW = function(length){

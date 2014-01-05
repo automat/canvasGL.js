@@ -1,8 +1,9 @@
-function Float32ArrayMutable(reserveSize,autoresize){
-    this._size   = reserveSize;
-    this._resize = typeof autoresize === 'undefined' ? false : autoresize;
-    this._index  = 0;
-    this.array   = new Float32Array(this._size);
+function Float32ArrayMutable(reserveSize,autoresize,autoresizeLimit){
+    this._size        = reserveSize;
+    this._resize      = typeof autoresize === 'undefined' ? false : autoresize;
+    this._resizeLimit = autoresizeLimit;
+    this._index       = 0;
+    this.array        = new Float32Array(this._size);
 }
 
 Float32ArrayMutable.__RESIZE_F = 1.5;
