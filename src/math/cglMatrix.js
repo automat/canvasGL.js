@@ -97,6 +97,23 @@ Mat33.applyVecfv = function(vArr,m,outArr){
     }
 };
 
+Mat33.toArray = function(m,out){
+    out = out || [];
+    out.length = 9;
+
+    out[0] = m[0];
+    out[1] = m[1];
+    out[2] = m[2];
+    out[3] = m[3];
+    out[4] = m[4];
+    out[5] = m[5];
+    out[6] = m[6];
+    out[7] = m[7];
+    out[8] = m[8];
+
+    return out;
+};
+
 module.exports = Mat33;
 
 

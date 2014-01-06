@@ -15,7 +15,7 @@ App.prototype = Object.create(CanvasGL.prototype);
 
 App.prototype.setup = function(){
     // Init stuff goes here
-    this.noLoop();
+    //this.noLoop();
 };
 
 App.prototype.draw = function(){
@@ -33,7 +33,20 @@ App.prototype.draw = function(){
 
     c.setModeEllipse(c.CENTER);
 
+    /*
+    c.fill3f(1,1,1);
+    var i = -1;
+    while(++i < 10){
+        c.ellipse((-1 + Math.random() * 2) * width,
+                  (-1 + Math.random() * 2) * width,
+                   2,2);
+    }
+    */
 
+    c.fill1f(1);
+    c.ellipse(0,0,100,100);
+
+    /*
     c.stroke1f(1);
     c.setLineWidth(50);
 
@@ -55,6 +68,7 @@ App.prototype.draw = function(){
         c.line(arr);
 
     }
+    */
 };
 
 

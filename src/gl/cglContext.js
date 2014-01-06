@@ -180,6 +180,8 @@ function Context(element,canvas3d,canvas2d){
     this._bMutColorRectSet    = new Float32ArrayMutable(4 * 4 * SET_ALLOCATE_MIN_SIZE,true);
     this._bMutTexCoordRectSet = new Float32ArrayMutable(4 * 2 * SET_ALLOCATE_MIN_SIZE,true);
 
+    //this._propertyStack
+
     /*------------------------------------------------------------------------------------------------------------*/
 
     // circle set
@@ -344,6 +346,18 @@ function Context(element,canvas3d,canvas2d){
 
     this._batchTextureActive = false;
 
+
+    this._stackEllipseSize   = 0;
+    this._stackRectSize      = 0;
+    this._stackRoundRectSize = 0;
+    this._stackArcSize       = 0;
+    this._stackCircleSize    = 0;
+    this._stackQuadSize      = 0;
+    this._stackPointSize     = 0;
+    this._stackLineSize      = 0;
+    this._stackCurveSize     = 0;
+    this._stackBezierSize    = 0;
+
     this._stackDrawFunc = new Value1Stack();
 
     /*------------------------------------------------------------------------------------------------------------*/
@@ -459,6 +473,7 @@ Context.prototype._resetDrawProperties = function(){
 
     this.setLineWidth(Default.LINE_WIDTH);
 
+    this._resetDrawFuncStacks();
 
 
     this.resetBlend();
@@ -466,6 +481,19 @@ Context.prototype._resetDrawProperties = function(){
     this.resetUVOffset();
     this.resetUVQuad();
     this.resetUVTriangle();
+};
+
+Context.prototype._resetDrawFuncStacks = function(){
+    this._stackEllipseSize   = 0;
+    this._stackRectSize      = 0;
+    this._stackRoundRectSize = 0;
+    this._stackArcSize       = 0;
+    this._stackCircleSize    = 0;
+    this._stackQuadSize      = 0;
+    this._stackPointSize     = 0;
+    this._stackLineSize      = 0;
+    this._stackCurveSize     = 0;
+    this._stackBezierSize    = 0;
 };
 
 
@@ -1387,6 +1415,7 @@ Context.prototype.circle = function(x,y,radius){
 
 
     stackDetail.push(stackDetail.peek());
+
     this._stackDrawFunc.push(this.ellipse);
 };
 
@@ -2439,6 +2468,15 @@ Context.prototype.drawElements = function(vertices,indices,colors,mode,length){
     }
 
     this._stackDrawFunc.push(this.drawElements);
+};
+
+/*---------------------------------------------------------------------------------------------------------*/
+// Draw Func stack
+/*---------------------------------------------------------------------------------------------------------*/
+
+Context.prototype._flushDrawCalls = function(){
+
+
 };
 
 
