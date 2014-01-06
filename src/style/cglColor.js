@@ -27,6 +27,9 @@ Color.colorvLerped = function(colors,arr){
     return arr;
 };
 
-
+Color.rgbToHex = function(r,g,b){
+    var h = (r << 16 | g << 8 | b).toString(16);
+    return "#"+new Array(7-h.length).join("0")+h;
+};
 
 module.exports = Color;

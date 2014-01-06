@@ -33,7 +33,6 @@ Utils.copyArray = function(arr){
     return out;
 };
 
-
 Utils.setArr = function(a,b){
     var i = -1,l = a.length;
     while(++i< l){
@@ -41,10 +40,21 @@ Utils.setArr = function(a,b){
     }
 };
 
-Utils.rgbToHex = function(r,g,b){
-    var h = (r << 16 | g << 8 | b).toString(16);
-    return "#"+new Array(7-h.length).join("0")+h;
+//check for content not object equality
+Utils.equalArrContent = function(a,b){
+    if(!a || !b || (!a && !b)){
+        return false;
+    } else if(a.length != b.length){
+        return false
+    } else {
+        var i = -1, l = a.length;
+        while(++i < l){
+            if(a[i] != b[i])return false;
+        }
+    }
+    return true;
 };
+
 
 module.exports = Utils;
 

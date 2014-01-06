@@ -22,7 +22,6 @@ var Warning   = require('../common/cglWarning'),
 var ModelUtil    = require('../geom/cglModelUtil'),
     VertexUtil   = require('../geom/cglVertexUtil'),
     GeomUtil     = require('../geom/cglGeomUtil'),
-    PolylineUtil = require('../geom/cglPolylineUtil'),
     BezierUtil   = require('../geom/cglBezierUtil');
 
 var Color  = require('../style/cglColor'),
@@ -171,23 +170,25 @@ function Context(element,canvas3d,canvas2d){
         bColorEllipseLen  = ELLIPSE_DETAIL_MAX * 4,
         bIndexEllipseLen  = (ELLIPSE_DETAIL_MAX - 2) * 3;
 
+    /*------------------------------------------------------------------------------------------------------------*/
+
     // rect set
-    this._bVertexRectSet       = new Float32Array(6 * 2);
-    this._bColorRectSet        = new Float32Array(4);
-    this._bTexCoordsRectSet    = new Float32Array([0,0,0,1,1,1,1,1,1,0,0,0]);
-    this._bMutVertexRectSet    = new Float32ArrayMutable(4 * 2 * SET_ALLOCATE_MIN_SIZE,true);
-    this._bMutColorRectSet     = new Float32ArrayMutable(4 * 4 * SET_ALLOCATE_MIN_SIZE,true);
+    this._bVertexRectSet      = new Float32Array(6 * 2);
+    this._bColorRectSet       = new Float32Array(4);
+    this._bTexCoordsRectSet   = new Float32Array([0,0,0,1,1,1,1,1,1,0,0,0]);
+    this._bMutVertexRectSet   = new Float32ArrayMutable(4 * 2 * SET_ALLOCATE_MIN_SIZE,true);
+    this._bMutColorRectSet    = new Float32ArrayMutable(4 * 4 * SET_ALLOCATE_MIN_SIZE,true);
     this._bMutTexCoordRectSet = new Float32ArrayMutable(4 * 2 * SET_ALLOCATE_MIN_SIZE,true);
 
-
+    /*------------------------------------------------------------------------------------------------------------*/
 
     // circle set
-    this._bVertexCircleSet     = new Float32Array(bVertexEllipseLen);
-    this._bVertexCircleSetS    = new Float32Array(bVertexEllipseLen); // circle set vertices from unit scaled
-    this._bVertexCircleSetT    = new Float32Array(bVertexEllipseLen); // circle set vertices from scaled translated
-    this._bColorCircleSet      = new Float32Array(4 * ELLIPSE_DETAIL_MAX);
-    this._bIndexCircleSet      = new Uint16Array( bIndexEllipseLen);
-    this._bTexCoordCircleSet   = new Float32Array(bVertexEllipseLen);
+    this._bVertexCircleSet   = new Float32Array(bVertexEllipseLen);
+    this._bVertexCircleSetS  = new Float32Array(bVertexEllipseLen); // circle set vertices from unit scaled
+    this._bVertexCircleSetT  = new Float32Array(bVertexEllipseLen); // circle set vertices from scaled translated
+    this._bColorCircleSet    = new Float32Array(4 * ELLIPSE_DETAIL_MAX);
+    this._bIndexCircleSet    = new Uint16Array( bIndexEllipseLen);
+    this._bTexCoordCircleSet = new Float32Array(bVertexEllipseLen);
 
     this._bMutVertexCircleSet   = new Float32ArrayMutable(bVertexEllipseLen * SET_ALLOCATE_MIN_SIZE,true);
     this._bMutColorCircleSet    = new Float32ArrayMutable(bColorEllipseLen  * SET_ALLOCATE_MIN_SIZE,true);
@@ -198,6 +199,7 @@ function Context(element,canvas3d,canvas2d){
     this._stackDetailCircleSet  = new Value1Stack();
     this._stackOriginCircleSet  = new Value2Stack();
 
+    /*------------------------------------------------------------------------------------------------------------*/
 
     // ellipse
     this._bVertexEllipse     = new Float32Array(bVertexEllipseLen); // ellipse vertices from unit
@@ -207,6 +209,8 @@ function Context(element,canvas3d,canvas2d){
     this._stackDetailEllipse = new Value1Stack();
     this._stackRadiusEllipse = new Value2Stack();
     this._stackOriginEllipse = new Value2Stack();
+
+    /*------------------------------------------------------------------------------------------------------------*/
 
     // circle
     this._bVertexCircle     = new Float32Array(bVertexEllipseLen);  // circle vertices from detail
@@ -218,7 +222,7 @@ function Context(element,canvas3d,canvas2d){
     this._stackRadiusCircle = new Value1Stack();
     this._stackOriginCircle = new Value2Stack();
 
-
+    /*------------------------------------------------------------------------------------------------------------*/
 
     // round rect
     var bVertexRoundRectLen = ELLIPSE_DETAIL_MAX * 2 + 8;
@@ -231,6 +235,8 @@ function Context(element,canvas3d,canvas2d){
     this._stackRadiusRRect  = new Value1Stack();
     this._stackOriginRRect  = new Value2Stack();
 
+    /*------------------------------------------------------------------------------------------------------------*/
+
     // arc
     var bVertexArcLen      = ELLIPSE_DETAIL_MAX * 2 * 2;
     this._bVertexArc       = new Float32Array(bVertexArcLen);
@@ -242,18 +248,23 @@ function Context(element,canvas3d,canvas2d){
     this._stackOriginArc   = new Value2Stack();
     this._bVertexArcStroke = new Float32Array(ELLIPSE_DETAIL_MAX * 2);
 
+    /*------------------------------------------------------------------------------------------------------------*/
 
     // bezier
     this._bVertexBezier     = new Float32Array(BEZIER_DETAIL_MAX  * 2);
     this._bPointsBezier     = new Array(2 * 4); // cache
     this._stackDetailBezier = new Value1Stack();
 
+    /*------------------------------------------------------------------------------------------------------------*/
+
     // curve
     this._stackDetailSpline = new Value1Stack();
 
+    /*------------------------------------------------------------------------------------------------------------*/
+
     // polyline
-    var lineCap0Length = 2 * Common.LINE_ROUND_CAP_DETAIL_MAX;
-    var capDetail = Common.LINE_ROUND_CAP_DETAIL_MAX;
+    var capDetail = Common.LINE_ROUND_CAP_DETAIL_MAX; //this is constant for now
+    var lineCap0Length = 2 * capDetail;
     this._bVertexLineCap0       = GeomUtil.genVerticesCircle(capDetail, new Float32Array(lineCap0Length));
     this._bVertexLineCap0S      = new Float32Array(lineCap0Length);
     this._bVertexLineCap0T      = new Float32Array(lineCap0Length);
@@ -1749,7 +1760,12 @@ Context.prototype.pointSet = function(vertexArrOrFloat32Arr){
 Context.prototype._polyline = function(points,pointsLength,loop){
     var stackWidthLine = this._stackWidthLine,
         lineWidth      = stackWidthLine.peek();
-    if(!this._stroke || lineWidth <= 0.0)return;
+
+    if(!this._stroke || lineWidth <= 0.0){
+        return;
+    }
+
+    var lineWidth_2 = lineWidth * 0.5;
 
     var stackColorStroke = this._stackColorStroke,
         colorStroke      = stackColorStroke.peek(),
@@ -1761,45 +1777,19 @@ Context.prototype._polyline = function(points,pointsLength,loop){
         throw Warning.POLYLINE_INVALID_COLOR_RANGE;
     }
 
-    pointsLength = ((Utils.isUndefined(pointsLength) || pointsLength == null) ? points.length : pointsLength) +  (loop ? 2 : 0);
+    loop         = Utils.isUndefined(loop) ? false : loop;
+    pointsLength = ((Utils.isUndefined(pointsLength) || pointsLength == null) ? points.length : pointsLength) + (loop ? 2 : 0);
 
     /*------------------------------------------------------------------------------------------------------------*/
 
-
     var stackPoints       = this._stackPointsLine,
         stackPointsLength = this._stackPointsLineLength;
-
-    loop = Utils.isUndefined(loop) ? false : loop;
-
-    var lineWidth_2 = lineWidth * 0.5;
-
-    var capDetail = Common.LINE_ROUND_CAP_DETAIL_MAX;
-
 
     if(!stackWidthLine.isEqual()){
         VertexUtil.scale(this._bVertexLineCap0,lineWidth_2,lineWidth_2,this._bVertexLineCap0S);
     }
 
-    var pointsLast  = stackPoints.peek(),
-        pointsEqual = true;
-
-    if(pointsLast){
-        if(points.length == pointsLast.length){
-            var pi = -1;
-            while(++pi < points.length){
-                if(points[pi] != pointsLast[pi]){
-                    pointsEqual = false;
-                    break;
-                }
-            }
-        } else {
-            pointsEqual = false;
-        }
-    } else {
-        pointsEqual = false;
-    }
-
-
+    var pointsEqual =  Utils.equalArrContent(points,stackPoints.peek());
 
     var bMutVertex = this._bMutVertexLine, //float32 vertices
         bMutColor  = this._bMutColorLine,  //float32 colors
@@ -1811,122 +1801,112 @@ Context.prototype._polyline = function(points,pointsLength,loop){
         bVertexCapT = this._bVertexLineCap0T,//float32 cap translateVertices
         bIndexCap   = this._bIndexLineCap0;  //uint16 cap indices
 
+    var capVertexLen = bVertexCap.length,
+        capColorLen  = bVertexCap.length * 2,
+        capIndexLen  = bIndexCap.length;
+
+    var bVertexEdge = this._bVertexLineEdge; //8 edge vertices
+
+    var edgeVertexLen = 8,
+        edgeColorLen  = 16,
+        edgeIndexLen  = 18;
 
     var pointSize  = 2,
         pointNum   = pointsLength * 0.5,
         pointNum_1 = pointNum - 1,
         pointNum_2 = pointNum - 2;
 
-    var edgeVertexLen = 8,
-        edgeColorLen = 16,
-        edgeIndexLen = 18;
-
-    var edgeVertexLenTotal = edgeVertexLen * pointNum_1,
-        edgeColorLenTotal = edgeColorLen * pointNum_1,
+    var edgeColorLenTotal = edgeColorLen * pointNum_1,
         edgeIndexLenTotal = edgeIndexLen * pointNum_1;
 
-    var capVertexLen = capDetail * 2,
-        capColorLen = capDetail * 4,
-        capIndexLen = capDetail == 0 ? 0 : (capDetail - 2) * 3;
-
-    var capVertexLenTotal = capVertexLen * pointNum,
-        capColorLenTotal = capColorLen * pointNum,
+    var capColorLenTotal = capColorLen * pointNum,
         capIndexLenTotal = capIndexLen * pointNum;
 
     var edgeCapVertexLen = edgeVertexLen + capVertexLen,
         edgeCapColorLen = edgeColorLen + capColorLen,
         edgeCapIndexLen = edgeIndexLen + capIndexLen;
 
-
-    var bVertexEdge = this._bVertexLineEdge;
-
-    bMutVertex.reset();
-    bMutColor.reset();
-
-
-    bMutColor.reserve(edgeColorLenTotal + capColorLenTotal);
-
-
-    var bColor = Utils.arrayResized(this._bColorLine,edgeColorLenTotal + capColorLenTotal),
-        bIndex = Utils.arrayResized(this._bIndexLine,edgeColorLenTotal + capColorLenTotal);
-
     var i, j, k, i2;
-
-    var faceIndex,
-        offsetVertex,
-        offsetIndex;
-
-    var x, y, nx, ny;
-    var slopex, slopey, slopelen, temp;
 
     /*------------------------------------------------------------------------------------------------------------*/
 
+    // Recalc cap and edge vertices if points or linewidth differ
+    if(!pointsEqual || !stackWidthLine.isEqual()){
+        bMutVertex.reset();
 
+        var faceIndex,
+            offsetVertex,
+            offsetIndex;
 
-    i = -1;
-    while (++i < pointNum){
-        i2 = i * 2;
+        var x, y, nx, ny;
+        var slopex, slopey, slopelen, temp;
 
-        x = points[i2    ];
-        y = points[i2 + 1];
+        i = -1;
+        while (++i < pointNum){
+            i2 = i * 2;
 
-        if (loop && (i == pointNum_1)){
-            x = points[0];
-            y = points[1];
-        }
+            x = points[i2    ];
+            y = points[i2 + 1];
 
-        // Set cap vertices
-        VertexUtil.translate(bVertexCap, x, y, bVertexCapT); //translate uni cap to pos
-        bMutVertex.set(bVertexCapT, bMutVertex.size(), capVertexLen); //send to float32
-
-
-        // Set edge vertices
-        if (i < pointNum_1){
-            nx = points[i2 + 2];
-            ny = points[i2 + 3];
-
-            if (loop && (i == pointNum_2)){
-                nx = points[0];
-                ny = points[1];
+            if (loop && (i == pointNum_1)){
+                x = points[0];
+                y = points[1];
             }
 
-            slopex = nx - x;
-            slopey = ny - y;
+            // Set cap vertices
+            VertexUtil.translate(bVertexCap, x, y, bVertexCapT); //translate uni cap to pos
+            bMutVertex.set(bVertexCapT, bMutVertex.size(), capVertexLen); //send to float32
 
-            slopelen = 1 / Math.sqrt(slopex * slopex + slopey * slopey);
 
-            slopex *= slopelen;
-            slopey *= slopelen;
+            // Set edge vertices
+            if (i < pointNum_1){
+                nx = points[i2 + 2];
+                ny = points[i2 + 3];
 
-            temp   = slopex;
-            slopex = slopey;
-            slopey = -temp;
+                if (loop && (i == pointNum_2)){
+                    nx = points[0];
+                    ny = points[1];
+                }
 
-            temp = lineWidth_2 * slopex;
+                slopex = nx - x;
+                slopey = ny - y;
 
-            offsetVertex = j = edgeCapVertexLen * i + capVertexLen;
+                slopelen = 1 / Math.sqrt(slopex * slopex + slopey * slopey);
 
-            bVertexEdge[0] = x  + temp;
-            bVertexEdge[2] = x  - temp;
-            bVertexEdge[4] = nx + temp;
-            bVertexEdge[6] = nx - temp;
+                slopex *= slopelen;
+                slopey *= slopelen;
 
-            temp = lineWidth_2 * slopey;
+                temp   = slopex;
+                slopex = slopey;
+                slopey = -temp;
 
-            bVertexEdge[1] = y  + temp;
-            bVertexEdge[3] = y  - temp;
-            bVertexEdge[5] = ny + temp;
-            bVertexEdge[7] = ny - temp;
+                temp = lineWidth_2 * slopex;
 
-            bMutVertex.set(bVertexEdge, bMutVertex.size()); //send to float32
+                offsetVertex = j = edgeCapVertexLen * i + capVertexLen;
+
+                bVertexEdge[0] = x  + temp;
+                bVertexEdge[2] = x  - temp;
+                bVertexEdge[4] = nx + temp;
+                bVertexEdge[6] = nx - temp;
+
+                temp = lineWidth_2 * slopey;
+
+                bVertexEdge[1] = y  + temp;
+                bVertexEdge[3] = y  - temp;
+                bVertexEdge[5] = ny + temp;
+                bVertexEdge[7] = ny - temp;
+
+                bMutVertex.set(bVertexEdge, bMutVertex.size()); //send to float32
+            }
         }
-
-        /*------------------------------------------------------------------------------------------------------------*/
     }
 
+    /*------------------------------------------------------------------------------------------------------------*/
 
-    // Just recalc face indices if lineWidth or pointsLength changed
-    if(!stackWidthLine.isEqual() || !stackPointsLength.isEqual()){
+    // Recalc face indices if pointsLength changed
+    if(!stackPointsLength.isEqual()){
+        var bIndex = Utils.arrayResized(this._bIndexLine,edgeIndexLenTotal + capIndexLenTotal);
+
         i = -1;
         while (++i < pointNum){
             i2 = i * 2;
@@ -1958,48 +1938,43 @@ Context.prototype._polyline = function(points,pointsLength,loop){
         bMutIndex.set(bIndex);
     }
 
-
-
-
-
-
-
     /*------------------------------------------------------------------------------------------------------------*/
 
+    var bColorLength = edgeColorLenTotal + capColorLenTotal;
+    var bColor       = Utils.arrayResized(this._bColorLine,bColorLength);
 
+    bMutColor.reset();
+    bMutColor.reserve(bColorLength);
 
     if( colorStrokeLen != 4){
         if(colorStrokeLen != pointsLength * 2){
-            var bColorIntrpl = this._bColorStrokeIntrpl;
-                bColorIntrpl.length = pointNum * 4;
-            var colIArr = Color.colorvLerped(colorStroke,bColorIntrpl);
-            var colorsTLen = capColorLenTotal + capColorLenTotal;
+            var bColorIntrpl = Color.colorvLerped(colorStroke,Utils.arrayResized(pointNum * 4, this._bColorStrokeIntrpl));
 
             i = 0;
 
-            while(i <  colorsTLen)
+            while(i < bColorLength)
             {
                 j = i;
                 k = i/edgeCapColorLen * 4;
 
                 while(j < i + capColorLen)
                 {
-                    bColor[j  ] = colIArr[k  ];
-                    bColor[j+1] = colIArr[k+1];
-                    bColor[j+2] = colIArr[k+2];
-                    bColor[j+3] = colIArr[k+3];
+                    bColor[j  ] = bColorIntrpl[k  ];
+                    bColor[j+1] = bColorIntrpl[k+1];
+                    bColor[j+2] = bColorIntrpl[k+2];
+                    bColor[j+3] = bColorIntrpl[k+3];
                     j+=4;
                 }
 
-                bColor[j   ] = bColor[j+4 ] = colIArr[k  ];
-                bColor[j+1 ] = bColor[j+5 ] = colIArr[k+1];
-                bColor[j+2 ] = bColor[j+6 ] = colIArr[k+2];
-                bColor[j+3 ] = bColor[j+7 ] = colIArr[k+3];
+                bColor[j   ] = bColor[j+4 ] = bColorIntrpl[k  ];
+                bColor[j+1 ] = bColor[j+5 ] = bColorIntrpl[k+1];
+                bColor[j+2 ] = bColor[j+6 ] = bColorIntrpl[k+2];
+                bColor[j+3 ] = bColor[j+7 ] = bColorIntrpl[k+3];
 
-                bColor[j+8 ] = bColor[j+12] = colIArr[k+4];
-                bColor[j+9 ] = bColor[j+13] = colIArr[k+5];
-                bColor[j+10] = bColor[j+14] = colIArr[k+6];
-                bColor[j+11] = bColor[j+15] = colIArr[k+7];
+                bColor[j+8 ] = bColor[j+12] = bColorIntrpl[k+4];
+                bColor[j+9 ] = bColor[j+13] = bColorIntrpl[k+5];
+                bColor[j+10] = bColor[j+14] = bColorIntrpl[k+6];
+                bColor[j+11] = bColor[j+15] = bColorIntrpl[k+7];
 
                 i+=edgeCapColorLen;
             }
@@ -2008,7 +1983,6 @@ Context.prototype._polyline = function(points,pointsLength,loop){
         }
 
         bMutColor.set(bColor,bMutColor.size());
-
     }
     else{
         this.bufferColors(colorStroke,bMutColor.array);
