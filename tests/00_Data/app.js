@@ -61,7 +61,6 @@ function testFloat32ArraySet(){
     var src = new Float32Array(srcBuf,0,10);
 
     f32Set(arr,src,-4);
-    console.log(arr);
 }
 
 
@@ -106,20 +105,23 @@ function testUint16ArrayMutable(){
     console.assert(arr.at(5) == 0, arr.at(5));
 }
 
-function testFloat32LargeSet(){
-    var arr = new Float32ArrayMutable(1,true);
-    var src = new Float32Array(Float32ArrayMutable.MAX - 2);
-    arr.set(src);
+function testFloat32ArrayMutableLimitSet(){
+    var arr = new Float32ArrayMutable(10,true);
+    var src = new Float32Array([0,1,2,3,4,5]);
+
+    arr.set(src,0,2);
+    console.assert(arr.size() == 2,arr.size());
+    arr.set(src,arr.size(),2);
+    console.log(arr.array);
 }
 
 
 function run(){
-    testFloat32ArraySet();
-
-    testFloat32ArrayMutable();
-    testUint16ArrayMutable();
-
-    //testFloat32LargeSet();
+    //testFloat32ArraySet();
+    //testFloat32ArrayMutable();
+    //testUint16ArrayMutable();
+    //testFloat32ArrayMutableLimitSet();
+    //testFloat32ArrayMutableUntypedSet();
 
 }
 

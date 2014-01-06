@@ -16,5 +16,7 @@ Value1Stack.prototype.isEqual = function(){
     return this._a == this._b;
 };
 
+Value1Stack.EMPTY = null;
+
 
 module.exports = Value1Stack;

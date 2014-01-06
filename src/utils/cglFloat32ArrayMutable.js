@@ -16,7 +16,7 @@ Float32ArrayMutable.prototype.set = function(array,offset,limit){
 
     var offsetSize = offset + limit;
 
-    if(this._resize && (offsetSize >= this._size)){
+    if(this._resize && (offset + array.length >= this._size)){
         this.resize(Math.floor(offsetSize * Float32ArrayMutable.__RESIZE_F));
     }
 
@@ -54,6 +54,10 @@ Float32ArrayMutable.prototype.push = function(){
 Float32ArrayMutable.prototype.pop = function(){
     if(this._index == 0)return null;
     return this.array[this.index--];
+};
+
+Float32ArrayMutable.prototype.reserve = function(size){
+    if(size > this._size)this.resize(size);
 };
 
 

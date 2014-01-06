@@ -20,6 +20,20 @@ Utils.copyFloat32Array = function(arr){
     return new Float32Array(arr);
 };
 
+Utils.arrayResized = function(arr,length){
+    arr.length = length;
+    return arr;
+};
+
+Utils.copyArray = function(arr){
+    var i = -1, l = arr.length, out = new Array(l);
+    while(++i < l){
+        out[i] = arr[i];
+    }
+    return out;
+};
+
+
 Utils.setArr = function(a,b){
     var i = -1,l = a.length;
     while(++i< l){

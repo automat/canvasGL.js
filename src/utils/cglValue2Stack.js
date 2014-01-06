@@ -39,5 +39,7 @@ Value2Stack.prototype.isEqual   = function(){
     return a[0] == b[0] && a[1] == b[1];
 };
 
+Value2Stack.EMPTY = [null,null];
+
 
 module.exports = Value2Stack;

@@ -38,6 +38,23 @@ App.prototype.draw = function(){
     c.setLineWidth(50);
 
     c.line([-100,-100,0,0,-100,100,0,200]);
+
+    c.setLineWidth(10);
+    c.line([200,-100,180,0,180,100,160,120,140,80]);
+    var arr = new Array(8);
+    var i = -1;
+    while(++i < 10){
+        arr[0] = (-1 + Math.random() * 2) * width;
+        arr[2] = (-1 + Math.random() * 2) * width;
+        arr[4] = (-1 + Math.random() * 2) * width;
+        arr[6] = (-1 + Math.random() * 2) * width;
+        arr[1] = (-1 + Math.random() * 2) * height;
+        arr[3] = (-1 + Math.random() * 2) * height;
+        arr[5] = (-1 + Math.random() * 2) * height;
+        arr[7] = (-1 + Math.random() * 2) * height;
+        c.line(arr);
+
+    }
 };
 
 

@@ -15,8 +15,8 @@ Uint16ArrayMutable.prototype.set = function(array,offset,limit){
 
     var offsetSize = offset + limit;
 
-    if(this._resize && (offsetSize >= this._size)){
-        this.resize(Math.floor(offsetSize * Float32ArrayMutable.__RESIZE_F));
+    if(this._resize && (offset + array.length >= this._size)){
+        this.resize(Math.floor(offsetSize * Uint16ArrayMutable.__RESIZE_F));
     }
 
     this.array.set(array,offset);
@@ -41,7 +41,7 @@ Uint16ArrayMutable.prototype.push = function(){
     var array = this.array;
 
     if(this._resize && (this._index + argsLen + 1) >= size){
-        this.resize(Math.floor((this._index + argsLen + 1) * Float32ArrayMutable.__RESIZE_F));
+        this.resize(Math.floor((this._index + argsLen + 1) * Uint16ArrayMutable.__RESIZE_F));
     }
 
     var i = -1;
@@ -54,6 +54,11 @@ Uint16ArrayMutable.prototype.pop = function(){
     if(this._index == 0)return null;
     return this.array[this.index--];
 };
+
+Uint16ArrayMutable.prototype.reserve = function(size){
+    if(size > this._size)this.resize(size);
+};
+
 
 Uint16ArrayMutable.prototype.resize = function(size){
     this._size = size;

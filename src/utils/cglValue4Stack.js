@@ -48,5 +48,7 @@ Value4Stack.prototype.isEqual = function(){
            a[3] == b[3];
 };
 
+Value4Stack.EMPTY = [null,null,null,null];
+
 
 module.exports = Value4Stack;

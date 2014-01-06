@@ -5,7 +5,7 @@ var _Math               = require('../math/cglMath'),
     Value1Stack         = require('../utils/cglValue1Stack'),
     Value2Stack         = require('../utils/cglValue2Stack'),
     Value4Stack         = require('../utils/cglValue4Stack'),
-    ValueStateStack     = require('../utils/cglValueStateStack'),
+    ValueArrStack       = require('../utils/cglValueArrStack'),
     Mat33               = require('../math/cglMatrix');
 
 var Program     = require('./cglProgram'),
@@ -35,15 +35,15 @@ function Context(element,canvas3d,canvas2d){
     this._canvas2d = canvas2d;
 
     var options = { alpha:false,
-                    depth:false,
-                    stencil:false,
-                    antialias: false,
-                    premultipliedAlpha:false,
-                    preserveDrawingBuffer:true };
+        depth:false,
+        stencil:false,
+        antialias: false,
+        premultipliedAlpha:false,
+        preserveDrawingBuffer:true };
 
     var gl = this._context3d = canvas3d.getContext('webkit-3d',options) ||
-                               canvas3d.getContext('webgl',options) ||
-                               canvas3d.getContext('experimental-webgl',options);
+        canvas3d.getContext('webgl',options) ||
+        canvas3d.getContext('experimental-webgl',options);
 
 
     if(!gl){
@@ -68,9 +68,9 @@ function Context(element,canvas3d,canvas2d){
 
     // Setup 2d / post shader
     var attributesToBind = {};
-        attributesToBind[ShaderDict.aVertPosition] = 0;
-        attributesToBind[ShaderDict.aVertColor]    = 1;
-        attributesToBind[ShaderDict.aTexCoord]     = 2;
+    attributesToBind[ShaderDict.aVertPosition] = 0;
+    attributesToBind[ShaderDict.aVertColor]    = 1;
+    attributesToBind[ShaderDict.aTexCoord]     = 2;
 
     this._program      = new Program(this, Shader.vert,     Shader.frag, attributesToBind);
     this._programPost  = new Program(this, Shader.vertPost, Shader.fragPost);
@@ -242,6 +242,7 @@ function Context(element,canvas3d,canvas2d){
     this._stackOriginArc   = new Value2Stack();
     this._bVertexArcStroke = new Float32Array(ELLIPSE_DETAIL_MAX * 2);
 
+
     // bezier
     this._bVertexBezier     = new Float32Array(BEZIER_DETAIL_MAX  * 2);
     this._bPointsBezier     = new Array(2 * 4); // cache
@@ -252,18 +253,24 @@ function Context(element,canvas3d,canvas2d){
 
     // polyline
     var lineCap0Length = 2 * Common.LINE_ROUND_CAP_DETAIL_MAX;
-    this._bVertexLineCap0  = new Float32Array(lineCap0Length);
-    this._bVertexLineCap0S = new Float32Array(lineCap0Length);
-    this._bVertexLineCap0T = new Float32Array(lineCap0Length);
+    var capDetail = Common.LINE_ROUND_CAP_DETAIL_MAX;
+    this._bVertexLineCap0       = GeomUtil.genVerticesCircle(capDetail, new Float32Array(lineCap0Length));
+    this._bVertexLineCap0S      = new Float32Array(lineCap0Length);
+    this._bVertexLineCap0T      = new Float32Array(lineCap0Length);
+    this._bVertexLineEdge       = new Float32Array(8);
+    this._stackPointsLine       = new ValueArrStack();
+    this._stackPointsLineLength = new Value1Stack();
+    this._bIndexLine            = [];
+    this._bColorLine            = [];
 
 
     this._bLineCap0Res    = 0;
-    this._bIndexLineCap0  = [];
+    this._bIndexLineCap0  = ModelUtil.genFaceIndicesFan(capDetail * 2,[]);
 
     this._stackWidthLine  = new Value1Stack();
     this._bMutVertexLine  = new Float32ArrayMutable(2 * 100,true);
     this._bMutColorLine   = new Float32ArrayMutable(4 * 100,true);
-    this._bMutIndexLine   = new Float32ArrayMutable((100 - 2) * 3,true);
+    this._bMutIndexLine   = new Uint16ArrayMutable((100 - 2) * 3,true);
 
 
 
@@ -301,9 +308,12 @@ function Context(element,canvas3d,canvas2d){
     this._bColorFill4 = [1.0,1.0,1.0,1.0];
     this._bColorFill  = this._bColorFill4;
 
-    this._stroke        = true;
-    this._bColorStroke4 = [1.0,1.0,1.0,1.0];
-    this._bColorStroke  = this._bColorStroke4;
+    this._stroke           = true;
+    this._bColorStroke4    = [1.0,1.0,1.0,1.0];
+    this._bColorStroke     = this._bColorStroke4;
+    this._stackColorStroke = new ValueArrStack();
+    this._bColorStroke4Temp= new Array(4);
+    this._bColorStrokeIntrpl = [];
 
     this._tempCurveVertices = [];
 
@@ -358,8 +368,8 @@ Context.prototype._setSize = function(width, height){
     var i_255 = 1.0 / 255.0;
 
     gl.clearColor(colorBG[0] * i_255,
-                  colorBG[1] * i_255,
-                  colorBG[2] * i_255,1.0);
+        colorBG[1] * i_255,
+        colorBG[2] * i_255,1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 };
 
@@ -384,12 +394,16 @@ Context.prototype._resetDrawProperties = function(){
     this.setModeEllipse(Context.CENTER);
     this.setModeCircle(Context.CENTER);
 
-    var EMPTY1 = ValueStateStack.EMPTY1,
-        EMPTY2 = ValueStateStack.EMPTY2;
+    var EMPTY1   = Value1Stack.EMPTY,
+        EMPTY2   = Value2Stack.EMPTY,
+        EMPTYARR = ValueArrStack.EMPTY;
+
+    //color stroke
+    this._stackColorStroke.push(EMPTYARR);
 
     //progtram
     //this._stackProgram.pushEmpty();
-    this._stackDrawFunc.push(ValueStateStack.EMPTY1);
+    this._stackDrawFunc.push(Value1Stack.EMPTY);
 
     // ellipse
     this._stackDetailEllipse.push(EMPTY1);
@@ -429,6 +443,9 @@ Context.prototype._resetDrawProperties = function(){
 
     // polyline
     this._stackWidthLine.push(EMPTY1);
+    this._stackPointsLine.push(EMPTYARR);
+    this._stackPointsLineLength.push(EMPTY1);
+
     this.setLineWidth(Default.LINE_WIDTH);
 
 
@@ -610,29 +627,6 @@ Context.prototype.fill = function(){
     this._fill = true;
 };
 
-Context.prototype.fill1i = function(k){
-    var f = this._bColorFill = this._bColorFill4;
-    f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
-    this._fill = true;
-};
-
-Context.prototype.fill2i = function(k,a){
-    var f = this._bColorFill = this._bColorFill4;
-    f[0] = f[1] = f[2] = k/255;f[3] = a;
-    this._fill = true;
-};
-
-Context.prototype.fill3i = function(r,g,b){
-    var f = this._bColorFill = this._bColorFill4;
-    f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
-    this._fill = true;
-};
-
-Context.prototype.fill4i = function(r,g,b,a){
-    var f = this._bColorFill = this._bColorFill4;
-    f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = a;
-    this._fill = true;
-};
 
 Context.prototype.fill1f = function(k){
     var f = this._bColorFill = this._bColorFill4;
@@ -684,91 +678,63 @@ Context.prototype.noFill = function(){
 };
 
 Context.prototype.stroke = function(){
-    var f = this._bColorStroke = this._bColorStroke4;
-    f[3] = 1.0;
-    var i_255 = 1.0 / 255.0;
-    switch (arguments.length){
-        case 0: f[0] = f[1] = f[2]  = 0.0; break;
-        case 1: f[0] = f[1] = f[2]  = arguments[0] * i_255; break;
-        case 2: f[0] = f[1] = f[2]  = arguments[0] * i_255; f[3] = arguments[1]; break;
-        case 3: f[0] = arguments[0] * i_255; f[1] = arguments[1] * i_255; f[2] = arguments[2] * i_255; break;
-        case 4: f[0] = arguments[0] * i_255; f[1] = arguments[1] * i_255; f[2] = arguments[2] * i_255; f[3] = arguments[3]; break;
+    switch(arguments.length){
+        case 0:
+            break;
+        case 1:
+            var arg0 = arguments[0];
+            this._stroke4f(arg0,arg0,arg0,1.0);
+            break;
+        case 2:
+            var arg0 = arguments[0];
+            this._stroke4f(arg0,arg0,arg0,arguments[1]);
+            break;
+        case 3:
+            this._stroke4f(arguments[0],arguments[1],arguments[2],1.0);
+            break;
+        case 4:
+            this._stroke4f(arguments[0],arguments[1],arguments[2],arguments[3]);
+            break;
     }
-
-    this._stroke = true;
-};
-
-Context.prototype.stroke1i = function(k){
-    var f = this._bColorStroke = this._bColorStroke4;
-    f[0] = f[1] = f[2] = k/255;f[3] = 1.0;
-    this._stroke = true;
-};
-
-Context.prototype.stroke2i = function(k,a){
-    var f = this._bColorStroke = this._bColorStroke4;
-    f[0] = f[1] = f[2] = k/255;f[3] = a;
-    this._stroke = true;
-};
-
-Context.prototype.stroke3i = function(r,g,b){
-    var f = this._bColorStroke = this._bColorStroke4;
-    f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = 1.0;
-    this._stroke = true;
-};
-
-Context.prototype.stroke4i = function(r,g,b,a){
-    var f = this._bColorStroke = this._bColorStroke4;
-    f[0] = r/255;f[1] = g/255; f[2] = b/255;f[3] = a;
-    this._stroke = true;
 };
 
 Context.prototype.stroke1f = function(k){
-    var f = this._bColorStroke = this._bColorStroke4;
-    f[0] = f[1] = f[2] = k;f[3] = 1.0;
-    this._stroke = true;
+    this._stroke4f(k,k,k,1.0);
 };
 
 Context.prototype.stroke2f = function(k,a){
-    var f = this._bColorStroke = this._bColorStroke4;
-    f[0] = f[1] = f[2] = k;f[3] = a;
-    this._stroke = true;
+    this._stroke4f(k,k,k,a);
 };
 
 Context.prototype.stroke3f = function(r,g,b){
-    var f = this._bColorStroke = this._bColorStroke4;
-    f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
-    this._stroke = true;
+    this._stroke4f(r,g,b,1.0);
 };
 
 Context.prototype.stroke4f = function(r,g,b,a){
-    var f = this._bColorStroke = this._bColorStroke4;
-    f[0] = r;f[1] = g; f[2] = b;f[3] = a;
-    this._stroke = true;
-};
-
-Context.prototype.strokev = function(a){
-    this._bColorStroke = a;
-    this._stroke = true;
-};
-
-Context.prototype.strokeiv = function(a){
-    var i_255 = 1.0 / 255.0;
-    var i = 0;
-    while(i < a.length){
-        a[i  ]*=i_255;
-        a[i+1]*=i_255;
-        a[i+2]*=i_255;
-        i+=4;
-    }
-
-    this._bColorStroke = a;
-    this._stroke = true;
+    this._stroke4f(r,g,b,a);
 };
 
 Context.prototype.strokefv = function(a){
-    this._bColorStroke = a;
+    this._strokefv(a);
+};
+
+Context.prototype._stroke4f = function(r,g,b,a){
+    var bColorStroke4fTemp = this._bColorStroke4Temp;
+        bColorStroke4fTemp[0] = r;
+        bColorStroke4fTemp[1] = g;
+        bColorStroke4fTemp[2] = b;
+        bColorStroke4fTemp[3] = a;
+    this._stackColorStroke.push(Utils.copyArray(bColorStroke4fTemp));
     this._stroke = true;
 };
+
+Context.prototype._strokefv = function(arr){
+    this._stackColorStroke.push(Utils.copyArray(arr));
+    this._stroke = true;
+};
+
+
+
 
 Context.prototype.noStroke = function(){
     this._stroke = false;
@@ -863,7 +829,7 @@ Context.prototype._enableTextureObj = function(textureObj){
 };
 
 Context.prototype._disableTextureObj = function(){
-    this._stackTexture.push(ValueStateStack.EMPTY1);
+    this._stackTexture.push(Value1Stack.EMPTY);
     this._unbindTexture();
     this._texture = false;
 };
@@ -935,7 +901,7 @@ Context.prototype._bindFramebuffer = function(fbo){
 Context.prototype._unbindFramebuffer = function(){
     var gl = this._context3d;
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-    this._stackFbo.push(ValueStateStack.EMPTY1);
+    this._stackFbo.push(Value1Stack.EMPTY);
 };
 
 Context.prototype._readPixelsFromTex = function(tex,out){
@@ -988,23 +954,6 @@ Context.prototype.backgroundfv = function(){
     this._stackColorBg.push(this._bColorTemp);
 };
 
-Context.prototype.backgroundiv = function(){
-    var col  = this._bColorTemp;
-    col[3] = 1.0;
-
-    var i_255 = 1.0 / 255.0;
-    switch (arguments.length){
-        case 0: col[0]=col[1]=col[2]=0.0;break;
-        case 1: col[0]=col[1]=col[2]=arguments[0]*i_255;break;
-        case 2: col[0]=col[1]=col[2]=arguments[0]*i_255;col[3]=arguments[1]*i_255;break;
-        case 3: col[0]=arguments[0]*i_255;col[1]=arguments[1]*i_255;col[2]=arguments[2]*i_255;break;
-        case 4: col[0]=arguments[0]*i_255;col[1]=arguments[1]*i_255;col[2]=arguments[2]*i_255;col[3]=arguments[3]*i_255;break;
-    }
-
-    this._backgroundClear = (col[3] == 1.0);
-    this._stackColorBg.push(this._bColorTemp);
-};
-
 
 Context.prototype.clearColorBuffer = function(){
     var gl = this._context3d;
@@ -1012,10 +961,10 @@ Context.prototype.clearColorBuffer = function(){
     var stackColorBg    = this._stackColorBg;
     var stackColorBgTop = stackColorBg.peek();
     var color = this._bColorBg;
-        color[0] = stackColorBgTop[0];
-        color[1] = stackColorBgTop[1];
-        color[2] = stackColorBgTop[2];
-        color[3] = stackColorBgTop[3];
+    color[0] = stackColorBgTop[0];
+    color[1] = stackColorBgTop[1];
+    color[2] = stackColorBgTop[2];
+    color[3] = stackColorBgTop[3];
 
     var i_255 = 1.0 / 255.0;
 
@@ -1179,11 +1128,11 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
         sizeDiffers   = !stackSize.isEqual();
 
     /*
-    console.log('detail: ' + detailDiffers + '\n' +
-                'radius: ' + radiusDiffers + '\n' +
-                'origin: ' + originDiffers + '\n' +
-                'size:   ' + sizeDiffers);
-    */
+     console.log('detail: ' + detailDiffers + '\n' +
+     'radius: ' + radiusDiffers + '\n' +
+     'origin: ' + originDiffers + '\n' +
+     'size:   ' + sizeDiffers);
+     */
 
 
     if(radius == 0){
@@ -1205,7 +1154,7 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
         bCorner[0] = bCorner[6] = width  - radius;
         bCorner[1] = bCorner[3] = height - radius;
         bCorner[2] = bCorner[4] =
-        bCorner[5] = bCorner[7] = radius;
+            bCorner[5] = bCorner[7] = radius;
     }
 
     var vertices,
@@ -1313,10 +1262,10 @@ Context.prototype.ellipse = function(x,y,radiusX,radiusY){
     vertices = bVertexT;
 
     /*
-    console.log('detail: ' + stackDetailChanged  + '\n' +
-                'radius: ' + stackRadiusChanged  + '\n' +
-                'origin: ' + stackOriginChanged);
-    */
+     console.log('detail: ' + stackDetailChanged  + '\n' +
+     'radius: ' + stackRadiusChanged  + '\n' +
+     'origin: ' + stackOriginChanged);
+     */
 
 
     if(this._fill && !this._texture){
@@ -1468,13 +1417,13 @@ Context.prototype.arc = function(x,y,radiusX,radiusY,startAngle,stopAngle,innerR
 
     if(radiusIDiffers || radiusODiffers || angleDiffers || detailDiffers){
         GeomUtil.genVerticesArc(radiusX,radiusY,
-                                innerRadiusX,innerRadiusY,
-                                startAngle,stopAngle,
-                                detail,bVertex);
+            innerRadiusX,innerRadiusY,
+            startAngle,stopAngle,
+            detail,bVertex);
     }
 
     if(originDiffers){
-       VertexUtil.translate(bVertex,originX,originY,bVertexT);
+        VertexUtil.translate(bVertex,originX,originY,bVertexT);
     }
 
     vertices = bVertexT;
@@ -1499,7 +1448,7 @@ Context.prototype.arc = function(x,y,radiusX,radiusY,startAngle,stopAngle,innerR
     if(this._stroke){
         var bVertexStroke = this._bVertexArcStroke;
         if(radiusIDiffers || radiusODiffers || angleDiffers || detailDiffers){
-             GeomUtil.genVerticesArcStroke(bVertexT,detail,bVertexStroke);
+            GeomUtil.genVerticesArcStroke(bVertexT,detail,bVertexStroke);
         }
         this._polyline(bVertexStroke,detail * 2,false);
     }
@@ -1565,10 +1514,10 @@ Context.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3){
         bVertex  = this._bVertexBezier;
 
     if(bPoint[0] != x0 || bPoint[1] != y0 ||
-       bPoint[2] != x2 || bPoint[3] != y2 ||
-       bPoint[4] != x1 || bPoint[5] != y1 ||
-       bPoint[6] != x3 || bPoint[7] != y3 ||
-       !detailBezier.isEqual()){
+        bPoint[2] != x2 || bPoint[3] != y2 ||
+        bPoint[4] != x1 || bPoint[5] != y1 ||
+        bPoint[6] != x3 || bPoint[7] != y3 ||
+        !detailBezier.isEqual()){
         BezierUtil.genPoints(x0,y0,x1,y1,x2,y2,x3,y3,detail,bVertex);
     }
 
@@ -1627,13 +1576,13 @@ Context.prototype.curve = function(points){
             ni = i+1;
 
             vertices.push(catmullrom(points[Math.max(0,i-2)],
-                                     points[i],
-                                     points[Math.min(i+2,pl-2)],
-                                     points[Math.min(i+4,pl-2)],t),
-                          catmullrom(points[Math.max(1,ni-2)],
-                                     points[ni],
-                                     points[Math.min(ni+2,pl-1)],
-                                     points[Math.min(ni+4,pl-1)],t));
+                points[i],
+                points[Math.min(i+2,pl-2)],
+                points[Math.min(i+4,pl-2)],t),
+                catmullrom(points[Math.max(1,ni-2)],
+                    points[ni],
+                    points[Math.min(ni+2,pl-1)],
+                    points[Math.min(ni+4,pl-1)],t));
             j+=2;
         }
         i+=2;
@@ -1650,6 +1599,10 @@ Context.prototype.beginCurve =  function(out){
 Context.prototype.endCurve =  function(){
     this.curve(this._tempCurveVertices);
 };
+
+Context.prototype.getCurvePoints = function(){
+    return this._tempCurveVertices;
+}
 
 Context.prototype.curveVertex = function(x,y){
     this._tempCurveVertices.push(x,y)
@@ -1789,146 +1742,150 @@ Context.prototype.pointSet = function(vertexArrOrFloat32Arr){
     this._stackDrawFunc.push(this.pointSet);
 };
 
+/*------------------------------------------------------------------------------------------------------------*/
+//  Polyline
+/*------------------------------------------------------------------------------------------------------------*/
 
 Context.prototype._polyline = function(points,pointsLength,loop){
     var stackWidthLine = this._stackWidthLine,
         lineWidth      = stackWidthLine.peek();
     if(!this._stroke || lineWidth <= 0.0)return;
 
-    var widthPolyLineDiffers = !stackWidthLine.isEqual();
+    var stackColorStroke = this._stackColorStroke,
+        colorStroke      = stackColorStroke.peek(),
+        colorStrokeLen   = colorStroke.length;
 
-    var bColorStroke    = this._bColorStroke,
-        bColorStrokeLen = bColorStroke.length;
-
-    if(bColorStrokeLen != 4 &&
-       bColorStrokeLen != 8 &&
-       bColorStrokeLen != pointsLength * 2){
+    if(colorStrokeLen != 4 &&
+       colorStrokeLen != 8 &&
+       colorStrokeLen != pointsLength * 2){
         throw Warning.POLYLINE_INVALID_COLOR_RANGE;
     }
 
+    pointsLength = ((Utils.isUndefined(pointsLength) || pointsLength == null) ? points.length : pointsLength) +  (loop ? 2 : 0);
+
+    /*------------------------------------------------------------------------------------------------------------*/
+
+
+    var stackPoints       = this._stackPointsLine,
+        stackPointsLength = this._stackPointsLineLength;
+
     loop = Utils.isUndefined(loop) ? false : loop;
-
-
-
-
 
     var lineWidth_2 = lineWidth * 0.5;
 
-    var pointSize   = 2,
-        pointLen    = (pointsLength || points.length) + (loop ? pointSize : 0),
-        pointNum    = pointLen  * 0.5,
-        pointNum_1  = pointNum - 1,
-        pointNum_2  = pointNum - 2;
-
-    var capDetail = Math.max(Common.LINE_ROUND_CAP_DETAIL_MIN,
-                             Math.min((lineWidth <= 2.0 ) ? 0 : Math.round(lineWidth)*4,
-                                       Common.LINE_ROUND_CAP_DETAIL_MAX));
-
-
-
-    var edgeVertexLen = 8,
-        edgeColorLen  = 16,
-        edgeIndexLen  = 18;
-
-    var edgeVertexLenTotal = edgeVertexLen * pointNum_1,
-        edgeColorLenTotal  = edgeColorLen  * pointNum_1,
-        edgeIndexLenTotal  = edgeIndexLen  * pointNum_1;
-
-    var capVertexLen = capDetail * 2,
-        capColorLen  = capDetail * 4,
-        capIndexLen  = capDetail == 0 ? 0 : (capDetail-2) * 3;
-
-    var capVertexLenTotal = capVertexLen * pointNum,
-        capColorLenTotal  = capColorLen * pointNum,
-        capIndexLenTotal  = capIndexLen * pointNum;
-
-    var edgeCapVertexLen = edgeVertexLen + capVertexLen,
-        edgeCapColorLen  = edgeColorLen + capColorLen,
-        edgeCapIndexLen  = edgeIndexLen + capIndexLen;
-
-    var bVertex  = new Float32Array(edgeVertexLenTotal + capVertexLenTotal),
-        bColor   = new Float32Array(edgeColorLenTotal  + capColorLenTotal),
-        bIndex   = new Uint16Array( edgeIndexLenTotal  + capIndexLenTotal);
+    var capDetail = Common.LINE_ROUND_CAP_DETAIL_MAX;
 
 
     if(!stackWidthLine.isEqual()){
-        GeomUtil.genVerticesCircle(capDetail, this._bVertexLineCap0);
         VertexUtil.scale(this._bVertexLineCap0,lineWidth_2,lineWidth_2,this._bVertexLineCap0S);
-        ModelUtil.genFaceIndicesFan(this._bVertexLineCap0.length,this._bIndexLineCap0);
     }
 
-    var bVertexCapS = this._bVertexLineCap0S,
-        bVertexCapT = this._bVertexLineCap0T,
-        bIndexCap   = this._bIndexLineCap0;
+    var pointsLast  = stackPoints.peek(),
+        pointsEqual = true;
+
+    if(pointsLast){
+        if(points.length == pointsLast.length){
+            var pi = -1;
+            while(++pi < points.length){
+                if(points[pi] != pointsLast[pi]){
+                    pointsEqual = false;
+                    break;
+                }
+            }
+        } else {
+            pointsEqual = false;
+        }
+    } else {
+        pointsEqual = false;
+    }
 
 
-    var i, j, k;
+
+    var bMutVertex = this._bMutVertexLine, //float32 vertices
+        bMutColor  = this._bMutColorLine,  //float32 colors
+        bMutIndex  = this._bMutIndexLine;  //uint16  indices
+
+    /*------------------------------------------------------------------------------------------------------------*/
+
+    var bVertexCap  = this._bVertexLineCap0S, //float32 unicap vertices
+        bVertexCapT = this._bVertexLineCap0T,//float32 cap translateVertices
+        bIndexCap   = this._bIndexLineCap0;  //uint16 cap indices
 
 
-    var i2,
-        faceIndex;
+    var pointSize  = 2,
+        pointNum   = pointsLength * 0.5,
+        pointNum_1 = pointNum - 1,
+        pointNum_2 = pointNum - 2;
 
-    var offsetVertex,
+    var edgeVertexLen = 8,
+        edgeColorLen = 16,
+        edgeIndexLen = 18;
+
+    var edgeVertexLenTotal = edgeVertexLen * pointNum_1,
+        edgeColorLenTotal = edgeColorLen * pointNum_1,
+        edgeIndexLenTotal = edgeIndexLen * pointNum_1;
+
+    var capVertexLen = capDetail * 2,
+        capColorLen = capDetail * 4,
+        capIndexLen = capDetail == 0 ? 0 : (capDetail - 2) * 3;
+
+    var capVertexLenTotal = capVertexLen * pointNum,
+        capColorLenTotal = capColorLen * pointNum,
+        capIndexLenTotal = capIndexLen * pointNum;
+
+    var edgeCapVertexLen = edgeVertexLen + capVertexLen,
+        edgeCapColorLen = edgeColorLen + capColorLen,
+        edgeCapIndexLen = edgeIndexLen + capIndexLen;
+
+
+    var bVertexEdge = this._bVertexLineEdge;
+
+    bMutVertex.reset();
+    bMutColor.reset();
+
+
+    bMutColor.reserve(edgeColorLenTotal + capColorLenTotal);
+
+
+    var bColor = Utils.arrayResized(this._bColorLine,edgeColorLenTotal + capColorLenTotal),
+        bIndex = Utils.arrayResized(this._bIndexLine,edgeColorLenTotal + capColorLenTotal);
+
+    var i, j, k, i2;
+
+    var faceIndex,
+        offsetVertex,
         offsetIndex;
 
-    var theta = 2 * Math.PI / capDetail,
-        c     = Math.cos(theta),
-        s     = Math.sin(theta),
-        t;
+    var x, y, nx, ny;
+    var slopex, slopey, slopelen, temp;
 
-    var VertexTranslate = VertexUtil.translate;
+    /*------------------------------------------------------------------------------------------------------------*/
 
-    var x, y, cx, cy, nx, ny;
 
-    var slopex,slopey,slopelen,temp;
 
     i = -1;
-    while(++i < pointNum){
+    while (++i < pointNum){
         i2 = i * 2;
 
         x = points[i2    ];
         y = points[i2 + 1];
 
-        if(loop && (i == pointNum_1)){
+        if (loop && (i == pointNum_1)){
             x = points[0];
             y = points[1];
         }
 
-        // Set cap
-        VertexTranslate(bVertexCapS,x,y,bVertexCapT);
+        // Set cap vertices
+        VertexUtil.translate(bVertexCap, x, y, bVertexCapT); //translate uni cap to pos
+        bMutVertex.set(bVertexCapT, bMutVertex.size(), capVertexLen); //send to float32
 
-        offsetVertex = j = edgeCapVertexLen * i;
 
-        k = 0;
-        while(j < offsetVertex + capVertexLen){
-            bVertex[j  ] = bVertexCapT[k  ];
-            bVertex[j+1] = bVertexCapT[k+1];
-
-            j+=2;
-            k+=2;
-        }
-
-        offsetIndex = j = edgeCapIndexLen * i;
-        faceIndex =  offsetVertex / pointSize;
-
-        k = 1;
-
-        while(j < offsetIndex + capIndexLen){
-            bIndex[j    ] = faceIndex;
-            bIndex[j + 1] = faceIndex + k;
-            bIndex[j + 2] = faceIndex + k + 1;
-
-            j+=3;
-            k++;
-        }
-
-        // Set edge
-
-        if(i < pointNum_1){
+        // Set edge vertices
+        if (i < pointNum_1){
             nx = points[i2 + 2];
             ny = points[i2 + 3];
 
-            if(loop && (i == pointNum_2)){
+            if (loop && (i == pointNum_2)){
                 nx = points[0];
                 ny = points[1];
             }
@@ -1936,7 +1893,7 @@ Context.prototype._polyline = function(points,pointsLength,loop){
             slopex = nx - x;
             slopey = ny - y;
 
-            slopelen = 1/Math.sqrt(slopex*slopex + slopey*slopey);
+            slopelen = 1 / Math.sqrt(slopex * slopex + slopey * slopey);
 
             slopex *= slopelen;
             slopey *= slopelen;
@@ -1949,100 +1906,128 @@ Context.prototype._polyline = function(points,pointsLength,loop){
 
             offsetVertex = j = edgeCapVertexLen * i + capVertexLen;
 
-            bVertex[j  ] = x  + temp;
-            bVertex[j+2] = x  - temp;
-            bVertex[j+4] = nx + temp;
-            bVertex[j+6] = nx - temp;
+            bVertexEdge[0] = x  + temp;
+            bVertexEdge[2] = x  - temp;
+            bVertexEdge[4] = nx + temp;
+            bVertexEdge[6] = nx - temp;
 
             temp = lineWidth_2 * slopey;
 
-            bVertex[j+1] = y  + temp;
-            bVertex[j+3] = y  - temp;
-            bVertex[j+5] = ny + temp;
-            bVertex[j+7] = ny - temp;
+            bVertexEdge[1] = y  + temp;
+            bVertexEdge[3] = y  - temp;
+            bVertexEdge[5] = ny + temp;
+            bVertexEdge[7] = ny - temp;
 
-            faceIndex =  offsetVertex / pointSize;
-            j = offsetIndex + capIndexLen;
-
-            bIndex[j  ] = faceIndex;
-            bIndex[j+1] = bIndex[j+3] = faceIndex + 1;
-            bIndex[j+2] = bIndex[j+4] = faceIndex + 2;
-            bIndex[j+5] = faceIndex + 3;
+            bMutVertex.set(bVertexEdge, bMutVertex.size()); //send to float32
         }
 
-
+        /*------------------------------------------------------------------------------------------------------------*/
     }
 
-    if( bColorStroke.length != 4){
-        var colIArr = Color.colorvLerped(bColorStroke,new Array(pointNum*4));
-        var colorsTLen = capColorLenTotal + capColorLenTotal;
 
-        i = 0;
+    // Just recalc face indices if lineWidth or pointsLength changed
+    if(!stackWidthLine.isEqual() || !stackPointsLength.isEqual()){
+        i = -1;
+        while (++i < pointNum){
+            i2 = i * 2;
 
-        while(i <  colorsTLen)
-        {
-            j = i;
-            k = i/edgeCapColorLen * 4;
+            // Set cap face indices
+            offsetIndex  = j = edgeCapIndexLen * i;
+            offsetVertex = edgeCapVertexLen * i;
+            faceIndex    = offsetVertex / pointSize;
 
-            while(j < i + capColorLen)
-            {
-                bColor[j  ] = colIArr[k  ];
-                bColor[j+1] = colIArr[k+1];
-                bColor[j+2] = colIArr[k+2];
-                bColor[j+3] = colIArr[k+3];
-                j+=4;
+            k = 0;
+            while (j < offsetIndex + capIndexLen){
+                bIndex[j++] = bIndexCap[k++] + faceIndex;
             }
 
-            bColor[j   ] = bColor[j+4 ] = colIArr[k  ];
-            bColor[j+1 ] = bColor[j+5 ] = colIArr[k+1];
-            bColor[j+2 ] = bColor[j+6 ] = colIArr[k+2];
-            bColor[j+3 ] = bColor[j+7 ] = colIArr[k+3];
+            // Set edge face indices
+            if (i < pointNum_1){
+                offsetVertex = edgeCapVertexLen * i + capVertexLen;
+                faceIndex    = offsetVertex / pointSize;
+                j            = offsetIndex + capIndexLen;
 
-            bColor[j+8 ] = bColor[j+12] = colIArr[k+4];
-            bColor[j+9 ] = bColor[j+13] = colIArr[k+5];
-            bColor[j+10] = bColor[j+14] = colIArr[k+6];
-            bColor[j+11] = bColor[j+15] = colIArr[k+7];
-
-            i+=edgeCapColorLen;
+                bIndex[j    ] = faceIndex;
+                bIndex[j + 1] = bIndex[j + 3] = faceIndex + 1;
+                bIndex[j + 2] = bIndex[j + 4] = faceIndex + 2;
+                bIndex[j + 5] = faceIndex + 3;
+            }
         }
+        //send faces to uint16
+        bMutIndex.reset();
+        bMutIndex.set(bIndex);
+    }
+
+
+
+
+
+
+
+    /*------------------------------------------------------------------------------------------------------------*/
+
+
+
+    if( colorStrokeLen != 4){
+        if(colorStrokeLen != pointsLength * 2){
+            var bColorIntrpl = this._bColorStrokeIntrpl;
+                bColorIntrpl.length = pointNum * 4;
+            var colIArr = Color.colorvLerped(colorStroke,bColorIntrpl);
+            var colorsTLen = capColorLenTotal + capColorLenTotal;
+
+            i = 0;
+
+            while(i <  colorsTLen)
+            {
+                j = i;
+                k = i/edgeCapColorLen * 4;
+
+                while(j < i + capColorLen)
+                {
+                    bColor[j  ] = colIArr[k  ];
+                    bColor[j+1] = colIArr[k+1];
+                    bColor[j+2] = colIArr[k+2];
+                    bColor[j+3] = colIArr[k+3];
+                    j+=4;
+                }
+
+                bColor[j   ] = bColor[j+4 ] = colIArr[k  ];
+                bColor[j+1 ] = bColor[j+5 ] = colIArr[k+1];
+                bColor[j+2 ] = bColor[j+6 ] = colIArr[k+2];
+                bColor[j+3 ] = bColor[j+7 ] = colIArr[k+3];
+
+                bColor[j+8 ] = bColor[j+12] = colIArr[k+4];
+                bColor[j+9 ] = bColor[j+13] = colIArr[k+5];
+                bColor[j+10] = bColor[j+14] = colIArr[k+6];
+                bColor[j+11] = bColor[j+15] = colIArr[k+7];
+
+                i+=edgeCapColorLen;
+            }
+        } else{
+
+        }
+
+        bMutColor.set(bColor,bMutColor.size());
+
     }
     else{
-        this.bufferColors(bColorStroke,bColor);
+        this.bufferColors(colorStroke,bMutColor.array);
     }
 
-    this.setMatrixUniform();
 
-    var gl = this._context3d,
-        glArrayBuffer = gl.ARRAY_BUFFER,
-        glDynamicDraw = gl.DYNAMIC_DRAW,
-        glFloat       = gl.FLOAT;
+    if(this._batchActive){}
+    else{
+        var gl = this._context3d;
+        this.bufferArrays(bMutVertex.array,bMutColor.array,null,gl.DYNAMIC_DRAW);
+        this.setMatrixUniform();
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,bMutIndex.array,gl.DYNAMIC_DRAW);
+        gl.drawElements(gl.TRIANGLES,bMutIndex.size(),gl.UNSIGNED_SHORT,0);
 
-    var vblen = bVertex.byteLength,
-        cblen = bColor.byteLength,
-        tlen  = vblen + cblen;
-
-    if(this._batchActive)
-    {
-        this._batchPush(bVertex,bIndex,bColor,null);
-    }
-    else
-    {
-        var program = this._stackProgram.peek();
-
-        if(this._texture)
-        {
-            //this._blankTexture.bind();
-        }
-
-        gl.bufferData(glArrayBuffer,tlen,glDynamicDraw);
-        gl.bufferSubData(glArrayBuffer,0,    bVertex);
-        gl.bufferSubData(glArrayBuffer,vblen,bColor);
-        gl.vertexAttribPointer(0, 2, glFloat, false, 0, 0);
-        gl.vertexAttribPointer(1, 4, glFloat, false, 0, vblen);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,bIndex,glDynamicDraw);
-        gl.drawElements(gl.TRIANGLES,bIndex.length,gl.UNSIGNED_SHORT,0);
     }
 
+    stackColorStroke.push(Utils.copyArray(colorStroke));
+    stackPoints.push(Utils.copyArray(points));
+    stackPointsLength.push(pointsLength);
     stackWidthLine.push(lineWidth);
 };
 
@@ -2061,8 +2046,8 @@ Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,t
     if(!fillColorArr   && !this._fill && !strokeColorArr && !this._stroke && !texCoordsArr   && !this._texture)return;
 
     if((posArr.length == 0) || (posArr.length != dimArr.length) ||
-       (fillColorArr   && fillColorArr.length   * 0.5 != posArr.length) ||
-       (strokeColorArr && strokeColorArr.length * 0.5 != posArr.length)){
+        (fillColorArr   && fillColorArr.length   * 0.5 != posArr.length) ||
+        (strokeColorArr && strokeColorArr.length * 0.5 != posArr.length)){
         return;
     }
 
@@ -2424,15 +2409,15 @@ Context.prototype.drawArrays = function(verticesArrOrFloat32Arr, colorArrOrFloat
 
     var vertices = Utils.safeFloat32Array(verticesArrOrFloat32Arr),
         colors   = this.bufferColors((colorArrOrFloat32Arr || this._bColorFill4),
-                   new Float32Array(verticesArrOrFloat32Arr.length * 2));
+            new Float32Array(verticesArrOrFloat32Arr.length * 2));
 
     var gl  = this._context3d;
 
     if(this._batchActive){
         this._batchPush(vertices,
             mode == Context.TRIANGLE_STRIP ?
-            ModelUtil.genFaceIndicesLinearCW(vertices.length) :
-            ModelUtil.genFaceIndicesFan(vertices.length),
+                ModelUtil.genFaceIndicesLinearCW(vertices.length) :
+                ModelUtil.genFaceIndicesFan(vertices.length),
             colors,null);
 
     } else {
@@ -2448,21 +2433,21 @@ Context.prototype.drawArrays = function(verticesArrOrFloat32Arr, colorArrOrFloat
 Context.prototype.drawElements = function(vertices,indices,colors,mode,length){
     vertices = Utils.safeFloat32Array(vertices);
     indices  = indices ?
-               Utils.safeUint16Array(indices) :
-               new Uint16Array(ModelUtil.genFaceIndicesLinearCW(vertices.length));
+        Utils.safeUint16Array(indices) :
+        new Uint16Array(ModelUtil.genFaceIndicesLinearCW(vertices.length));
 
     //TODO: fix me
     var colorsExpLength = vertices.length * 2;
 
     colors = colors ? (colors.length == colorsExpLength ?
-                       Utils.safeFloat32Array(colors) :
-                       this.bufferColors(colors, new Float32Array(colorsExpLength))) :
-             this.bufferColors(this._bColorFill4, new Float32Array(colorsExpLength));
+        Utils.safeFloat32Array(colors) :
+        this.bufferColors(colors, new Float32Array(colorsExpLength))) :
+        this.bufferColors(this._bColorFill4, new Float32Array(colorsExpLength));
 
     if(colors){
         colors = colors.length == colorsExpLength ?
-                 Utils.safeFloat32Array(colors) :
-                 this.bufferColors(colors, new Float32Array(colorsExpLength));
+            Utils.safeFloat32Array(colors) :
+            this.bufferColors(colors, new Float32Array(colorsExpLength));
     } else {
         colors = this.bufferColors(this._bColorFill4, new Float32Array(colorsExpLength));
     }
@@ -2731,7 +2716,7 @@ Context.prototype.pushMatrix = function(){
 Context.prototype.popMatrix = function(){
     var stack = this._matrixStack;
     if(stack.length == 0){
-        throw Context.__Warning.INVALID_STACK_POP;
+        throw Warning.INVALID_STACK_POP;
     }
 
     this._matrix = stack.pop();
@@ -2817,6 +2802,7 @@ Context.prototype.bufferColors = function(color,buffer){
             buffer[i+3]=color[3];
             i+=4;
         }
+
     }
     else{
         if(cl != bl){

@@ -40,6 +40,7 @@ App.prototype.draw = function(){
 
     c.setDetailCircle(10);
     c.fill3f(1,1,1);
+    c.noStroke();
     //c.circleSet([0,0,100,0],[50,10]);
 
     var w = 50,h = 50;
