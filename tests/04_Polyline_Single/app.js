@@ -43,17 +43,17 @@ App.prototype.draw = function(){
     }
     */
 
-    c.fill1f(1);
-    c.ellipse(0,0,100,100);
 
-    /*
+
+
     c.stroke1f(1);
     c.setLineWidth(50);
 
     c.line([-100,-100,0,0,-100,100,0,200]);
 
-    c.setLineWidth(10);
+    c.setLineWidth(2);
     c.line([200,-100,180,0,180,100,160,120,140,80]);
+    /*
     var arr = new Array(8);
     var i = -1;
     while(++i < 10){
@@ -69,6 +69,9 @@ App.prototype.draw = function(){
 
     }
     */
+
+
+
 };
 
 

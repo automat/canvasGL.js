@@ -19,6 +19,16 @@ TextureFormat.prototype.set = function(mipmap,magFilter,minFilter,wrapMode,flipY
     return this;
 };
 
+TextureFormat.isEqual = function(format0,format1){
+    return format0.mipmap    == format1.mipmap &&
+           format0.magFilter == format1.magFilter &&
+           format0.minFilter == format1.minFilter &&
+           format0.wrapMode  == format1.wrapMode &&
+           format0.flipY     == format1.flipY &&
+           format0.dataFormat== format1.dataFormat &&
+           format0.dataType  == format1.dataType;
+};
+
 TextureFormat.RGB  = WebGLRenderingContext.RGB;
 TextureFormat.RGBA = WebGLRenderingContext.RGBA;
 TextureFormat.UNSIGNED_BYTE = WebGLRenderingContext.UNSIGNED_BYTE;

@@ -98,8 +98,6 @@ function Context(element,canvas3d,canvas2d){
 
     this._vboShared = gl.createBuffer();
     this._iboShared = gl.createBuffer();
-    this._vboSelected = null;
-    this._iboSelected = null;
 
     gl.bindBuffer(glArrayBuffer,        this._vboShared);
     gl.bindBuffer(glElementArrayBuffer, this._iboShared);
@@ -155,7 +153,6 @@ function Context(element,canvas3d,canvas2d){
     var SET_ALLOCATE_MIN_SIZE = Default.SET_ALLOCATE_MIN_SIZE;
 
     this._bVertexPoint     = new Float32Array(2);
-    this._bVertexLine      = new Float32Array(4);
     this._bVertexTriangle  = new Float32Array(6);
     this._bVertexQuad      = new Float32Array(8);
 
@@ -275,6 +272,8 @@ function Context(element,canvas3d,canvas2d){
     this._stackPointsLineLength = new Value1Stack();
     this._bIndexLine            = [];
     this._bColorLine            = [];
+    this.bPointLine4            = new Array(4);
+
 
 
     this._bLineCap0Res    = 0;
@@ -386,7 +385,7 @@ Context.prototype._setSize = function(width, height){
     var program = this._program;
 
     this.useProgram(program);
-    gl.uniform2f(program[ShaderDict.uResolution],iwidth,iheight);
+    gl.uniform2f(program[ShaderDict.uViewport],iwidth,iheight);
     gl.viewport(0,0,iwidth,iheight);
 
     var colorBG = this._bColorBg;
@@ -965,7 +964,7 @@ Context.prototype._writePixelsToTex = function(tex,x,y,width,height,format,type,
 
 Context.prototype.bindDefaultFramebuffer = function(){
     this._bindFramebuffer(this._fboCanvas);
-}
+};
 
 Context.prototype.getCurrFramebuffer = function(){
     return this._stackFbo.peek();
@@ -1507,7 +1506,7 @@ Context.prototype.line = function(){
             this._polyline(arguments[0]);
             break;
         case 4:
-            var v = this._bVertexLine;
+            var v = this.bPointLine4;
 
             v[0] = arguments[0];
             v[1] = arguments[1];
@@ -1521,27 +1520,9 @@ Context.prototype.line = function(){
     this._stackDrawFunc.push(this.line);
 };
 
-Context.prototype.lineSet = function(lines,strokeColors,lineWidths)
+Context.prototype.lineSet = function(pointArr,widthArr,colorArr)
 {
-    var i = -1,l = lines.length, s,i_2;
 
-    while(++i<l)
-    {
-        i_2 = i * 0.5;
-
-        if(strokeColors)
-        {
-            s = strokeColors[i_2];
-            this.stroke(s[0],s[1],s[2],s[3]);
-        }
-
-        if(lineWidths)
-        {
-            this.setLineWidth(lineWidths[i_2]);
-        }
-
-        this.line(lines[i]);
-    }
 
     this._stackDrawFunc.push(this.lineSet);
 };
@@ -1794,7 +1775,7 @@ Context.prototype._polyline = function(points,pointsLength,loop){
         return;
     }
 
-    var lineWidth_2 = lineWidth * 0.5;
+    var lineWidth_2   = lineWidth * 0.5;
 
     var stackColorStroke = this._stackColorStroke,
         colorStroke      = stackColorStroke.peek(),
@@ -1832,7 +1813,7 @@ Context.prototype._polyline = function(points,pointsLength,loop){
 
     var capVertexLen = bVertexCap.length,
         capColorLen  = bVertexCap.length * 2,
-        capIndexLen  = bIndexCap.length;
+        capIndexLen  = bIndexCap.length ;
 
     var bVertexEdge = this._bVertexLineEdge; //8 edge vertices
 
@@ -2470,6 +2451,11 @@ Context.prototype.drawElements = function(vertices,indices,colors,mode,length){
     this._stackDrawFunc.push(this.drawElements);
 };
 
+Context.prototype._bindDefaultGLArrayBuffer = function(){
+    var gl = this._context3d;
+    gl.bindBuffer(gl.ARRAY_BUFFER,this._vboShared);
+};
+
 /*---------------------------------------------------------------------------------------------------------*/
 // Draw Func stack
 /*---------------------------------------------------------------------------------------------------------*/
@@ -2687,6 +2673,10 @@ Context.prototype.useProgram = function(program){
     stackProgram.push(program);
 };
 
+Context.prototype.restoreDefaultProgram = function(){
+    this.useProgram(this._program);
+};
+
 Context.prototype.getProgram = function(){
     return this._stackProgram.peek();
 };
@@ -2888,6 +2878,9 @@ Context.BOLD   = "bold";
 
 Context.CAP_NONE = 5;
 Context.CAP_ROUND = 6;
+
+Context.ARRAY_BUFFER = WebGLRenderingContext.ARRAY_BUFFER;
+Context.ELEMENT_ARRAY_BUFFER = WebGLRenderingContext.ELEMENT_ARRAY_BUFFER;
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Exports

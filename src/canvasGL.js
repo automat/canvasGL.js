@@ -380,11 +380,15 @@ CanvasGL.UNSIGNED_BYTE = Context.UNSIGNED_BYTE;
 CanvasGL.CAP_NONE  = Context.CAP_NONE;
 CanvasGL.CAP_ROUND = Context.CAP_ROUND;
 
+CanvasGL.ARRAY_BUFFER = Context.ARRAY_BUFFER;
+CanvasGL.ELEMENT_ARRAY_BUFFER = Context.ELEMENT_ARRAY_BUFFER;
+
 /*---------------------------------------------------------------------------------------------------------*/
 
 CanvasGL.Math          = require('./math/cglMath');
 CanvasGL.Program       = require('./gl/cglProgram');
 CanvasGL.Framebuffer   = require('./gl/cglFramebuffer');
+CanvasGL.ArrayBuffer   = require('./gl/cglArrayBuffer');
 CanvasGL.TextureFormat = require('./gl/cglTextureFormat');
 CanvasGL.Texture       = require('./gl/cglTexture');
 CanvasGL.ImageState    = require('./image/cglImageState');

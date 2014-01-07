@@ -1,6 +1,6 @@
 var ShaderDict = {
     uMatrix:       'uMatrix',
-    uResolution:   'uResolution',
+    uViewport:     'uViewport',
     uFlipY:        'uFlipY',
     uImage:        'uImage',
     uUseTexture:   'uUseTexture',
