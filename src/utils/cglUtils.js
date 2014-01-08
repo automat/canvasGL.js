@@ -40,7 +40,14 @@ Utils.setArr = function(a,b){
     }
 };
 
-//check for content not object equality
+Utils.setArrOffsetIndex = function(arr,offset,length){
+    var i = -1, l = length || arr.length;
+    while(++i < l){
+        arr[i]+=offset;
+    }
+};
+
+//check for content not object equality, object is number
 Utils.equalArrContent = function(a,b){
     if(!a || !b || (!a && !b)){
         return false;

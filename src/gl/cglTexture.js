@@ -3,14 +3,17 @@ var _Math         = require('../math/cglMath'),
     Extension     = require('../common/cglExtension'),
     TextureFormat = require('./cglTextureFormat');
 
-function Texture(ctx,width,height,format){
+function Texture(ctx,width,height,format,unit){
     this._ctxRef = ctx;
     var gl = ctx.getContext3d();
-    this._format = format || new TextureFormat();
-    this._width  = null;
-    this._height = null;
+
+    this._format      = format || new TextureFormat();
+    this._width       = null;
+    this._height      = null;
     this._initialized = false;
-    this._tex = gl.createTexture();
+    this._texUnit     = unit;
+    this._tex         = gl.createTexture();
+
     this.setSize(width,height);
 }
 
@@ -18,11 +21,16 @@ Texture.prototype.setSize = function(width,height){
     var gl = this._ctxRef.getContext3d(),
         glTexture2d = gl.TEXTURE_2D;
 
+    var unit     = this._texUnit;
+    var prevUnit = gl.getParameter(gl.ACTIVE_TEXTURE);
+
     this._width  = width;
     this._height = height;
 
     var format = this._format;
     var pot    = _Math.isPOT(width) && _Math.isPOT(height);
+
+
 
     if(!this._initialized){
         var wrapMode;
@@ -34,7 +42,9 @@ Texture.prototype.setSize = function(width,height){
             wrapMode = format.wrapMode;
         }
 
-
+        if(unit && unit != prevUnit){
+            gl.activeTexture(gl.TEXTURE0 + unit);
+        }
         gl.bindTexture(glTexture2d,this._tex);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, format.flipY);
 
@@ -51,6 +61,10 @@ Texture.prototype.setSize = function(width,height){
         gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_S, wrapMode);
         gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_T, wrapMode);
         gl.texImage2D(glTexture2d,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+
+        if(unit){
+            gl.activeTexture(prevUnit);
+        }
         gl.bindTexture(glTexture2d,null);
 
         this._initialized = true;
@@ -60,8 +74,15 @@ Texture.prototype.setSize = function(width,height){
             throw Warning.TEX_NP2_WRAP_MODE_RESIZE;
         }
 
+        if(unit && unit != prevUnit){
+            gl.activeTexture(gl.TEXTURE0 + unit);
+        }
         gl.bindTexture(glTexture2d,this._tex);
         gl.texImage2D(glTexture2d,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+
+        if(unit){
+            gl.activeTexture(prevUnit);
+        }
         gl.bindTexture(glTexture2d,null);
     }
 };

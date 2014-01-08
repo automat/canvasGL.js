@@ -1,7 +1,9 @@
 var _Math               = require('../math/cglMath'),
     Utils               = require('../utils/cglUtils'),
+    DataType            = require('../utils/cglDataType'),
     Float32ArrayMutable = require('../utils/cglFloat32ArrayMutable'),
     Uint16ArrayMutable  = require('../utils/cglUint16ArrayMutable'),
+    Uint32ArrayMutable  = require('../utils/cglUint32ArrayMutable'),
     Value1Stack         = require('../utils/cglValue1Stack'),
     Value2Stack         = require('../utils/cglValue2Stack'),
     Value4Stack         = require('../utils/cglValue4Stack'),
@@ -56,6 +58,18 @@ function Context(element,canvas3d,canvas2d){
     if(!Extension.Initialized){
         Extension.UintTypeAvailable     = gl.getExtension('OES_element_index_uint') ? true : false;
         Extension.FloatTextureAvailable = gl.getExtension('OES_texture_float') ? true : false;
+
+        if(Extension.UintTypeAvailable){
+            DataType.UintArray     = Uint32Array;
+            DataType.UintArrayMut  = Uint32ArrayMutable;
+            DataType.ElementIndex = gl.UNSIGNED_INT;
+        } else {
+            DataType.UintArray     = Uint16Array;
+            DataType.UintArrayMut  = Uint16ArrayMutable;
+            DataType.ElementIndex = gl.UNSIGNED_SHORT;
+        }
+
+
         Extension.Initialized = true;
     }
 
@@ -139,8 +153,6 @@ function Context(element,canvas3d,canvas2d){
     this._textureOffsetW = this._textureOffsetH = 0;
 
 
-    this._drawSetDataType = Extension.UintTypeAvailable ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
-
     /*------------------------------------------------------------------------------------------------------------*/
     //  Set vertices/color/texCoord temp buffers
     /*------------------------------------------------------------------------------------------------------------*/
@@ -183,20 +195,15 @@ function Context(element,canvas3d,canvas2d){
 
     // circle set
     this._bVertexCircleSet   = new Float32Array(bVertexEllipseLen);
-    this._bVertexCircleSetS  = new Float32Array(bVertexEllipseLen); // circle set vertices from unit scaled
-    this._bVertexCircleSetT  = new Float32Array(bVertexEllipseLen); // circle set vertices from scaled translated
     this._bColorCircleSet    = new Float32Array(4 * ELLIPSE_DETAIL_MAX);
-    this._bIndexCircleSet    = new Uint16Array( bIndexEllipseLen);
+    this._bIndexCircleSet    = new DataType.UintArray(bIndexEllipseLen);
     this._bTexCoordCircleSet = new Float32Array(bVertexEllipseLen);
 
     this._bMutVertexCircleSet   = new Float32ArrayMutable(bVertexEllipseLen * SET_ALLOCATE_MIN_SIZE,true);
     this._bMutColorCircleSet    = new Float32ArrayMutable(bColorEllipseLen  * SET_ALLOCATE_MIN_SIZE,true);
     this._bMutTexCoordCircleSet = new Float32ArrayMutable(bVertexEllipseLen * SET_ALLOCATE_MIN_SIZE,true);
-    this._bMutIndexCircleSet    = new Uint16ArrayMutable( bIndexEllipseLen  * SET_ALLOCATE_MIN_SIZE,true);
+    this._bMutIndexCircleSet    = new DataType.UintArrayMut( bIndexEllipseLen  * SET_ALLOCATE_MIN_SIZE,true);
 
-    this._stackRadiusCircleSet  = new Value1Stack();
-    this._stackDetailCircleSet  = new Value1Stack();
-    this._stackOriginCircleSet  = new Value2Stack();
 
     /*------------------------------------------------------------------------------------------------------------*/
 
@@ -2288,9 +2295,7 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
     if(!fillColorArr   && !this._fill && !strokeColorArr && !this._stroke && !texCoordsArr   && !this._texture)return;
 
     var modeOrigin  = this._modeCircle;
-    var stackOrigin = this._stackOriginCircleSet,
-        stackRadius = this._stackRadiusCircleSet,
-        stackDetail = this._stackDetailCircle;
+    var stackDetail = this._stackDetailCircle;
 
     var length = posArr.length * 0.5;
     var detail = stackDetail.peek();
@@ -2299,16 +2304,15 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
         GeomUtil.genVerticesCircle(detail,this._bVertexCircle);
         this._bTexCoordCircleSet = new Float32Array(ModelUtil.genTexCoordsLinearCW(detail * 2));
         this._bIndexCircle       = new Uint16Array(ModelUtil.genFaceIndicesFan(detail * 2));
-        this._bIndexCircleSet    = new Uint16Array(this._bIndexCircle.length);
+        this._bIndexCircleSet    = new DataType.UintArray(this._bIndexCircle.length);
     }
 
-    var bVertex   = this._bVertexCircle,
-        bVertexS  = this._bVertexCircleSetS,
-        bVertexT  = this._bVertexCircleSetT,
-        bIndexT   = this._bIndexCircleSet,
-        bIndex    = this._bIndexCircle,
-        bColor    = this._bColorCircleSet,
-        bTexCoord = this._bTexCoordCircleSet;
+    var bVertex    = this._bVertexCircle,
+        bVertexSet = this._bVertexCircleSet,
+        bIndexSet  = this._bIndexCircleSet,
+        bIndex     = this._bIndexCircle,
+        bColor     = this._bColorCircleSet,
+        bTexCoord  = this._bTexCoordCircleSet;
 
     var bMutVertex   = this._bMutVertexCircleSet,
         bMutColor    = this._bMutColorCircleSet,
@@ -2326,9 +2330,10 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
 
     var radius,originX,originY;
 
-    var shift     = modeOrigin == 0 ? 0 : 1;
+    var shift = modeOrigin == 0 ? 0 : 1;
+    var shiftRadius;
 
-    var indexLen    = bIndexT.length,
+    var indexLen    = bIndexSet.length,
         vertexLen   = detail * 2,
         colorLen    = detail * 4,
         texCoordLen = vertexLen;
@@ -2344,40 +2349,37 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
         bColor[j4+3] = colorFill4f[3];
     }
 
-    bIndexT.set(bIndex);
+    bIndexSet.set(bIndex);
+
+    var ScaleTranslate    = VertexUtil.scaleTranslate,
+        SetArrOffsetIndex = Utils.setArrOffsetIndex;
 
     i = -1;
     while(++i < length){
         i2 = i * 2;
 
-        radius  = radiusArr[i];
-        originX = posArr[i2  ] + shift * radius;
-        originY = posArr[i2+1] + shift * radius;
+        radius      = radiusArr[i];
+        shiftRadius = shift * radius;
+        originX     = posArr[i2  ] + shiftRadius;
+        originY     = posArr[i2+1] + shiftRadius;
 
-        stackOrigin.push(originX,originY);
-        stackRadius.push(radius);
+        ScaleTranslate(bVertex,radius,radius,originX,originY,bVertexSet);
 
-        VertexUtil.scale(bVertex,radius,radius,bVertexS);
-        VertexUtil.translate(bVertexS,originX,originY,bVertexT);
-
-        bMutVertex.set(bVertexT,bMutVertex.size(),vertexLen);
+        bMutVertex.set(bVertexSet,bMutVertex.size(),vertexLen);
         bMutColor.set(bColor,bMutColor.size(),colorLen);
         bMutTexCoord.set(bTexCoord,bMutTexCoord.size(),texCoordLen);
 
         if(i > 0){
-            j = -1;
-            while(++j < indexLen){
-                bIndexT[j]+=detail;
-            }
+            SetArrOffsetIndex(bIndexSet,detail,indexLen);
         }
 
-        bMutIndex.set(bIndexT,bMutIndex.size());
+        bMutIndex.set(bIndexSet,bMutIndex.size());
     }
 
     this.bufferArrays(bMutVertex.array, bMutColor.array, bMutTexCoord.array, gl.DYNAMIC_DRAW);
     this.setMatrixUniform();
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,bMutIndex.array,gl.DYNAMIC_DRAW);
-    gl.drawElements(gl.TRIANGLES,bMutIndex.size(),gl.UNSIGNED_SHORT,0);
+    gl.drawElements(gl.TRIANGLES,bMutIndex.size(),DataType.ElementIndex,0);
 
     stackDetail.push(detail);
     this._stackDrawFunc.push(this.circleSet);

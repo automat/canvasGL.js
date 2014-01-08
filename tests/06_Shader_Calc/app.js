@@ -36,7 +36,7 @@ App.prototype.setup = function(){
     this._framebuffer = new CanvasGL.Framebuffer(ctx,128,4,format);
 
 
-    this._arraybuffer = new CanvasGL.ArrayBuffer(ctx);
+    var arraybuffer = this._arraybuffer = new CanvasGL.ArrayBuffer(ctx);
 
 
 
