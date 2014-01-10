@@ -1,6 +1,6 @@
 var Color = {};
 
-Color.color1fArr = function(k,length){
+Color.getColor1v = function(k,length){
     var a = new Array(length);
     var i = -1;
     while(++i < length){a[i]=k;}
@@ -27,6 +27,9 @@ Color.colorvLerped = function(colors,arr){
     return arr;
 };
 
-
+Color.rgbToHex = function(r,g,b){
+    var h = (r << 16 | g << 8 | b).toString(16);
+    return "#"+new Array(7-h.length).join("0")+h;
+};
 
 module.exports = Color;

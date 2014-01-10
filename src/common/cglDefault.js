@@ -19,7 +19,10 @@ var Default = {
     FPS: 30,
     INIT_WIDTH:100,
     INIT_HEIGHT:100,
-    SET_ALLOCATE_SIZE : 500
+    SET_ALLOCATE_MIN_SIZE : 100,
+
+    RENDERBUFFER_WIDTH : 100,
+    RENDERBUFFER_HEIGHT : 100
 };
 
 module.exports = Default;

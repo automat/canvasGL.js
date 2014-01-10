@@ -25,20 +25,34 @@ function App(element){
 App.prototype = Object.create(CanvasGL.prototype);
 
 App.prototype.draw = function(){
-    var c = this;
-    var time   = c.getSecondsElapsed();
-    var PI_4 = Math.PI * 0.25;
-    var width  = c.getWidth(),
-        height = c.getHeight();
 
+    var time   = this.getSecondsElapsed();
+    var PI_4 = Math.PI * 0.25;
+    var width  = this._getWidth(),
+        height = this._getHeight();
+
+    var c = this.getContext();
 
 
     c.backgroundfv(0.15,0,0.15);
+
+   // c.rect(0,0,10,10);
+
+
     c.setDetailCircle(20);
 
     c.translate(width * 0.5, height * 0.5);
     c.rotate(time);
 
+    // c.rotate(time);
+    c.fill3f(1,0,0);
+    c.rect(-300,-300,600,600);
+
+    c.fill3f(0,0,1);
+    c.rect(-300,0,300,300);
+
+    c.fill1f(1);
+    c.rect(0,200,200,10);
 
     c.noStroke();
     c.fill3f(1,0,1);
@@ -71,6 +85,7 @@ App.prototype.draw = function(){
         c.noStroke();
         c.popMatrix();
     }
+
 
 };
 

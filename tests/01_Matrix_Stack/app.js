@@ -1,3 +1,5 @@
+var CanvasGL = require('../../src/CanvasGL');
+
 function App(element){
     CanvasGL.call(this,element);
     this.setSize(window.innerWidth,window.innerHeight);
@@ -12,11 +14,11 @@ function App(element){
 App.prototype = Object.create(CanvasGL.prototype);
 
 App.prototype.draw = function(){
-    var c = this;
-    var time   = c.getSecondsElapsed();
+    var c = this.getContext();
+    var time   = this.getSecondsElapsed();
     var PI_4 = Math.PI * 0.25;
-    var width  = c.getWidth(),
-        height = c.getHeight();
+    var width  = this.getWidth(),
+        height = this.getHeight();
 
 
 
@@ -24,6 +26,7 @@ App.prototype.draw = function(){
     c.setDetailCircle(20);
 
     c.translate(width * 0.5, height * 0.5);
+    c.scale(0.5,0.5);
     c.rotate(time);
 
 
