@@ -16,8 +16,8 @@ App.prototype.setup = function(){
     var ctx = this.getContext();
     this._texture = CanvasGL.Texture.genBlankTexture(ctx);
 
-    this._w = 225;
-    this._h = 225;
+    this._w = 200;
+    this._h = 200;
     this._num = this._w * this._h;
     this._posArr = new Array(this._num * 2);
     this._radiusArr = new Array(this._num);
@@ -75,10 +75,12 @@ App.prototype.draw = function(){
             //posArr[ij*2+1] = (-0.5 + j/(h-1)) * 2 * (height_2 * 0.75 + Math.sin(i/(w-1)*Math.PI*16+time*4) * Math.sin(j/(h-1) * Math.PI * (0.5 +Math.sin(time) *0.5)*8 + time)* 20);
             radiusArr[ij]  = 1 + (0.5 + Math.sin(jN * Math.PI *10- time*8) * 0.5) * 3 ;
 
+
             colorArr[ij*4+0] = 0.5 + (0.5+Math.sin(jN * Math.PI *10- time*16) * 0.5)*0.75;
             colorArr[ij*4+1] = 0;
             colorArr[ij*4+2] = 0.25;
             colorArr[ij*4+3] =1;
+
 
 
         }

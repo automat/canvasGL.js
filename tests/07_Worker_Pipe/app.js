@@ -1,100 +1,43 @@
-var workerAScript = require('./workerA.js'),
-    workerBScript = require('./workerB.js'),
-    workerCScript = require('./workerC.js');
-
+var workerScript = require('./worker.js');
 
 function Pipe(){
-    this._queue   = [];
+    var worker = this._worker = new Worker(workerSrcFromStr(workerScript));
+    worker.postMessage = worker.webkitPostMessage || worker.postMessage;
 
-    this._counterA = 0;
-    this._counterB = 0;
-    this._counterC = 0;
+    this._shared_data = new Float32Array(1000 * 2);
 
+    // check transferableObjects
+    var ab = new ArrayBuffer(1);
+    worker.postMessage( ab, [ab] );
+    var TRANSFERABLE_OBJS_AVAILABLE = !ab.byteLength;
 
-    this._sharedDataA = new Float32Array(4 * 3);
-    this._sharedDataB = new Float32Array(4 * 3);
-    this._sharedDataC = new Float32Array(4 * 3);
+    worker.postMessage({msg:Pipe.kWorkerFunc.FUNCTION_A,data:this._shared_data});
 
-    var workerA = this._workerA = new Worker(workerSrcFromStr(workerAScript)),
-        workerB = this._workerB = new Worker(workerSrcFromStr(workerBScript)),
-        workerC = this._workerC = new Worker(workerSrcFromStr(workerCScript));
+    worker.addEventListener('message',function(e){
+        var dataObj = e.data;
 
-    workerA.addEventListener('message',this._onWorkerMessage.bind(this));
-    workerB.addEventListener('message',this._onWorkerMessage.bind(this));
-    workerC.addEventListener('message',this._onWorkerMessage.bind(this));
+        switch (dataObj.msg){
+            case Pipe.kWorkerMsg.LOG:
+                console.log(e.target + ': ' + dataObj.data);
+                break;
+        }
+
+    });
+
 }
 
-Pipe.prototype._onWorkerMessage = function(e){
-    var dataObj = e.data;
-    switch (this['_'+dataObj.target]){
-        case this._workerA:
-            console.log('Worker A: done! Order: ' + dataObj.order);
-            break;
-        case this._workerB:
-            console.log('Worker B: done! Order: ' + dataObj.order);
-            break;
-        case this._workerC:
-            console.log('Worker C: done! Order: ' + dataObj.order);
-            break;
-    }
 
-    var queue = this._queue;
-    queue.splice(queue.indexOf(dataObj),1);
-    if(queue.length == 0)this._onFinish();
+Pipe.kWorkerMsg = {
+    LOG : 0
 };
 
-Pipe.prototype._onFinish = function(){
-    console.log('done');
+Pipe.kWorkerFunc = {
+    FUNCTION_A : 'functionA',
+    FUNCTION_B : 'functionB'
 };
-
-Pipe.prototype.methodA = function(a){
-    if(this._counterA * this._sharedDataA.length){this._doResizeWhatever();}
-    this._queue.push({target:'workerA',data:a,sharedData:this._sharedDataA,order:this._counterA++});
-};
-
-Pipe.prototype.methodB = function(b){
-    if(this._counterB * this._sharedDataB.length){this._doResizeWhatever();}
-    this._queue.push({target:'workerB',data:b,sharedData:this._sharedDataB,order:this._counterB++});
-};
-
-Pipe.prototype.methodC = function(c){
-    if(this._counterC * this._sharedDataC.length){this._doResizeWhatever();}
-    this._queue.push({target:'workerC',data:c,sharedData:this._sharedDataC,order:this._counterC++});
-};
-
-Pipe.prototype._doResizeWhatever = function(){};
-
-/*
-Pipe.prototype.process = function(){
-    var queue = this._queue;
-    var item;
-    var i = -1;
-    while(++i < queue.length){
-        item = queue[i];
-        this['_'+item.target].postMessage(item);
-    }
-};
-*/
-
-
 
 function App(){
-
-    //console.log(Pipe);
-
-    var pipe = this._pipe = new Pipe();
-
-    var data = new Float32Array([0,0,0]);
-
-    pipe.methodA(data);
-    /*
-    pipe.methodB(data);
-    pipe.methodC(data);
-    pipe.methodC(data);
-    pipe.methodB(data);
-    pipe.methodA(data);
-    */
-    pipe.process();
+    var pipe = new Pipe();
 
 
 }
