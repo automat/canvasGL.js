@@ -1,31 +1,31 @@
-var Utils = {};
+var Util = {};
 
-Utils.isUndefined = function(obj){
+Util.isUndefined = function(obj){
     return typeof obj === 'undefined';
 };
 
-Utils.isFloat32Array = function(arr){
+Util.isFloat32Array = function(arr){
     return arr instanceof Float32Array;
 };
 
-Utils.safeFloat32Array = function(arr){
+Util.safeFloat32Array = function(arr){
     return arr instanceof Float32Array ? arr : new Float32Array(arr);
 };
 
-Utils.safeUint16Array = function(arr){
+Util.safeUint16Array = function(arr){
     return arr instanceof Uint16Array ? arr : new Uint16Array(arr);
 };
 
-Utils.copyFloat32Array = function(arr){
+Util.copyFloat32Array = function(arr){
     return new Float32Array(arr);
 };
 
-Utils.arrayResized = function(arr,length){
+Util.arrayResized = function(arr,length){
     arr.length = length;
     return arr;
 };
 
-Utils.copyArray = function(arr){
+Util.copyArray = function(arr){
     var i = -1, l = arr.length, out = new Array(l);
     while(++i < l){
         out[i] = arr[i];
@@ -33,14 +33,14 @@ Utils.copyArray = function(arr){
     return out;
 };
 
-Utils.setArr = function(a,b){
+Util.setArr = function(a,b){
     var i = -1,l = a.length;
     while(++i< l){
         a[i] = b[i];
     }
 };
 
-Utils.setArrOffsetIndex = function(arr,offset,length){
+Util.setArrOffsetIndex = function(arr,offset,length){
     var i = -1, l = length || arr.length;
     while(++i < l){
         arr[i]+=offset;
@@ -48,7 +48,7 @@ Utils.setArrOffsetIndex = function(arr,offset,length){
 };
 
 //check for content not object equality, object is number
-Utils.equalArrContent = function(a,b){
+Util.equalArrContent = function(a,b){
     if(!a || !b || (!a && !b)){
         return false;
     } else if(a.length != b.length){
@@ -63,5 +63,5 @@ Utils.equalArrContent = function(a,b){
 };
 
 
-module.exports = Utils;
+module.exports = Util;
 

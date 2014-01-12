@@ -1,4 +1,4 @@
-var Utils = require('./cglUtils');
+var Utils = require('./../cglUtil');
 
 function ArrayMutable(reserveSize,autoresize,autoresizeLimit){
     this._size        = reserveSize;

@@ -1,13 +1,13 @@
 var _Math               = require('../math/cglMath'),
-    Utils               = require('../utils/cglUtils'),
-    DataType            = require('../utils/cglDataType'),
-    Float32ArrayMutable = require('../utils/cglFloat32ArrayMutable'),
-    Uint16ArrayMutable  = require('../utils/cglUint16ArrayMutable'),
-    Uint32ArrayMutable  = require('../utils/cglUint32ArrayMutable'),
-    Value1Stack         = require('../utils/cglValue1Stack'),
-    Value2Stack         = require('../utils/cglValue2Stack'),
-    Value4Stack         = require('../utils/cglValue4Stack'),
-    ValueArrStack       = require('../utils/cglValueArrStack'),
+    Util                = require('../util/cglUtil'),
+    DataType            = require('../util/cglDataType'),
+    Float32ArrayMutable = require('../util/data/cglFloat32ArrayMutable'),
+    Uint16ArrayMutable  = require('../util/data/cglUint16ArrayMutable'),
+    Uint32ArrayMutable  = require('../util/data/cglUint32ArrayMutable'),
+    Value1Stack         = require('../util/data/cglValue1Stack'),
+    Value2Stack         = require('../util/data/cglValue2Stack'),
+    Value4Stack         = require('../util/data/cglValue4Stack'),
+    ValueArrStack       = require('../util/data/cglValueArrStack'),
     Mat33               = require('../math/cglMatrix');
 
 var Program     = require('./cglProgram'),
@@ -769,12 +769,12 @@ Context.prototype._stroke4f = function(r,g,b,a){
         bColorStroke4fTemp[1] = g;
         bColorStroke4fTemp[2] = b;
         bColorStroke4fTemp[3] = a;
-    this._stackColorStroke.push(Utils.copyArray(bColorStroke4fTemp));
+    this._stackColorStroke.push(Util.copyArray(bColorStroke4fTemp));
     this._stroke = true;
 };
 
 Context.prototype._strokefv = function(arr){
-    this._stackColorStroke.push(Utils.copyArray(arr));
+    this._stackColorStroke.push(Util.copyArray(arr));
     this._stroke = true;
 };
 
@@ -831,7 +831,7 @@ Context.prototype.setUVQuad = function(u0,v0,u1,v1,u2,v2,u3,v3){
 };
 
 Context.prototype.resetUVQuad = function(){
-    Utils.setArr(this._bTexCoordsQuad,this._bTexCoordsQuadDefault);
+    Util.setArr(this._bTexCoordsQuad,this._bTexCoordsQuadDefault);
 };
 
 Context.prototype.setUVTriangle = function(u0,v0,u1,v1,u2,v2){
@@ -846,7 +846,7 @@ Context.prototype.setUVTriangle = function(u0,v0,u1,v1,u2,v2){
 };
 
 Context.prototype.resetUVTriangle = function(){
-    Utils.setArr(this._bTexCoordsTriangle,this._bTexCoordsTriangleDefault);
+    Util.setArr(this._bTexCoordsTriangle,this._bTexCoordsTriangleDefault);
 };
 
 Context.prototype._bindTexture = function(tex){
@@ -1763,7 +1763,7 @@ Context.prototype.pointSet = function(vertexArrOrFloat32Arr){
     var gl  = this._context3d;
 
     this.setMatrixUniform();
-    this.bufferArrays(Utils.safeFloat32Array(vertexArrOrFloat32Arr),
+    this.bufferArrays(Util.safeFloat32Array(vertexArrOrFloat32Arr),
         this.bufferColors(this._bColorFill,new Float32Array(vertexArrOrFloat32Arr.length*2)));
     gl.drawArrays(gl.POINTS,0,vertexArrOrFloat32Arr.length*0.5);
 
@@ -1794,8 +1794,8 @@ Context.prototype._polyline = function(points,pointsLength,loop){
         throw Warning.POLYLINE_INVALID_COLOR_RANGE;
     }
 
-    loop         = Utils.isUndefined(loop) ? false : loop;
-    pointsLength = ((Utils.isUndefined(pointsLength) || pointsLength == null) ? points.length : pointsLength) + (loop ? 2 : 0);
+    loop         = Util.isUndefined(loop) ? false : loop;
+    pointsLength = ((Util.isUndefined(pointsLength) || pointsLength == null) ? points.length : pointsLength) + (loop ? 2 : 0);
 
     /*------------------------------------------------------------------------------------------------------------*/
 
@@ -1806,7 +1806,7 @@ Context.prototype._polyline = function(points,pointsLength,loop){
         VertexUtil.scale(this._bVertexLineCap0,lineWidth_2,lineWidth_2,this._bVertexLineCap0S);
     }
 
-    var pointsEqual =  Utils.equalArrContent(points,stackPoints.peek());
+    var pointsEqual =  Util.equalArrContent(points,stackPoints.peek());
 
     var bMutVertex = this._bMutVertexLine, //float32 vertices
         bMutColor  = this._bMutColorLine,  //float32 colors
@@ -1923,7 +1923,7 @@ Context.prototype._polyline = function(points,pointsLength,loop){
 
     // Recalc face indices if pointsLength changed
     if(!stackPointsLength.isEqual()){
-        var bIndex = Utils.arrayResized(this._bIndexLine,edgeIndexLenTotal + capIndexLenTotal);
+        var bIndex = Util.arrayResized(this._bIndexLine,edgeIndexLenTotal + capIndexLenTotal);
 
         i = -1;
         while (++i < pointNum){
@@ -1959,14 +1959,14 @@ Context.prototype._polyline = function(points,pointsLength,loop){
     /*------------------------------------------------------------------------------------------------------------*/
 
     var bColorLength = edgeColorLenTotal + capColorLenTotal;
-    var bColor       = Utils.arrayResized(this._bColorLine,bColorLength);
+    var bColor       = Util.arrayResized(this._bColorLine,bColorLength);
 
     bMutColor.reset(bColorLength);
 
 
     if( colorStrokeLen != 4){
         if(colorStrokeLen != pointsLength * 2){
-            var bColorIntrpl = Color.colorvLerped(colorStroke,Utils.arrayResized(pointNum * 4, this._bColorStrokeIntrpl));
+            var bColorIntrpl = Color.colorvLerped(colorStroke,Util.arrayResized(pointNum * 4, this._bColorStrokeIntrpl));
 
             i = 0;
 
@@ -2017,8 +2017,8 @@ Context.prototype._polyline = function(points,pointsLength,loop){
 
     }
 
-    stackColorStroke.push(Utils.copyArray(colorStroke));
-    stackPoints.push(Utils.copyArray(points));
+    stackColorStroke.push(Util.copyArray(colorStroke));
+    stackPoints.push(Util.copyArray(points));
     stackPointsLength.push(pointsLength);
     stackWidthLine.push(lineWidth);
 };
@@ -2375,7 +2375,7 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
 
 
                 if(i > 0){
-                    Utils.setArrOffsetIndex(bIndexSet,detail,indexLen);
+                    Util.setArrOffsetIndex(bIndexSet,detail,indexLen);
                 }
 
                 bMutIndex.unsafePush(bIndexSet,indexLen);
@@ -2408,7 +2408,7 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
 
 
                 if(i > 0){
-                    Utils.setArrOffsetIndex(bIndexSet,detail,indexLen);
+                    Util.setArrOffsetIndex(bIndexSet,detail,indexLen);
                 }
 
                 bMutIndex.unsafePush(bIndexSet,indexLen);
@@ -2452,7 +2452,7 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
                 bMutTexCoord.set(bTexCoordSet,bMutTexCoord.size(),texCoordLen);
 
                 if(i > 0){
-                    Utils.setArrOffsetIndex(bIndexSet,detail,indexLen);
+                    Util.setArrOffsetIndex(bIndexSet,detail,indexLen);
                 }
 
                 bMutIndex.set(bIndexSet,bMutIndex.size());
@@ -2476,7 +2476,7 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
                 bMutTexCoord.set(bTexCoordSet,bMutTexCoord.size(),texCoordLen);
 
                 if(i > 0){
-                    Utils.setArrOffsetIndex(bIndexSet,detail,indexLen);
+                    Util.setArrOffsetIndex(bIndexSet,detail,indexLen);
                 }
 
                 bMutIndex.set(bIndexSet,bMutIndex.size());
@@ -2517,7 +2517,7 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
 Context.prototype.drawArrays = function(verticesArrOrFloat32Arr, colorArrOrFloat32Arr, mode){
     if(!this._fill)return;
 
-    var vertices = Utils.safeFloat32Array(verticesArrOrFloat32Arr),
+    var vertices = Util.safeFloat32Array(verticesArrOrFloat32Arr),
         colors   = this.bufferColors((colorArrOrFloat32Arr || this._bColorFill4),
             new Float32Array(verticesArrOrFloat32Arr.length * 2));
 
@@ -2541,22 +2541,22 @@ Context.prototype.drawArrays = function(verticesArrOrFloat32Arr, colorArrOrFloat
 
 
 Context.prototype.drawElements = function(vertices,indices,colors,mode,length){
-    vertices = Utils.safeFloat32Array(vertices);
+    vertices = Util.safeFloat32Array(vertices);
     indices  = indices ?
-        Utils.safeUint16Array(indices) :
+        Util.safeUint16Array(indices) :
         new Uint16Array(ModelUtil.genFaceIndicesLinearCW(vertices.length));
 
     //TODO: fix me
     var colorsExpLength = vertices.length * 2;
 
     colors = colors ? (colors.length == colorsExpLength ?
-        Utils.safeFloat32Array(colors) :
+        Util.safeFloat32Array(colors) :
         this.bufferColors(colors, new Float32Array(colorsExpLength))) :
         this.bufferColors(this._bColorFill4, new Float32Array(colorsExpLength));
 
     if(colors){
         colors = colors.length == colorsExpLength ?
-            Utils.safeFloat32Array(colors) :
+            Util.safeFloat32Array(colors) :
             this.bufferColors(colors, new Float32Array(colorsExpLength));
     } else {
         colors = this.bufferColors(this._bColorFill4, new Float32Array(colorsExpLength));
@@ -2737,10 +2737,10 @@ Context.prototype.endBatch = function(){
 Context.prototype.getBatch = function(out){
 
     if(out){
-        out[0] = Utils.copyFloat32Array(this._batchBVertex);
-        out[1] = Utils.copyFloat32Array(this._batchBColor);
-        out[2] = Utils.copyFloat32Array(this._batchBIndex);
-        out[3] = Utils.copyFloat32Array(this._batchBTexCoord);
+        out[0] = Util.copyFloat32Array(this._batchBVertex);
+        out[1] = Util.copyFloat32Array(this._batchBColor);
+        out[2] = Util.copyFloat32Array(this._batchBIndex);
+        out[3] = Util.copyFloat32Array(this._batchBTexCoord);
         return out;
     }
 
