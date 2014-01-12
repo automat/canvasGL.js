@@ -1,5 +1,5 @@
-var Float32ArrayMutable = require('../../src/utils/cglFloat32ArrayMutable'),
-    Uint16ArrayMutable  = require('../../src/utils/cglUint16ArrayMutable');
+var Float32ArrayMutable = require('.././cglFloat32ArrayMutable'),
+    Uint16ArrayMutable  = require('.././cglUint16ArrayMutable');
 
 function f32Set(dst,src,offset){
     var dstLen = dst.length,
