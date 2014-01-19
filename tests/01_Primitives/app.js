@@ -59,17 +59,17 @@ App.prototype.draw = function(){
     c.fill3f(1,0,0.25);
     c.rect(25,-175,100,100);
 
-    c.setModeRect(CanvasGL.CENTER);
+    c.setModeRect(CanvasGL.kCenter);
     c.fill3f(1,1,1);
     c.rect(100,-100,100,100);
 
-    c.setModeRect(CanvasGL.CENTER);
+    c.setModeRect(CanvasGL.kCenter);
     c.fill3f(1,0,0.25);
     c.roundRect(275,-125,100,100,10);
     c.fill3f(1,1,1);
     c.roundRect(300,-100,100,100,(Math.sin(time) * 0.5 + 0.5) * 30);
 
-    c.setModeRect(CanvasGL.CENTER);
+    c.setModeRect(CanvasGL.kCenter);
     c.fill3f(1,0,0);
     //c._enableTextureObj(this._texture);
     this._texture.bind();
@@ -79,7 +79,7 @@ App.prototype.draw = function(){
 
 
 
-    c.setModeRect(CanvasGL.CENTER);
+    c.setModeRect(CanvasGL.kCenter);
     var i = -1;
     var l = 2000;
     var n;
@@ -121,7 +121,7 @@ App.prototype.drawShapeOrigin = function(x,y){
     var prevFill   = c.getFill();
     var prevMode   = c.getModeCircle();
 
-    c.setModeCircle(CanvasGL.CENTER);
+    c.setModeCircle(CanvasGL.kCenter);
     c.noStroke();
     c.fill3f(0.15,0,0.65);
     c.circle(x,y,3,3);

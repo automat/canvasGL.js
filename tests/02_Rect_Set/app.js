@@ -74,7 +74,7 @@ App.prototype.drawShapeOrigin = function(x,y){
     var prevFill   = c.getFill();
     var prevMode   = c.getModeCircle();
 
-    c.setModeCircle(CanvasGL.CENTER);
+    c.setModeCircle(CanvasGL.kCenter);
     c.noStroke();
     c.fill3f(0.15,0,0.65);
     c.circle(x,y,3,3);

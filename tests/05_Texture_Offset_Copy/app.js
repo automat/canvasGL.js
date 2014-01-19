@@ -63,7 +63,7 @@ App.prototype.draw = function(){
 
     c.translate(width * 0.5, height * 0.5);
 
-    c.setModeEllipse(c.CENTER);
+    c.setModeEllipse(c.kCenter);
     c.setDetailCircle(20);
 
     c.fill3f(0.65,0,0.75);

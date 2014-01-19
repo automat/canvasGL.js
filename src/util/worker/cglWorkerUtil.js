@@ -1,24 +1,6 @@
 var ObjectUtil = require('./../cglObjectUtil');
 
 var WorkerUtil = {
-
-    __print : function(data){
-        ObjectUtil.isFunction(data) ? ObjectUtil.getFunctionString(data) :
-            ObjectUtil.isArray(data) ? ObjectUtil.getArrayString(data) :
-                ObjectUtil.isString(data) ? this.getString(data) :
-                    ObjectUtil.isTypedArray(data) ? ObjectUtil.getTypedArrayString(data) :
-                        ObjectUtil.isObject(data) ? ObjectUtil.getObjectString(data) :
-                            data;
-    },
-
-    console : {log:function(data){
-        self.postMessage({msg:0,data:this.__print(data)});
-    }},
-
-    addConsoleListener : function(worker){
-
-    },
-
     sourceFromScript : function(script){
         var blob;
         try {

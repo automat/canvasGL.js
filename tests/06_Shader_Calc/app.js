@@ -29,9 +29,9 @@ App.prototype.setup = function(){
     this._program = new CanvasGL.Program(ctx,vert,frag);
 
     var format = new CanvasGL.TextureFormat();
-        format.minFilter = CanvasGL.TextureFormat.NEAREST;
-        format.magFilter = CanvasGL.TextureFormat.NEAREST;
-        format.wrapMode  = CanvasGL.TextureFormat.CLAMP_TO_EDGE;
+        format.min_filter = CanvasGL.TextureFormat.NEAREST;
+        format.mag_filter = CanvasGL.TextureFormat.NEAREST;
+        format.wrap_mode  = CanvasGL.TextureFormat.CLAMP_TO_EDGE;
 
     this._framebuffer = new CanvasGL.Framebuffer(ctx,128,4,format);
 
@@ -51,7 +51,7 @@ App.prototype.draw = function(){
 
     c.translate(width * 0.5, height * 0.5);
 
-    c.setModeEllipse(c.CENTER);
+    c.setModeEllipse(c.kCenter);
     c.setDetailCircle(20);
 
     c.fill3f(0.65,0,0.75);

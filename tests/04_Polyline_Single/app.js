@@ -31,7 +31,7 @@ App.prototype.draw = function(){
 
     c.translate(width * 0.5, height * 0.5);
 
-    c.setModeEllipse(c.CENTER);
+    c.setModeEllipse(c.kCenter);
 
     /*
     c.fill3f(1,1,1);

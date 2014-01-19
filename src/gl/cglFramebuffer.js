@@ -3,8 +3,8 @@ var Default       = require('../common/cglDefault'),
     Texture       = require('./cglTexture');
 
 function Framebuffer(ctx,width,height,format){
-    this._ctxRef = ctx;
-    var gl = this._ctxRef.getContext3d();
+    this._ctx = ctx;
+    var gl = this._ctx.getContext3d();
     format = format || new TextureFormat().set(false,
                                                TextureFormat.LINEAR,
                                                TextureFormat.LINEAR,
@@ -13,8 +13,8 @@ function Framebuffer(ctx,width,height,format){
 
     this._tex = new Texture(ctx,width,height,format);
 
-    this.setSize(width  || Default.RENDERBUFFER_WIDTH,
-                 height || Default.RENDERBUFFER_HEIGHT);
+    this.setSize(width  || Default.FRAMEBUFFER_WIDTH,
+                 height || Default.FRAMEBUFFER_HEIGHT);
 
     this._fbo = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER,this._fbo);
@@ -43,18 +43,18 @@ Framebuffer.prototype.getTexture = function(){
 };
 
 Framebuffer.prototype.delete = function(){
-    var gl = this._ctxRef.getContext3d();
+    var gl = this._ctx.getContext3d();
     gl.deleteTexture(this._tex);
     gl.deleteFramebuffer(this._fbo);
 };
 
 Framebuffer.prototype.bind = function(){
-    if(this._ctxRef.getCurrFramebuffer() == this)return;
-    this._ctxRef._bindFramebuffer(this);
+    if(this._ctx.getCurrFramebuffer() == this)return;
+    this._ctx._bindFramebuffer(this);
 };
 
 Framebuffer.prototype.unbind = function(){
-    this._ctxRef._unbindFramebuffer();
+    this._ctx._unbindFramebuffer();
 };
 
 Framebuffer.prototype.getGLFramebuffer = function(){
@@ -62,7 +62,7 @@ Framebuffer.prototype.getGLFramebuffer = function(){
 };
 
 Framebuffer.prototype.readPixels = function(x,y,width,height,format,type,out){
-    var gl = this._ctxRef.getContext3d();
+    var gl = this._ctx.getContext3d();
     if(gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE){
         gl.readPixels(x,y,width,height,format,type,out);
     }

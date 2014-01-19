@@ -96,7 +96,7 @@ App.prototype.drawShapeOrigin = function(x,y){
 
     c.noStroke();
     c.fill3f(0,0,0);
-    c.setModeCircle(CanvasGL.CENTER);
+    c.setModeCircle(CanvasGL.kCenter);
     c.setDetailCircle(10);
     c.circle(x,y,7.5);
 

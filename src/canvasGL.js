@@ -47,15 +47,6 @@ function CanvasGL(element){
     var canvas3d = document.createElement('canvas'),
         canvas2d = document.createElement('canvas');
 
-    /*
-    //hmm
-    try{
-        this.__context = new Context(element,canvas3d,canvas2d);
-    } catch(e){
-        this.onNotAvailable();
-        return this;
-    }
-    */
     this.__context = new Context(element,canvas3d,canvas2d);
 
     /*
@@ -63,9 +54,9 @@ function CanvasGL(element){
     canvas3d.addEventListener('webglcontextrestored',this.onWebGLContextRestored.bind(this),false);
     */
 
-    this.__keyDown   = false;
-    this.__keyStr    = '';
-    this.__keyCode   = '';
+    this.__keyDown = false;
+    this.__keyStr  = '';
+    this.__keyCode = '';
 
     this.__mousePos        = [0,0];
     this.__mousePosLast    = [0,0];
@@ -87,12 +78,12 @@ function CanvasGL(element){
     //  Setup anim
     /*------------------------------------------------------------------------------------------------------------*/
 
-    this.__targetFPS    = Default.FPS;
+    this.__targetFps    = Default.FPS;
     this.__frameNum     = 0;
     this.__time         = 0;
     this.__timeStart    = -1;
     this.__timeNext     = 0;
-    this.__timeInterval = this.__targetFPS / 1000.0;
+    this.__timeInterval = this.__targetFps / 1000.0;
     this.__timeDelta    = 0;
     this.__timeElapsed  = 0;
 
@@ -115,7 +106,7 @@ function CanvasGL(element){
 
 // Override in sublclass
 CanvasGL.prototype.onNotAvailable = function(){
-    console.log(Warning.WEBGL_NOT_AVAILABLE);
+    console.log(Warning.kWebGLNotAvailable);
 };
 
 
@@ -128,12 +119,12 @@ CanvasGL.prototype.__onWebGLContextLost = function(e){
 
 // Override in sublcass
 CanvasGL.prototype.onWebGLContextLost = function(e){
-    console.log(Warning.WEBGL_CONTEXT_LOST);
+    console.log(Warning.kWebGLContextLost);
 };
 
 // TODO: finish
 CanvasGL.prototype.onWebGLContextRestored = function(){
-    console.log(Warning.WEBGL_CONTEXT_RESTORED);
+    console.log(Warning.kWebGLContextRestored);
 };
 */
 
@@ -290,13 +281,12 @@ CanvasGL.prototype.setup = function(){};
 CanvasGL.prototype.draw = function(){};
 
 // Get time props
-CanvasGL.prototype.setTargetFPS      = function(fps){this.__targetFPS = fps;this.__timeInterval  = this.__targetFPS / 1000.0;};
-CanvasGL.prototype.getTargetFPS      = function()   {return this.__targetFPS;};
+CanvasGL.prototype.setTargetFPS      = function(fps){this.__targetFps = fps;this.__timeInterval  = this.__targetFps / 1000.0;};
+CanvasGL.prototype.getTargetFPS      = function()   {return this.__targetFps;};
 CanvasGL.prototype.getFramesElapsed  = function(){return this.__frameNum;};
 CanvasGL.prototype.getSecondsElapsed = function(){return this.__timeElapsed;};
 CanvasGL.prototype.getTime           = function(){return this.__time};
 CanvasGL.prototype.getTimeStart      = function(){return this.__timeStart;};
-CanvasGL.prototype.getTimeNext       = function(){return this.__timeNext};
 CanvasGL.prototype.getTimeDelta      = function(){return this.__timeDelta;};
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -349,8 +339,8 @@ CanvasGL.CLAMP  = Context.CLAMP;
 CanvasGL.REPEAT = Context.REPEAT;
 
 CanvasGL.FUNC_ADD                = Context.FUNC_ADD;
-CanvasGL.FUNC_SUBSTRACT          = Context.FUNC_SUBSTRACT;
-CanvasGL.FUNC_REVERSER_SUBSTRACT = Context.FUNC_REVERSER_SUBSTRACT;
+CanvasGL.FUNC_SUBSTRACT          = Context.FUNC_SUBTRACT;
+CanvasGL.FUNC_REVERSE_SUBSTRACT = Context.FUNC_REVERSE_SUBTRACT;
 
 CanvasGL.ZERO = Context.ZERO;
 CanvasGL.ONE  = Context.ONE;
@@ -388,7 +378,6 @@ CanvasGL.ELEMENT_ARRAY_BUFFER = Context.ELEMENT_ARRAY_BUFFER;
 CanvasGL.Math          = require('./math/cglMath');
 CanvasGL.Program       = require('./gl/cglProgram');
 CanvasGL.Framebuffer   = require('./gl/cglFramebuffer');
-CanvasGL.ArrayBuffer   = require('./gl/cglArrayBuffer');
 CanvasGL.TextureFormat = require('./gl/cglTextureFormat');
 CanvasGL.Texture       = require('./gl/cglTexture');
 CanvasGL.ImageState    = require('./image/cglImageState');

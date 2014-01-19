@@ -3,6 +3,7 @@ var TextureFormat = require('../gl/cglTextureFormat'),
     ImageState    = require('./cglImageState');
 
 function _Image(ctx,format){
+    this._ctx = ctx;
     format = format || new TextureFormat().set(false,
                                                TextureFormat.LINEAR,
                                                TextureFormat.LINEAR,
@@ -24,12 +25,17 @@ _Image.prototype.getStatus = function(){
    return this._status;
 };
 
+_Image.prototype.draw = function(){
+    this._ctx._drawImage(this);
+};
+
 _Image.loadImage = function(ctx,imgPath,targetImg,callback){
     var imgSrc = new Image();
 
     imgSrc.addEventListener('load',function(){
         if(!imgSrc){
             targetImg._status = ImageState.IMAGE_ERROR;
+            callback();
         }
 
         targetImg.getTexture().setData(imgSrc,imgSrc.width,imgSrc.height);
@@ -40,6 +46,10 @@ _Image.loadImage = function(ctx,imgPath,targetImg,callback){
     imgSrc.src = imgPath;
 };
 
-
+_Image.fromImage = function(ctx,image){
+    var _image = new _Image(ctx);
+    _image.getTexture().setData(image,image.width,image.height);
+    return _image;
+};
 
 module.exports = _Image;

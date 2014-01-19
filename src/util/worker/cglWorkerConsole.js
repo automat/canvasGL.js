@@ -19,10 +19,12 @@ var WorkerConsole = {
                 out += '  ' + i + ' : ' + data[i] + '\n';
             }
         }
-        return out;
+
+        return out.substr(0,out.lastIndexOf('\n'));
     },
 
-    __format : function(data, detailed){
+    format : function(data, detailed){
+        detailed = Util.isUndefined(detailed) ? true : false
         return ObjectUtil.isFunction(data) ? ObjectUtil.getFunctionString(data) :
                ObjectUtil.isArray(data) ? ObjectUtil.getArrayString(data) :
                ObjectUtil.isString(data) ? ObjectUtil.getString(data) :
@@ -35,22 +37,25 @@ var WorkerConsole = {
                data;
     },
 
+    __MSG_LOG : 'worker_console_log',
+
     console : {
+        format:function(data,detailed){
+            return WorkerConsole.format(data,detailed);
+        },
         log:function(data,detailed){
-            self.postMessage({msg:0,data:WorkerConsole.__format(data,Util.isUndefined(detailed) ? true : false)});
-    }},
+            self.postMessage({msg:WorkerConsole.__MSG_LOG,data:this.format(data,detailed)});
+        }
+    },
 
     addListener : function(worker){
         worker.addEventListener('message',function(e){
             var dataObj = e.data;
-            if(dataObj.msg == 0){
+            if(dataObj.msg && dataObj.msg == WorkerConsole.__MSG_LOG){
                 console.log(dataObj.data);
             }
         })
     }
-
-
-
 };
 
 module.exports = WorkerConsole;

@@ -48,7 +48,7 @@ function Context(element,canvas3d,canvas2d){
 
 
     if(!gl){
-        throw new Error(Warning.WEBGL_NOT_AVAILABLE);
+        throw new Error(Warning.kWebGLNotAvailable);
     } //hmm
 
 
@@ -80,12 +80,12 @@ function Context(element,canvas3d,canvas2d){
         glElementArrayBuffer = gl.ELEMENT_ARRAY_BUFFER;
 
     // Setup 2d / post shader
-    var attributesToBind = {};
-    attributesToBind[ShaderDict.aVertPosition] = 0;
-    attributesToBind[ShaderDict.aVertColor]    = 1;
-    attributesToBind[ShaderDict.aTexCoord]     = 2;
+    var attributes_to_bind = {};
+    attributes_to_bind[ShaderDict.aVertPosition] = 0;
+    attributes_to_bind[ShaderDict.aVertColor]    = 1;
+    attributes_to_bind[ShaderDict.aTexCoord]     = 2;
 
-    this._program      = new Program(this, Shader.vert,     Shader.frag, attributesToBind);
+    this._program      = new Program(this, Shader.vert,     Shader.frag, attributes_to_bind);
     this._programPost  = new Program(this, Shader.vertPost, Shader.fragPost);
     this._stackProgram = new Value1Stack();
 
@@ -96,15 +96,15 @@ function Context(element,canvas3d,canvas2d){
     this._height = null;
     this._ssaaf  = Common.SSAA_FACTOR;
 
-    this._backgroundClear = Default.CLEAR_BACKGROUND;
-    this._bColorTemp      = new Array(4);
-    this._bColorBg        = new Float32Array(4);
-    this._stackColorBg    = new Value4Stack();
+    this._clearBackground = Default.CLEAR_BACKGROUND;
+    this._bColorTemp     = new Array(4);
+    this._bColorBg       = new Float32Array(4);
+    this._stackColorBg   = new Value4Stack();
 
     this._fboCanvas    = new Framebuffer(this);
-    this._fboPingPong  = new Framebuffer(this);
-    this._fboPixelRead = gl.createFramebuffer();
-    this._stackFbo     = new Value1Stack();
+    this._fboPingpong  = new Framebuffer(this);
+    this._fboPixelread = gl.createFramebuffer();
+    this._fboStack     = new Value1Stack();
 
     this._setSize(parseInt(element.offsetWidth),parseInt(element.offsetHeight));
 
@@ -120,7 +120,7 @@ function Context(element,canvas3d,canvas2d){
     gl.uniform1f(program[ShaderDict.uFlipY],1.0);
 
     // Create default blank _enableTextureObj and _enableTextureObj coords / use color & set alpha to 1.0
-    this._currTint = Default.TINT;
+    this._curr_tint = Default.TINT;
 
     var glTexture2d = gl.TEXTURE_2D,
         glRGBA      = gl.RGBA;
@@ -137,20 +137,19 @@ function Context(element,canvas3d,canvas2d){
     this.setMatrixUniform();
 
     // Set draw modes
-    this._modeEllipse     = Context.CENTER;
-    this._modeCircle      = Context.CENTER;
-    this._modeRect        = Context.CORNER;
+    this._modeEllipse      = Context.CENTER;
+    this._modeCircle       = Context.CENTER;
+    this._modeRect         = Context.CORNER;
     this._modePolylineCap = Context.CAP_ROUND;
 
     this._stackTexture          = new Value1Stack();
     this._stackTexture_internal = new Value1Stack();
-    this._texture     = false;
-    this._textureCurr = null;
+    this._texture      = false;
+    this._textureCurr  = null;
 
-    this._textureOffset = false;
-
-    this._textureOffsetX = this._textureOffsetY = 0;
-    this._textureOffsetW = this._textureOffsetH = 0;
+    this._textureOffset      = false;
+    this._textureOffsetX     = this._textureOffsetY = 0;
+    this._textureOffsetWidth = this._textureOffsetHeight = 0;
 
 
     /*------------------------------------------------------------------------------------------------------------*/
@@ -162,7 +161,7 @@ function Context(element,canvas3d,canvas2d){
         BEZIER_DETAIL_MAX  = Common.BEZIER_DETAIL_MAX;
     var ELLIPSE_DETAIL     = Default.ELLIPSE_DETAIL;
 
-    var SET_ALLOCATE_MIN_SIZE = Default.SET_ALLOCATE_MIN_SIZE;
+    var SETA_ALLOCATE_MIN = Default.SET_ALLOCATE_MIN;
 
     this._bVertexPoint     = new Float32Array(2);
     this._bVertexTriangle  = new Float32Array(6);
@@ -170,7 +169,7 @@ function Context(element,canvas3d,canvas2d){
 
     this._bVertexQuad_internal   = new Float32Array(8);
     this._bColorQuad_internal    = new Float32Array(16);
-    this._bTexCoordQuad_internal = new Float32Array(8);
+    this._bTexcoordQuad_internal = new Float32Array(8);
 
     this._bIndexQuad     = new Uint16Array([0,1,2,1,2,3]);
 
@@ -184,10 +183,10 @@ function Context(element,canvas3d,canvas2d){
     // rect set
     this._bVertexRectSet      = new Float32Array(6 * 2);
     this._bColorRectSet       = new Float32Array(4);
-    this._bTexCoordsRectSet   = new Float32Array([0,0,0,1,1,1,1,1,1,0,0,0]);
-    this._bMutVertexRectSet   = new Float32ArrayMutable(4 * 2 * SET_ALLOCATE_MIN_SIZE,true);
-    this._bMutColorRectSet    = new Float32ArrayMutable(4 * 4 * SET_ALLOCATE_MIN_SIZE,true);
-    this._bMutTexCoordRectSet = new Float32ArrayMutable(4 * 2 * SET_ALLOCATE_MIN_SIZE,true);
+    this._bTexcoordRectSet    = new Float32Array([0,0,0,1,1,1,1,1,1,0,0,0]);
+    this._bMutVertexRectSet   = new Float32ArrayMutable(4 * 2 * SETA_ALLOCATE_MIN,true);
+    this._bMutColorRectSet    = new Float32ArrayMutable(4 * 4 * SETA_ALLOCATE_MIN,true);
+    this._bMutTexcoordRectSet = new Float32ArrayMutable(4 * 2 * SETA_ALLOCATE_MIN,true);
 
     //this._propertyStack
 
@@ -197,12 +196,12 @@ function Context(element,canvas3d,canvas2d){
     this._bVertexCircleSet   = new Float32Array(bVertexEllipseLen);
     this._bColorCircleSet    = new Float32Array(4 * ELLIPSE_DETAIL_MAX);
     this._bIndexCircleSet    = new DataType.UintArray(bIndexEllipseLen);
-    this._bTexCoordCircleSet = new Float32Array(bVertexEllipseLen);
+    this._bTexcoordCircleSet = new Float32Array(bVertexEllipseLen);
 
-    this._bMutVertexCircleSet   = new Float32ArrayMutable(bVertexEllipseLen * SET_ALLOCATE_MIN_SIZE,true);
-    this._bMutColorCircleSet    = new Float32ArrayMutable(bColorEllipseLen  * SET_ALLOCATE_MIN_SIZE,true);
-    this._bMutTexCoordCircleSet = new Float32ArrayMutable(bVertexEllipseLen * SET_ALLOCATE_MIN_SIZE,true);
-    this._bMutIndexCircleSet    = new DataType.UintArrayMut( bIndexEllipseLen  * SET_ALLOCATE_MIN_SIZE,true);
+    this._bMutVertexCircleSet   = new Float32ArrayMutable(bVertexEllipseLen * SETA_ALLOCATE_MIN,true);
+    this._bMutColorCircleSet    = new Float32ArrayMutable(bColorEllipseLen  * SETA_ALLOCATE_MIN,true);
+    this._bMutTexcoordCircleSet = new Float32ArrayMutable(bVertexEllipseLen * SETA_ALLOCATE_MIN,true);
+    this._bMutIndexCircleSet    = new DataType.UintArrayMut( bIndexEllipseLen  * SETA_ALLOCATE_MIN,true);
 
 
     /*------------------------------------------------------------------------------------------------------------*/
@@ -220,7 +219,7 @@ function Context(element,canvas3d,canvas2d){
 
     // circle
     this._bVertexCircle     = new Float32Array(bVertexEllipseLen);  // circle vertices from detail
-    this._bVertexCirlceS    = new Float32Array(bVertexEllipseLen);  // cirlce vertices from unit scaled
+    this._bVertexCircleS    = new Float32Array(bVertexEllipseLen);  // cirlce vertices from unit scaled
     this._bVertexCircleT    = new Float32Array(bVertexEllipseLen);  // circle vertices from scaled translated
     this._bColorCircle      = new Float32Array(4 * ELLIPSE_DETAIL_MAX);
     this._bIndexCircle      = null;
@@ -231,34 +230,34 @@ function Context(element,canvas3d,canvas2d){
     /*------------------------------------------------------------------------------------------------------------*/
 
     // round rect
-    var bVertexRoundRectLen = ELLIPSE_DETAIL_MAX * 2 + 8;
-    this._bVertexRoundRect  = new Float32Array(bVertexRoundRectLen); // round rect from corner detail scaled
-    this._bVertexRoundRectT = new Float32Array(bVertexRoundRectLen); // round rect from scaled translated
-    this._bIndexRoundRect   = new Uint16Array((((this._bVertexRoundRect.length) / 2)-2) * 3);
-    this._bCornerRoundRect  = new Float32Array(8);
-    this._stackDetailRRect  = new Value1Stack();
-    this._stackSizeRRect    = new Value2Stack();
-    this._stackRadiusRRect  = new Value1Stack();
-    this._stackOriginRRect  = new Value2Stack();
+    var bVertexRRectLen = ELLIPSE_DETAIL_MAX * 2 + 8;
+    this._bVertexRRect     = new Float32Array(bVertexRRectLen); // round rect from corner detail scaled
+    this._bVertexRRectT    = new Float32Array(bVertexRRectLen); // round rect from scaled translated
+    this._bIndexRRect      = new Uint16Array((((this._bVertexRRect.length) / 2)-2) * 3);
+    this._bCornerRRect     = new Float32Array(8);
+    this._stackDetailRRect = new Value1Stack();
+    this._stackSizeRRect   = new Value2Stack();
+    this._stackRadiusRRect = new Value1Stack();
+    this._stackOriginRRect = new Value2Stack();
 
     /*------------------------------------------------------------------------------------------------------------*/
 
     // arc
-    var bVertexArcLen      = ELLIPSE_DETAIL_MAX * 2 * 2;
-    this._bVertexArc       = new Float32Array(bVertexArcLen);
-    this._bVertexArcT      = new Float32Array(bVertexArcLen);
-    this._stackDetailArc   = new Value1Stack();
-    this._stackRadiusIArc  = new Value2Stack();
-    this._stackRadiusOArc  = new Value2Stack();
-    this._stackAngleArc    = new Value2Stack();
-    this._stackOriginArc   = new Value2Stack();
-    this._bVertexArcStroke = new Float32Array(ELLIPSE_DETAIL_MAX * 2);
+    var bVertexArcLen = ELLIPSE_DETAIL_MAX * 2 * 2;
+    this._bVertexArc          = new Float32Array(bVertexArcLen);
+    this._bVertexArcT         = new Float32Array(bVertexArcLen);
+    this._stackDetailArc      = new Value1Stack();
+    this._stackRadiusInnerArc = new Value2Stack();
+    this._stackRadiusOuterArc = new Value2Stack();
+    this._stackAngleArc       = new Value2Stack();
+    this._stackOriginArc      = new Value2Stack();
+    this._bVertexArcStroke    = new Float32Array(ELLIPSE_DETAIL_MAX * 2);
 
     /*------------------------------------------------------------------------------------------------------------*/
 
     // bezier
     this._bVertexBezier     = new Float32Array(BEZIER_DETAIL_MAX  * 2);
-    this._bPointsBezier     = new Array(2 * 4); // cache
+    this._bPointBezier      = new Array(2 * 4); // cache
     this._stackDetailBezier = new Value1Stack();
 
     /*------------------------------------------------------------------------------------------------------------*/
@@ -269,22 +268,20 @@ function Context(element,canvas3d,canvas2d){
     /*------------------------------------------------------------------------------------------------------------*/
 
     // polyline
-    var capDetail = Common.LINE_ROUND_CAP_DETAIL_MAX; //this is constant for now
-    var lineCap0Length = 2 * capDetail;
-    this._bVertexLineCap0       = GeomUtil.genVerticesCircle(capDetail, new Float32Array(lineCap0Length));
-    this._bVertexLineCap0S      = new Float32Array(lineCap0Length);
-    this._bVertexLineCap0T      = new Float32Array(lineCap0Length);
+    var lineCapDetail = Common.LINE_ROUND_CAP_DETAIL_MAX; //this is constant for now
+    var lineCap0Len   = 2 * lineCapDetail;
+    this._bVertexLineCap0       = GeomUtil.genVerticesCircle(lineCapDetail, new Float32Array(lineCap0Len));
+    this._bVertexLineCap0S      = new Float32Array(lineCap0Len);
+    this._bVertexLineCap0T      = new Float32Array(lineCap0Len);
     this._bVertexLineEdge       = new Float32Array(8);
     this._stackPointsLine       = new ValueArrStack();
     this._stackPointsLineLength = new Value1Stack();
     this._bIndexLine            = [];
     this._bColorLine            = [];
-    this.bPointLine4            = new Array(4);
-
-
+    this._bPointLine4           = new Array(4);
 
     this._bLineCap0Res    = 0;
-    this._bIndexLineCap0  = ModelUtil.genFaceIndicesFan(capDetail * 2,[]);
+    this._bIndexLineCap0  = ModelUtil.genFaceIndicesFan(lineCapDetail * 2,[]);
 
     this._stackWidthLine  = new Value1Stack();
     this._bMutVertexLine  = new Float32ArrayMutable(2 * 100,true);
@@ -292,29 +289,25 @@ function Context(element,canvas3d,canvas2d){
     this._bMutIndexLine   = new Uint16ArrayMutable((100 - 2) * 3,true);
 
 
+    this._bTexcoordQuadDefault     = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,1.0]);
+    this._bTexcoordQuad            = new Float32Array(this._bTexcoordQuadDefault);
+    this._bTexcoordTriangleDefault = new Float32Array([0.0,0.0,1.0,0.0,1.0,1.0]);
+    this._bTexcoordTriangle        = new Float32Array(this._bTexcoordTriangleDefault.length);
+    this._bTexcoordEllipse         = new Float32Array(this._bVertexEllipse.length);
+    this._bTexcoordArc             = new Float32Array(this._bVertexArc.length);
+
+    this._bColorVertex   = new Float32Array(4);
+    this._bColorQuad     = new Float32Array(4 * 4);
+    this._bColorTriangle = new Float32Array(4 * 3);
+    this._bColorLine     = new Float32Array(4 * 2);
+    this._bColorPoint    = new Float32Array(4);
+    this._bColorArc      = new Float32Array(4 * ELLIPSE_DETAIL_MAX*2);
+    this._bColorRRect    = new Float32Array(this._bVertexRRect.length * 2);
 
 
-
-
-    this._bTexCoordsQuadDefault     = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,1.0]);
-    this._bTexCoordsQuad            = new Float32Array(this._bTexCoordsQuadDefault);
-    this._bTexCoordsTriangleDefault = new Float32Array([0.0,0.0,1.0,0.0,1.0,1.0]);
-    this._bTexCoordsTriangle        = new Float32Array(this._bTexCoordsTriangleDefault.length);
-    this._bTexCoordsEllipse         = new Float32Array(this._bVertexEllipse.length);
-    this._bTexCoodsArc              = new Float32Array(this._bVertexArc.length);
-
-    this._bColorVertex       = new Float32Array(4);
-    this._bColorQuad         = new Float32Array(4 * 4);
-    this._bColorTriangle     = new Float32Array(4 * 3);
-    this._bColorLine         = new Float32Array(4 * 2);
-    this._bColorPoint        = new Float32Array(4);
-    this._bColorArc          = new Float32Array(4 * ELLIPSE_DETAIL_MAX*2);
-    this._bColorRoundRect    = new Float32Array(this._bVertexRoundRect.length * 2);
-
-
-    this._bVertexFbo  = new Float32Array(8);
-    this._bColorFbo   = new Float32Array(4 * 4);
-    this._bTexCoordFbo= new Float32Array([0,0,1,0,0,1,1,1]);
+    this._bVertexFbo   = new Float32Array(8);
+    this._bColorFbo    = new Float32Array(4 * 4);
+    this._bTexcoordFbo = new Float32Array([0,0,1,0,0,1,1,1]);
 
     this._bIndexTriangle = [0,1,2];
 
@@ -327,11 +320,11 @@ function Context(element,canvas3d,canvas2d){
     this._bColorFill4 = [1.0,1.0,1.0,1.0];
     this._bColorFill  = this._bColorFill4;
 
-    this._stroke           = true;
-    this._bColorStroke4    = [1.0,1.0,1.0,1.0];
-    this._bColorStroke     = this._bColorStroke4;
-    this._stackColorStroke = new ValueArrStack();
-    this._bColorStroke4Temp= new Array(4);
+    this._stroke             = true;
+    this._bColorStroke4      = [1.0,1.0,1.0,1.0];
+    this._bColorStroke       = this._bColorStroke4;
+    this._stackColorStroke   = new ValueArrStack();
+    this._bColorStroke4Temp  = new Array(4);
     this._bColorStrokeIntrpl = [];
 
     this._tempCurveVertices = [];
@@ -340,29 +333,29 @@ function Context(element,canvas3d,canvas2d){
 
     // batch
 
-    this._batchActive             = false;
-    this._batchOffsetVertices     = 0;
+    this._batchActive        = false;
+    this._batchOffsetVertices = 0;
 
-    this._batchBVertex     = [];
-    this._batchBColor = [];
-    this._batchBIndex      = [];
-    this._batchBTexCoord    = [];
+    this._batchBVertex   = [];
+    this._batchBColor    = [];
+    this._batchBIndex    = [];
+    this._batchBTexcoord = [];
 
     this._batchLimit = 0;
 
     this._batchTextureActive = false;
 
 
-    this._stackEllipseSize   = 0;
-    this._stackRectSize      = 0;
-    this._stackRoundRectSize = 0;
-    this._stackArcSize       = 0;
-    this._stackCircleSize    = 0;
-    this._stackQuadSize      = 0;
-    this._stackPointSize     = 0;
-    this._stackLineSize      = 0;
-    this._stackCurveSize     = 0;
-    this._stackBezierSize    = 0;
+    this._stackEllipseSize = 0;
+    this._stackRectSize    = 0;
+    this._stackRRectSize   = 0;
+    this._stackArcSize     = 0;
+    this._stackCircleSize  = 0;
+    this._stackQuadSize    = 0;
+    this._stackPointSize   = 0;
+    this._stackLineSize    = 0;
+    this._stackCurveSize   = 0;
+    this._stackBezierSize  = 0;
 
     this._stackDrawFunc = new Value1Stack();
 
@@ -387,7 +380,7 @@ Context.prototype._setSize = function(width, height){
         iheight = canvas3d.height = this._height_internal = height * ssaaf;
 
     this._fboCanvas.setSize(iwidth,iheight);
-    this._fboPingPong.setSize(iwidth,iheight);
+    this._fboPingpong.setSize(iwidth,iheight);
 
     var program = this._program;
 
@@ -396,11 +389,8 @@ Context.prototype._setSize = function(width, height){
     gl.viewport(0,0,iwidth,iheight);
 
     var colorBG = this._bColorBg;
-    var i_255 = 1.0 / 255.0;
 
-    gl.clearColor(colorBG[0] * i_255,
-        colorBG[1] * i_255,
-        colorBG[2] * i_255,1.0);
+    gl.clearColor(colorBG[0], colorBG[1], colorBG[2], 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 };
 
@@ -459,8 +449,8 @@ Context.prototype._resetDrawProperties = function(){
     // arc
     this._stackDetailArc.push(EMPTY1);
     this._stackOriginArc.push(EMPTY2);
-    this._stackRadiusIArc.push(EMPTY2);
-    this._stackRadiusOArc.push(EMPTY2);
+    this._stackRadiusInnerArc.push(EMPTY2);
+    this._stackRadiusOuterArc.push(EMPTY2);
     this._stackAngleArc.push(EMPTY2);
     this.setDetailArc(Default.ELLIPSE_DETAIL);
 
@@ -492,7 +482,7 @@ Context.prototype._resetDrawProperties = function(){
 Context.prototype._resetDrawFuncStacks = function(){
     this._stackEllipseSize   = 0;
     this._stackRectSize      = 0;
-    this._stackRoundRectSize = 0;
+    this._stackRRectSize = 0;
     this._stackArcSize       = 0;
     this._stackCircleSize    = 0;
     this._stackQuadSize      = 0;
@@ -568,10 +558,10 @@ Context.prototype.getTextureWrap = function(){
 
 
 Context.prototype.setDetailEllipse = function(a){
-    var stackDetailEllipse = this._stackDetailEllipse;
-    if(stackDetailEllipse.peek() == a)return;
+    var stack = this._stackDetailEllipse;
+    if(stack.peek() == a)return;
     var max = Common.ELLIPSE_DETAIL_MAX;
-    stackDetailEllipse.push(a > max ? max : a);
+    stack.push(a > max ? max : a);
 };
 
 Context.prototype.getDetailEllipse = function(){
@@ -579,10 +569,10 @@ Context.prototype.getDetailEllipse = function(){
 };
 
 Context.prototype.setDetailCircle = function(a){
-    var stackDetailCircle = this._stackDetailCircle;
-    if(stackDetailCircle.peek() == a)return;
+    var stack = this._stackDetailCircle;
+    if(stack.peek() == a)return;
     var max = Common.ELLIPSE_DETAIL_MAX;
-    stackDetailCircle.push(a > max ? max : a);
+    stack.push(a > max ? max : a);
 };
 
 Context.prototype.getDetailCircle = function(){
@@ -590,10 +580,10 @@ Context.prototype.getDetailCircle = function(){
 };
 
 Context.prototype.setDetailCorner = function(a){
-    var stackDetailRRect = this._stackDetailRRect;
-    if(stackDetailRRect.peek() == a)return;
+    var stack = this._stackDetailRRect;
+    if(stack.peek() == a)return;
     var max = Common.CORNER_DETAIL_MAX;
-    stackDetailRRect.push(a > max ? max : a);
+    stack.push(a > max ? max : a);
 };
 
 Context.prototype.getDetailCorner = function(){
@@ -601,10 +591,10 @@ Context.prototype.getDetailCorner = function(){
 };
 
 Context.prototype.setDetailArc = function(a){
-    var stackDetailArc = this._stackDetailArc;
-    if(stackDetailArc.peek() == a)return;
+    var stack = this._stackDetailArc;
+    if(stack.peek() == a)return;
     var max = Common.ELLIPSE_DETAIL_MAX;
-    stackDetailArc.push(a > max ? max : a);
+    stack.push(a > max ? max : a);
 };
 
 Context.prototype.getDetailArc = function(){
@@ -612,10 +602,10 @@ Context.prototype.getDetailArc = function(){
 };
 
 Context.prototype.setDetailBezier = function(a){
-    var stackDetailBezier = this._stackDetailBezier;
-    if(stackDetailBezier.peek() == a)return;
+    var stack = this._stackDetailBezier;
+    if(stack.peek() == a)return;
     var max = Common.BEZIER_DETAIL_MAX;
-    stackDetailBezier.push(a > max ? max : a);
+    stack.push(a > max ? max : a);
 };
 
 Context.prototype.getDetailBezier = function(){
@@ -623,10 +613,10 @@ Context.prototype.getDetailBezier = function(){
 };
 
 Context.prototype.setDetailCurve = function(a){
-    var stackDetailSpline = this._stackDetailSpline;
-    if(stackDetailSpline.peek() == a)return;
+    var stack = this._stackDetailSpline;
+    if(stack.peek() == a)return;
     var max = Common.SPLINE_DETAIL_MAX;
-    stackDetailSpline.push(a > max ? max : a);
+    stack.push(a > max ? max : a);
 };
 
 Context.prototype.getDetailCurve  = function(){
@@ -634,9 +624,9 @@ Context.prototype.getDetailCurve  = function(){
 };
 
 Context.prototype.setLineWidth = function(a){
-    var stackWidthPolyline = this._stackWidthLine;
-    if(stackWidthPolyline.peek() == a)return;
-    stackWidthPolyline.push(a < 0 ? 0 : a);
+    var stack = this._stackWidthLine;
+    if(stack.peek() == a)return;
+    stack.push(a < 0 ? 0 : a);
 };
 
 Context.prototype.getLineWidth = function(){
@@ -659,14 +649,13 @@ Context.prototype.disableBlend = function(){
 Context.prototype.fill = function(){
     var f = this._bColorFill = this._bColorFill4;
     f[3] = 1.0;
-    var i_255 = 1.0 / 255.0;
 
     switch (arguments.length){
         case 0: f[0] = f[1] = f[2]  = 0.0; break;
-        case 1: f[0] = f[1] = f[2]  = arguments[0] * i_255; break;
-        case 2: f[0] = f[1] = f[2]  = arguments[0] * i_255;f[3] = arguments[1];break;
-        case 3: f[0] = arguments[0] * i_255; f[1] = arguments[1] * i_255; f[2] = arguments[2] * i_255; break;
-        case 4: f[0] = arguments[0] * i_255; f[1] = arguments[1] * i_255; f[2] = arguments[2] * i_255; f[3] = arguments[3]; break;
+        case 1: f[0] = f[1] = f[2]  = arguments[0]; break;
+        case 2: f[0] = f[1] = f[2]  = arguments[0];f[3] = arguments[1];break;
+        case 3: f[0] = arguments[0]; f[1] = arguments[1]; f[2] = arguments[2]; break;
+        case 4: f[0] = arguments[0]; f[1] = arguments[1]; f[2] = arguments[2]; f[3] = arguments[3]; break;
     }
 
     this._fill = true;
@@ -674,42 +663,26 @@ Context.prototype.fill = function(){
 
 
 Context.prototype.fill1f = function(k){
-    var f = this._bColorFill = this._bColorFill4;
-    f[0] = f[1] = f[2] = k;f[3] = 1.0;
+    var bColor = this._bColorFill = this._bColorFill4;
+    bColor[0] = bColor[1] = bColor[2] = k;bColor[3] = 1.0;
     this._fill = true;
 };
 
 Context.prototype.fill2f = function(k,a){
-    var f = this._bColorFill = this._bColorFill4;
-    f[0] = f[1] = f[2] = k;f[3] = a;
+    var bColor = this._bColorFill = this._bColorFill4;
+    bColor[0] = bColor[1] = bColor[2] = k;bColor[3] = a;
     this._fill = true;
 };
 
 Context.prototype.fill3f = function(r,g,b){
-    var f = this._bColorFill = this._bColorFill4;
-    f[0] = r;f[1] = g; f[2] = b;f[3] = 1.0;
+    var bColor = this._bColorFill = this._bColorFill4;
+    bColor[0] = r;bColor[1] = g; bColor[2] = b;bColor[3] = 1.0;
     this._fill = true;
 };
 
 Context.prototype.fill4f = function(r,g,b,a){
-    var f = this._bColorFill = this._bColorFill4;
-    f[0] = r;f[1] = g; f[2] = b;f[3] = a;
-    this._fill = true;
-};
-
-Context.prototype.fillv =  function(a){
-    this.filliv(a);
-};
-
-Context.prototype.filliv = function(a){
-    var i = 0;
-    var i_255 = 1.0 / 255.0;
-    while(i < a.length){
-        a[i  ] *= i_255; a[i+1] *= i_255;a[i+2] *= i_255;
-        i+=4;
-    }
-
-    this._bColorFill = a;
+    var bColor = this._bColorFill = this._bColorFill4;
+    bColor[0] = r;bColor[1] = g; bColor[2] = b;bColor[3] = a;
     this._fill = true;
 };
 
@@ -764,12 +737,12 @@ Context.prototype.strokefv = function(a){
 };
 
 Context.prototype._stroke4f = function(r,g,b,a){
-    var bColorStroke4fTemp = this._bColorStroke4Temp;
-        bColorStroke4fTemp[0] = r;
-        bColorStroke4fTemp[1] = g;
-        bColorStroke4fTemp[2] = b;
-        bColorStroke4fTemp[3] = a;
-    this._stackColorStroke.push(Util.copyArray(bColorStroke4fTemp));
+    var bColor = this._bColorStroke4Temp;
+        bColor[0] = r;
+        bColor[1] = g;
+        bColor[2] = b;
+        bColor[3] = a;
+    this._stackColorStroke.push(Util.copyArray(bColor));
     this._stroke = true;
 };
 
@@ -800,10 +773,10 @@ Context.prototype.getFill = function(){
 
 
 Context.prototype.setUVOffset = function(offsetU,offsetV,textureWidth,textureHeight){
-    this._textureOffsetX = offsetU;
-    this._textureOffsetY = offsetV;
-    this._textureOffsetW = textureWidth-1;
-    this._textureOffsetH = textureHeight-1;
+    this._textureOffsetX      = offsetU;
+    this._textureOffsetY      = offsetV;
+    this._textureOffsetWidth  = textureWidth-1;
+    this._textureOffsetHeight = textureHeight-1;
 
     this._textureOffset = true;
 };
@@ -811,42 +784,40 @@ Context.prototype.setUVOffset = function(offsetU,offsetV,textureWidth,textureHei
 Context.prototype.resetUVOffset = function(){
     this._textureOffsetX = 0;
     this._textureOffsetY = 0;
-    this._textureOffsetW = 1;
-    this._textureOffsetH = 1;
+    this._textureOffsetWidth = 1;
+    this._textureOffsetHeight = 1;
 
     this._textureOffset = false;
 };
 
 Context.prototype.setUVQuad = function(u0,v0,u1,v1,u2,v2,u3,v3){
-    var t = this._bTexCoordsQuad;
-
-    t[0] = u0;
-    t[1] = v0;
-    t[2] = u1;
-    t[3] = v1;
-    t[4] = u2;
-    t[5] = v2;
-    t[6] = u3;
-    t[7] = v3;
+    var bTexcoord = this._bTexcoordQuad;
+        bTexcoord[0] = u0;
+        bTexcoord[1] = v0;
+        bTexcoord[2] = u1;
+        bTexcoord[3] = v1;
+        bTexcoord[4] = u2;
+        bTexcoord[5] = v2;
+        bTexcoord[6] = u3;
+        bTexcoord[7] = v3;
 };
 
 Context.prototype.resetUVQuad = function(){
-    Util.setArr(this._bTexCoordsQuad,this._bTexCoordsQuadDefault);
+    Util.setArr(this._bTexcoordQuad,this._bTexcoordQuadDefault);
 };
 
 Context.prototype.setUVTriangle = function(u0,v0,u1,v1,u2,v2){
-    var t = this._bTexCoordsTriangle;
-
-    t[0] = u0;
-    t[1] = v0;
-    t[2] = u1;
-    t[3] = v1;
-    t[4] = u2;
-    t[5] = v2;
+    var bTexCoord = this._bTexcoordTriangle;
+        bTexCoord[0] = u0;
+        bTexCoord[1] = v0;
+        bTexCoord[2] = u1;
+        bTexCoord[3] = v1;
+        bTexCoord[4] = u2;
+        bTexCoord[5] = v2;
 };
 
 Context.prototype.resetUVTriangle = function(){
-    Util.setArr(this._bTexCoordsTriangle,this._bTexCoordsTriangleDefault);
+    Util.setArr(this._bTexcoordTriangle,this._bTexcoordTriangleDefault);
 };
 
 Context.prototype._bindTexture = function(tex){
@@ -897,11 +868,11 @@ Context.prototype.resetBlend = function(){
 };
 
 Context.prototype.tint = function(a){
-    this._currTint = Math.max(Common.TINT_MIN,Math.min(a,Common.TINT_MAX));
+    this._curr_tint = Math.max(Common.TINT_MIN,Math.min(a,Common.TINT_MAX));
 };
 
 Context.prototype.noTint = function(){
-    this._currTint = Common.TINT_MAX;
+    this._curr_tint = Common.TINT_MAX;
 };
 
 
@@ -919,7 +890,7 @@ Context.prototype.drawFbo = function(fbo,width,height){
 
     var bVertex   = this._bVertexFbo,
         bColor    = this._bColorFbo,
-        bTexCoord = this._bTexCoordFbo;
+        bTexcoord = this._bTexcoordFbo;
 
     bVertex[0] = bVertex[1] = bVertex[3] = bVertex[4] =0;
     bVertex[2] = bVertex[6] = width;
@@ -928,7 +899,7 @@ Context.prototype.drawFbo = function(fbo,width,height){
     this.setMatrixUniform();
 
     fbo.getTexture().bind();
-    this.bufferArrays(bVertex,bColor,bTexCoord);
+    this.bufferArrays(bVertex,bColor,bTexcoord);
 
     gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
@@ -940,33 +911,33 @@ Context.prototype.drawFbo = function(fbo,width,height){
 Context.prototype._bindFramebuffer = function(fbo){
     var gl = this._context3d;
     gl.bindFramebuffer(gl.FRAMEBUFFER,fbo.getGLFramebuffer());
-    this._stackFbo.push(fbo);
+    this._fboStack.push(fbo);
 };
 
 Context.prototype._unbindFramebuffer = function(){
     var gl = this._context3d;
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-    this._stackFbo.push(Value1Stack.EMPTY);
+    this._fboStack.push(Value1Stack.EMPTY);
 };
 
 Context.prototype._readPixelsFromTex = function(tex,out){
     var gl = this._context3d;
-    gl.bindFramebuffer(gl.FRAMEBUFFER,this._fboPixelRead);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,this._fboPixelread);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex.getGLTexture(), 0);
     if(gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE){
         var format = tex.getFormat();
-        gl.readPixels(0,0,tex.getWidth(),tex.getHeight(),format.dataFormat,format.dataType,out);
+        gl.readPixels(0,0,tex.getWidth(),tex.getHeight(),format.data_format,format.data_type,out);
     }
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER,this._stackFbo.peek());
+    gl.bindFramebuffer(gl.FRAMEBUFFER,this._fboStack.peek());
 };
 
 Context.prototype._writePixelsToTex = function(tex,x,y,width,height,format,type,pixels){
     var gl = this._context3d;
-    var stackTexture = this._stackTexture;
+    var stack = this._stackTexture;
     gl.bindTexture(gl.TEXTURE_2D,tex.getGLTexture());
     gl.texSubImage2D(gl.TEXTURE_2D,0,x,y,width,height,format,type,pixels);
-    gl.bindTexture(gl.TEXTURE_2D,stackTexture.peek() ? stackTexture.peek().getGLTexture() : this._blankTextureGL);
+    gl.bindTexture(gl.TEXTURE_2D,stack.peek() ? stack.peek().getGLTexture() : this._blankTextureGL);
 };
 
 Context.prototype.bindDefaultFramebuffer = function(){
@@ -974,7 +945,7 @@ Context.prototype.bindDefaultFramebuffer = function(){
 };
 
 Context.prototype.getCurrFramebuffer = function(){
-    return this._stackFbo.peek();
+    return this._fboStack.peek();
 };
 
 
@@ -984,18 +955,18 @@ Context.prototype.getCurrFramebuffer = function(){
 
 
 Context.prototype.backgroundfv = function(){
-    var col  = this._bColorTemp;
-    col[3] = 1.0;
+    var bColor  = this._bColorTemp;
+    bColor[3] = 1.0;
 
     switch (arguments.length){
-        case 0: col[0]=col[1]=col[2]=0.0;break;
-        case 1: col[0]=col[1]=col[2]=arguments[0];break;
-        case 2: col[0]=col[1]=col[2]=arguments[0];col[3]=arguments[1];break;
-        case 3: col[0]=arguments[0];col[1]=arguments[1];col[2]=arguments[2];break;
-        case 4: col[0]=arguments[0];col[1]=arguments[1];col[2]=arguments[2];col[3]=arguments[3];break;
+        case 0: bColor[0]=bColor[1]=bColor[2]=0.0;break;
+        case 1: bColor[0]=bColor[1]=bColor[2]=arguments[0];break;
+        case 2: bColor[0]=bColor[1]=bColor[2]=arguments[0];bColor[3]=arguments[1];break;
+        case 3: bColor[0]=arguments[0];bColor[1]=arguments[1];bColor[2]=arguments[2];break;
+        case 4: bColor[0]=arguments[0];bColor[1]=arguments[1];bColor[2]=arguments[2];bColor[3]=arguments[3];break;
     }
 
-    this._backgroundClear = (col[3] == 1.0);
+    this._clearBackground = (bColor[3] == 1.0);
     this._stackColorBg.push(this._bColorTemp);
 };
 
@@ -1003,33 +974,33 @@ Context.prototype.backgroundfv = function(){
 Context.prototype.clearColorBuffer = function(){
     var gl = this._context3d;
 
-    var stackColorBg    = this._stackColorBg;
-    var stackColorBgTop = stackColorBg.peek();
-    var color = this._bColorBg;
-    color[0] = stackColorBgTop[0];
-    color[1] = stackColorBgTop[1];
-    color[2] = stackColorBgTop[2];
-    color[3] = stackColorBgTop[3];
+    var stackColor = this._stackColorBg;
+    var color = stackColor.peek();
+    var bColor = this._bColorBg;
+    bColor[0] = color[0];
+    bColor[1] = color[1];
+    bColor[2] = color[2];
+    bColor[3] = color[3];
 
     var i_255 = 1.0 / 255.0;
 
-    if(this._backgroundClear){
-        gl.clearColor(color[0],color[1],color[2],1.0);
+    if(this._clearBackground){
+        gl.clearColor(bColor[0],bColor[1],bColor[2],1.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
     }
     else{
-        if(!stackColorBg.isEqual()){
-            var c0 = color[0] * i_255,
-                c1 = color[1] * i_255,
-                c2 = color[2] * i_255;
+        if(!stackColor.isEqual()){
+            var c0 = bColor[0] * i_255,
+                c1 = bColor[1] * i_255,
+                c2 = bColor[2] * i_255;
 
             gl.clearColor(c0,c1,c2,1.0);
             gl.clear(gl.COLOR_BUFFER_BIT );
 
-            stackColorBg.push(stackColorBg.peek());
+            stackColor.push(stackColor.peek());
         }
 
-        this.fill(color[0],color[1],color[2],color[3]);
+        this.fill(bColor[0],bColor[1],bColor[2],bColor[3]);
         this.rect(0,0,this._width_internal,this._height_internal);
         this.noFill();
     }
@@ -1050,7 +1021,7 @@ Context.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
 };
 
 Context.prototype._quad_internal = function(x0,y0,x1,y1,x2,y2,x3,y3){
-    var gl      = this._context3d;
+    var gl = this._context3d;
     var bVertex = this._bVertexQuad_internal,
         bColor;
 
@@ -1077,31 +1048,31 @@ Context.prototype._quad_internal = function(x0,y0,x1,y1,x2,y2,x3,y3){
     if(this._texture){
         bColor = this.bufferColors(this._bColorFill,this._bColorQuad_internal);
 
-        var bTexCoord = this._bTexCoordsQuad,
-            bTexCoordD= this._bTexCoordsQuadDefault;
+        var bTexcoord        = this._bTexcoordQuad,
+            bTexcoordDefault = this._bTexcoordQuadDefault;
 
         if(this._textureOffset){
-            var tox = this._textureOffsetX,
-                toy = this._textureOffsetY,
-                tow = this._textureOffsetW,
-                toh = this._textureOffsetH;
+            var offsetX      = this._textureOffsetX,
+                offsetY      = this._textureOffsetY,
+                offsetWidth  = this._textureOffsetWidth,
+                offsetHeight = this._textureOffsetHeight;
 
-            bTexCoord[0] = bTexCoordD[0] + tox;
-            bTexCoord[1] = bTexCoordD[1] + toy;
+            bTexcoord[0] = bTexcoordDefault[0] + offsetX;
+            bTexcoord[1] = bTexcoordDefault[1] + offsetY;
 
-            bTexCoord[2] = bTexCoordD[2] + tox + tow;
-            bTexCoord[3] = bTexCoordD[3] + toy;
+            bTexcoord[2] = bTexcoordDefault[2] + offsetX + offsetWidth;
+            bTexcoord[3] = bTexcoordDefault[3] + offsetY;
 
-            bTexCoord[4] = bTexCoordD[4] + tox;
-            bTexCoord[5] = bTexCoordD[5] + toy + toh;
+            bTexcoord[4] = bTexcoordDefault[4] + offsetX;
+            bTexcoord[5] = bTexcoordDefault[5] + offsetY + offsetHeight;
 
-            bTexCoord[6] = bTexCoordD[6] + tox + tow;
-            bTexCoord[7] = bTexCoordD[7] + toy + toh;
+            bTexcoord[6] = bTexcoordDefault[6] + offsetX + offsetWidth;
+            bTexcoord[7] = bTexcoordDefault[7] + offsetY + offsetHeight;
         }
 
         if(this._batchActive){}
         else{
-            this.bufferArrays(bTexCoord,bColor,bTexCoord);
+            this.bufferArrays(bTexcoord,bColor,bTexcoord);
             this.setMatrixUniform();
             gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
         }
@@ -1124,26 +1095,26 @@ Context.prototype._quad_internal = function(x0,y0,x1,y1,x2,y2,x3,y3){
 
 Context.prototype.rect = function(x,y,width,height){
     var cm = this._modeRect == Context.CENTER,
-        rx,ry,rw,rh;
+        rect_x,rect_y,rect_width,rect_height;
 
     if(cm){
-        var w2 = width  * 0.5,
-            h2 = height * 0.5;
+        var width_2  = width  * 0.5,
+            height_2 = height * 0.5;
 
-        rx = x - w2;
-        ry = y - h2;
-        rw = x + w2;
-        rh = y + h2;
+        rect_x      = x - width_2;
+        rect_y      = y - height_2;
+        rect_width  = x + width_2;
+        rect_height = y + height_2;
     }
     else{
-        rx = x;
-        ry = y;
-        rw = x + width;
-        rh = y + height;
+        rect_x      = x;
+        rect_y      = y;
+        rect_width  = x + width;
+        rect_height = y + height;
 
     }
 
-    this._quad_internal(rx,ry,rw,ry,rw,rh,rx,rh);
+    this._quad_internal(rect_x,rect_y,rect_width,rect_y,rect_width,rect_height,rect_x,rect_height);
     this._stackDrawFunc.push(this.rect);
 };
 
@@ -1152,25 +1123,25 @@ Context.prototype.rect = function(x,y,width,height){
 Context.prototype.roundRect = function(x,y,width,height,radius){
     if(!this._fill && !this._stroke && !this._texture)return;
 
-    var modeOrigin  = this._modeRect;
-    var stackOrigin = this._stackOriginRRect,
-        stackRadius = this._stackRadiusRRect,
-        stackDetail = this._stackDetailRRect,
-        stackSize   = this._stackSizeRRect;
+    var mode_orgigin  = this._modeRect;
+    var stack_origin = this._stackOriginRRect,
+        stack_radius = this._stackRadiusRRect,
+        stack_detail = this._stackDetailRRect,
+        stack_size   = this._stackSizeRRect;
 
-    var detail = stackDetail.peek();
+    var detail = stack_detail.peek();
 
-    var originX = modeOrigin == 0 ? x - width  * 0.5 : x,
-        originY = modeOrigin == 0 ? y - height * 0.5 : y;
+    var origin_x = mode_orgigin == 0 ? x - width  * 0.5 : x,
+        origin_y = mode_orgigin == 0 ? y - height * 0.5 : y;
 
-    stackOrigin.push(originX,originY);
-    stackSize.push(width,height);
-    stackRadius.push(radius);
+    stack_origin.push(origin_x,origin_y);
+    stack_size.push(width,height);
+    stack_radius.push(radius);
 
-    var originDiffers = !stackOrigin.isEqual(),
-        radiusDiffers = !stackRadius.isEqual(),
-        detailDiffers = !stackDetail.isEqual(),
-        sizeDiffers   = !stackSize.isEqual();
+    var origin_differs = !stack_origin.isEqual(),
+        radius_differs = !stack_radius.isEqual(),
+        detail_differs = !stack_detail.isEqual(),
+        size_diffes    = !stack_size.isEqual();
 
     /*
      console.log('detail: ' + detailDiffers + '\n' +
@@ -1181,51 +1152,51 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
 
 
     if(radius == 0){
-        var ox = originX + radius,
-            oy = originY + radius,
-            ow = originX + width  - radius,
-            oh = originY + height - radius;
+        var ox = origin_x + radius,
+            oy = origin_y + radius,
+            ow = origin_x + width  - radius,
+            oh = origin_y + height - radius;
         this.quad(ox,oy,ow,oy,ow,oh,ox,oh);
-        stackDetail.push(detail);
+        stack_detail.push(detail);
         return;
     }
 
-    var bVertex  = this._bVertexRoundRect,
-        bVertexT = this._bVertexRoundRectT;
-    var bIndex   = this._bIndexRoundRect;
-    var bCorner  = this._bCornerRoundRect;
+    var b_vertex   = this._bVertexRRect,
+        b_vertex_t = this._bVertexRRectT;
+    var b_index    = this._bIndexRRect;
+    var b_corner   = this._bCornerRRect;
 
-    if(sizeDiffers || radiusDiffers){
-        bCorner[0] = bCorner[6] = width  - radius;
-        bCorner[1] = bCorner[3] = height - radius;
-        bCorner[2] = bCorner[4] =
-            bCorner[5] = bCorner[7] = radius;
+    if(size_diffes || radius_differs){
+        b_corner[0] = b_corner[6] = width  - radius;
+        b_corner[1] = b_corner[3] = height - radius;
+        b_corner[2] = b_corner[4] =
+        b_corner[5] = b_corner[7] = radius;
     }
 
     var vertices,
         indices,
         colors;
 
-    if(sizeDiffers || radiusDiffers || detailDiffers){
-        GeomUtil.genVerticesRoundRect(bCorner,radius,detail,bVertex);
+    if(size_diffes || radius_differs || detail_differs){
+        GeomUtil.genVerticesRoundRect(b_corner,radius,detail,b_vertex);
     }
 
-    if(radiusDiffers || detailDiffers){
-        GeomUtil.genIndicesRoundRect(bCorner,radius,detail,bIndex);
+    if(radius_differs || detail_differs){
+        GeomUtil.genIndicesRoundRect(b_corner,radius,detail,b_index);
     }
 
-    if(originDiffers){
-        VertexUtil.translate(bVertex,originX,originY,bVertexT);
+    if(origin_differs){
+        VertexUtil.translate(b_vertex,origin_x,origin_y,b_vertex_t);
     }
 
-    vertices = bVertexT;
-    indices  = bIndex;
+    vertices = b_vertex_t;
+    indices  = b_index;
 
     var indicesLength = ((detail * 2 + 2) * 2 + 2) * 3;
     var gl = this._context3d;
 
     if(this._fill && !this._texture){
-        colors = this.bufferColors(this._bColorFill4,this._bColorRoundRect);
+        colors = this.bufferColors(this._bColorFill4,this._bColorRRect);
         if(this._batchActive){}
         else{
             this.bufferArrays(vertices,colors,null,gl.DYNAMIC_DRAW);
@@ -1258,53 +1229,53 @@ Context.prototype.roundRect = function(x,y,width,height,radius){
         this._polyline(vertices,d2*4+8,true);
     }
 
-    stackDetail.push(detail);
+    stack_detail.push(detail);
     this._stackDrawFunc.push(this.roundRect);
 };
 
 
-Context.prototype.ellipse = function(x,y,radiusX,radiusY){
+Context.prototype.ellipse = function(x,y,radius_x,radius_y){
     if(!this._fill && !this._stroke && !this._texture)return;
     var gl = this._context3d;
 
-    var modeOrigin  = this._modeEllipse;
-    var stackOrigin = this._stackOriginEllipse,
-        stackRadius = this._stackRadiusEllipse,
-        stackDetail = this._stackDetailEllipse;
+    var mode_origin  = this._modeEllipse;
+    var stack_origin = this._stackOriginEllipse,
+        stack_radius = this._stackRadiusEllipse,
+        stack_detail = this._stackDetailEllipse;
 
-    var originX = modeOrigin == 0 ? x : x + radiusX,
-        originY = modeOrigin == 0 ? y : y + radiusY;
+    var origin_x = mode_origin == 0 ? x : x + radius_x,
+        origin_y = mode_origin == 0 ? y : y + radius_y;
 
-    stackRadius.push(radiusX,radiusY);
-    stackOrigin.push(originX,originY);
+    stack_radius.push(radius_x,radius_y);
+    stack_origin.push(origin_x,origin_y);
 
-    var originDiffers = !stackOrigin.isEqual(),
-        radiusDiffers = !stackRadius.isEqual(),
-        detailDiffers = !stackDetail.isEqual();
+    var origin_differs = !stack_origin.isEqual(),
+        radius_differs = !stack_radius.isEqual(),
+        detail_differs = !stack_detail.isEqual();
 
-    var detail = stackDetail.peek();
+    var detail = stack_detail.peek();
     var length = detail * 2;
 
     var vertices,
         colors;
 
-    var bVertex  = this._bVertexEllipse,
-        bVertexS = this._bVertexEllipseS,
-        bVertexT = this._bVertexEllipseT;
+    var b_vertex   = this._bVertexEllipse,
+        b_vertex_s = this._bVertexEllipseS,
+        b_vertex_t = this._bVertexEllipseT;
 
-    if(detailDiffers){
-        GeomUtil.genVerticesCircle(detail,bVertex);
+    if(detail_differs){
+        GeomUtil.genVerticesCircle(detail,b_vertex);
     }
 
-    if(detailDiffers || radiusDiffers){
-        VertexUtil.scale(bVertex,radiusX,radiusY,bVertexS);
+    if(detail_differs || radius_differs){
+        VertexUtil.scale(b_vertex,radius_x,radius_y,b_vertex_s);
     }
 
-    if(detailDiffers || radiusDiffers || originDiffers){
-        VertexUtil.translate(bVertexS,originX,originY,bVertexT);
+    if(detail_differs || radius_differs || origin_differs){
+        VertexUtil.translate(b_vertex_s,origin_x,origin_y,b_vertex_t);
     }
 
-    vertices = bVertexT;
+    vertices = b_vertex_t;
 
     /*
      console.log('detail: ' + stackDetailChanged  + '\n' +
@@ -1323,12 +1294,12 @@ Context.prototype.ellipse = function(x,y,radiusX,radiusY){
 
     if(this._texture){
         colors = this.bufferColors(this._bColorFill,this._bColorEllipse);
-        var texCoords = this._bTexCoordsEllipse;
+        var texCoords = this._bTexcoordEllipse;
 
-        if(detailDiffers || this._textureOffset){
+        if(detail_differs || this._textureOffset){
             GeomUtil.genTexCoordsCircle(detail,
                 this._textureOffsetX,this._textureOffsetY,
-                this._textureOffsetW,this._textureOffsetH,
+                this._textureOffsetWidth,this._textureOffsetHeight,
                 texCoords);
         }
 
@@ -1341,7 +1312,7 @@ Context.prototype.ellipse = function(x,y,radiusX,radiusY){
         this._polyline(vertices,length,true);
     }
 
-    stackDetail.push(stackDetail.peek());
+    stack_detail.push(stack_detail.peek());
     this._stackDrawFunc.push(this.ellipse);
 };
 
@@ -1351,44 +1322,44 @@ Context.prototype.circle = function(x,y,radius){
     if(!this._fill && !this._stroke && !this._texture)return;
     var gl = this._context3d;
 
-    var modeOrigin  = this._modeCircle;
-    var stackOrigin = this._stackOriginCircle,
-        stackRadius = this._stackRadiusCircle,
-        stackDetail = this._stackDetailCircle;
+    var mode_origin  = this._modeCircle;
+    var stack_origin = this._stackOriginCircle,
+        stack_radius = this._stackRadiusCircle,
+        stack_detail = this._stackDetailCircle;
 
-    var originX = modeOrigin == 0 ? x : x + radius,
-        originY = modeOrigin == 0 ? y : y + radius;
+    var origin_x = mode_origin == 0 ? x : x + radius,
+        origin_y = mode_origin == 0 ? y : y + radius;
 
-    stackOrigin.push(originX,originY);
-    stackRadius.push(radius);
+    stack_origin.push(origin_x,origin_y);
+    stack_radius.push(radius);
 
-    var originDiffers = !stackOrigin.isEqual(),
-        radiusDiffers = !stackRadius.isEqual(),
-        detailDiffers = !stackDetail.isEqual();
+    var origin_differs = !stack_origin.isEqual(),
+        radius_differs = !stack_radius.isEqual(),
+        detail_differs = !stack_detail.isEqual();
 
-    var detail = stackDetail.peek();
+    var detail = stack_detail.peek();
     var length = detail * 2;
 
     var vertices,
         colors;
 
-    var bVertex  = this._bVertexCircle,
-        bVertexS = this._bVertexCirlceS,
-        bVertexT = this._bVertexCircleT;
+    var b_vertex   = this._bVertexCircle,
+        b_vertex_s = this._bVertexCircleS,
+        b_vertex_t = this._bVertexCircleT;
 
-    if(detailDiffers){
-        GeomUtil.genVerticesCircle(detail,bVertex);
+    if(detail_differs){
+        GeomUtil.genVerticesCircle(detail,b_vertex);
     }
 
-    if(detailDiffers || radiusDiffers){
-        VertexUtil.scale(bVertex,radius,radius,bVertexS);
+    if(detail_differs || radius_differs){
+        VertexUtil.scale(b_vertex,radius,radius,b_vertex_s);
     }
 
-    if(detailDiffers || radiusDiffers || originDiffers){
-        VertexUtil.translate(bVertexS,originX,originY,bVertexT);
+    if(detail_differs || radius_differs || origin_differs){
+        VertexUtil.translate(b_vertex_s,origin_x,origin_y,b_vertex_t);
     }
 
-    vertices = bVertexT;
+    vertices = b_vertex_t;
 
 
     if(this._fill && !this._texture){
@@ -1401,12 +1372,12 @@ Context.prototype.circle = function(x,y,radius){
 
     if(this._texture){
         colors = this.bufferColors(this._bColorFill,this._bColorCircle);
-        var texCoords = this._bTexCoordsEllipse;
+        var texCoords = this._bTexcoordEllipse;
 
-        if(detailDiffers || this._textureOffset){
+        if(detail_differs || this._textureOffset){
             GeomUtil.genTexCoordsCircle(detail,
                 this._textureOffsetX,this._textureOffsetY,
-                this._textureOffsetW,this._textureOffsetH,
+                this._textureOffsetWidth,this._textureOffsetHeight,
                 texCoords);
         }
 
@@ -1420,59 +1391,59 @@ Context.prototype.circle = function(x,y,radius){
     }
 
 
-    stackDetail.push(stackDetail.peek());
+    stack_detail.push(stack_detail.peek());
 
     this._stackDrawFunc.push(this.ellipse);
 };
 
 
-Context.prototype.arc = function(x,y,radiusX,radiusY,startAngle,stopAngle,innerRadiusX,innerRadiusY){
+Context.prototype.arc = function(x, y, radius_x, radius_y, angle_start, angle_stop, radius_x_inner, radius_y_inner){
     if(!this._fill && !this._stroke && !this._texture)return;
 
-    innerRadiusX = innerRadiusX || 0;
-    innerRadiusY = innerRadiusY || 0;
+    radius_x_inner = radius_x_inner || 0;
+    radius_y_inner = radius_y_inner || 0;
 
     var gl = this._context3d;
 
-    var modeOrigin   = this._modeEllipse;
-    var stackOrigin  = this._stackOriginArc,
-        stackRadiusI = this._stackRadiusIArc,
-        stackRadiusO = this._stackRadiusOArc,
-        stackAngle   = this._stackAngleArc,
-        stackDetail  = this._stackDetailArc;
+    var mode_origin        = this._modeEllipse;
+    var stack_origin       = this._stackOriginArc,
+        stack_radius_inner = this._stackRadiusInnerArc,
+        stack_radius_outer = this._stackRadiusOuterArc,
+        stack_angle        = this._stackAngleArc,
+        stack_detail       = this._stackDetailArc;
 
-    var originX = modeOrigin == 0 ? x : x + radiusX,
-        originY = modeOrigin == 0 ? y : y + radiusY;
+    var origin_x = mode_origin == 0 ? x : x + radius_x,
+        origin_y = mode_origin == 0 ? y : y + radius_y;
 
-    stackRadiusI.push(innerRadiusX,innerRadiusY);
-    stackRadiusO.push(radiusX,radiusY);
-    stackAngle.push(startAngle,stopAngle);
-    stackOrigin.push( originX,originY);
+    stack_radius_inner.push(radius_x_inner,radius_y_inner);
+    stack_radius_outer.push(radius_x,radius_y);
+    stack_angle.push(angle_start,angle_stop);
+    stack_origin.push( origin_x,origin_y);
 
-    var originDiffers = !stackOrigin.isEqual(),
-        radiusIDiffers= !stackRadiusI.isEqual(),
-        radiusODiffers= !stackRadiusO.isEqual(),
-        angleDiffers  = !stackAngle.isEqual(),
-        detailDiffers = !stackDetail.isEqual();
+    var origin_differs       = !stack_origin.isEqual(),
+        radius_inner_differs = !stack_radius_inner.isEqual(),
+        radius_outer_differs = !stack_radius_outer.isEqual(),
+        angle_differs = !stack_angle.isEqual(),
+        detai_differs = !stack_detail.isEqual();
 
-    var detail = stackDetail.peek();
+    var detail = stack_detail.peek();
     var vertices;
 
-    var bVertex  = this._bVertexArc,
-        bVertexT = this._bVertexArcT;
+    var b_vertex   = this._bVertexArc,
+        v_certex_t = this._bVertexArcT;
 
-    if(radiusIDiffers || radiusODiffers || angleDiffers || detailDiffers){
-        GeomUtil.genVerticesArc(radiusX,radiusY,
-            innerRadiusX,innerRadiusY,
-            startAngle,stopAngle,
-            detail,bVertex);
+    if(radius_inner_differs || radius_outer_differs || angle_differs || detai_differs){
+        GeomUtil.genVerticesArc(radius_x,radius_y,
+            radius_x_inner,radius_y_inner,
+            angle_start,angle_stop,
+            detail,b_vertex);
     }
 
-    if(originDiffers){
-        VertexUtil.translate(bVertex,originX,originY,bVertexT);
+    if(origin_differs){
+        VertexUtil.translate(b_vertex,origin_x,origin_y,v_certex_t);
     }
 
-    vertices = bVertexT;
+    vertices = v_certex_t;
 
     if(this._fill && !this._texture){
         var colors = this.bufferColors(this._bColorFill,this._bColorArc);
@@ -1492,14 +1463,14 @@ Context.prototype.arc = function(x,y,radiusX,radiusY,startAngle,stopAngle,innerR
     }
 
     if(this._stroke){
-        var bVertexStroke = this._bVertexArcStroke;
-        if(radiusIDiffers || radiusODiffers || angleDiffers || detailDiffers){
-            GeomUtil.genVerticesArcStroke(bVertexT,detail,bVertexStroke);
+        var b_vertex_stroke = this._bVertexArcStroke;
+        if(radius_inner_differs || radius_outer_differs || angle_differs || detai_differs){
+            GeomUtil.genVerticesArcStroke(v_certex_t,detail,b_vertex_stroke);
         }
-        this._polyline(bVertexStroke,detail * 2,false);
+        this._polyline(b_vertex_stroke,detail * 2,false);
     }
 
-    stackDetail.push(detail);
+    stack_detail.push(detail);
     this._stackDrawFunc.push(this.arc);
 };
 
@@ -1513,7 +1484,7 @@ Context.prototype.line = function(){
             this._polyline(arguments[0]);
             break;
         case 4:
-            var v = this.bPointLine4;
+            var v = this._bPointLine4;
 
             v[0] = arguments[0];
             v[1] = arguments[1];
@@ -1535,59 +1506,59 @@ Context.prototype.lineSet = function(pointArr,widthArr,colorArr)
 };
 
 Context.prototype.bezier = function(x0,y0,x1,y1,x2,y2,x3,y3){
-    var detailBezier = this._stackDetailBezier;
+    var detail_bezier = this._stackDetailBezier;
 
-    var detail   = detailBezier.peek(),
-        bPoint   = this._bPointsBezier,
-        bVertex  = this._bVertexBezier;
+    var detail   = detail_bezier.peek(),
+        b_point  = this._bPointBezier,
+        b_vertex = this._bVertexBezier;
 
-    if(bPoint[0] != x0 || bPoint[1] != y0 ||
-        bPoint[2] != x2 || bPoint[3] != y2 ||
-        bPoint[4] != x1 || bPoint[5] != y1 ||
-        bPoint[6] != x3 || bPoint[7] != y3 ||
-        !detailBezier.isEqual()){
-        BezierUtil.genPoints(x0,y0,x1,y1,x2,y2,x3,y3,detail,bVertex);
+    if(b_point[0] != x0 || b_point[1] != y0 ||
+        b_point[2] != x2 || b_point[3] != y2 ||
+        b_point[4] != x1 || b_point[5] != y1 ||
+        b_point[6] != x3 || b_point[7] != y3 ||
+        !detail_bezier.isEqual()){
+        BezierUtil.genPoints(x0,y0,x1,y1,x2,y2,x3,y3,detail,b_vertex);
     }
 
-    this._polyline(bVertex,detail,false);
+    this._polyline(b_vertex,detail,false);
 
-    detailBezier.push(detail);
+    detail_bezier.push(detail);
     this._stackDrawFunc.push(this.bezier);
 };
 
 Context.prototype.bezierPoint = function(d,out){
-    var bPoint = this._bPointsBezier;
-    var x0 = bPoint[0],
-        y0 = bPoint[1],
-        x2 = bPoint[2],
-        y2 = bPoint[3],
-        x1 = bPoint[4],
-        y1 = bPoint[5],
-        x3 = bPoint[6],
-        y3 = bPoint[7];
+    var b_point = this._bPointBezier;
+    var x0 = b_point[0],
+        y0 = b_point[1],
+        x2 = b_point[2],
+        y2 = b_point[3],
+        x1 = b_point[4],
+        y1 = b_point[5],
+        x3 = b_point[6],
+        y3 = b_point[7];
 
     return BezierUtil.getPoint(x0,y0,x1,y1,x2,y2,x3,y3,d,out);
 };
 
 
 Context.prototype.bezierTangentAngle = function(d){
-    var bPoint = this._bPointsBezier;
-    var x0 = bPoint[0],
-        y0 = bPoint[1],
-        x2 = bPoint[2],
-        y2 = bPoint[3],
-        x1 = bPoint[4],
-        y1 = bPoint[5],
-        x3 = bPoint[6],
-        y3 = bPoint[7];
+    var b_point = this._bPointBezier;
+    var x0 = b_point[0],
+        y0 = b_point[1],
+        x2 = b_point[2],
+        y2 = b_point[3],
+        x1 = b_point[4],
+        y1 = b_point[5],
+        x3 = b_point[6],
+        y3 = b_point[7];
 
     return BezierUtil.getTangentAngle(x0,y0,x1,y1,x2,y2,x3,y3,d);
 };
 
 Context.prototype.curve = function(points){
-    var stackDetailSpline = this._stackDetailSpline;
-    var detail = stackDetailSpline.peek(),
-        d_2 = detail - 2;
+    var stack_detail = this._stackDetailSpline;
+    var detail   = stack_detail.peek(),
+        detail_2 = detail - 2;
 
     var i = 0, j,t;
 
@@ -1600,7 +1571,7 @@ Context.prototype.curve = function(points){
     while(i < pl-2){
         j = 0;
         while(j < detail){
-            t  = j / d_2;
+            t  = j / detail_2;
             ni = i+1;
 
             vertices.push(catmullrom(points[Math.max(0,i-2)],
@@ -1671,14 +1642,14 @@ Context.prototype.triangle = function(x0,y0,x1,y1,x2,y2){
     {
         c = this.bufferColors(this._bColorFill,this._bColorTriangle);
 
-        var t = this._bTexCoordsTriangle;
+        var t = this._bTexcoordTriangle;
 
         if(this._textureOffset)
         {
             var tox = this._textureOffsetX,
                 toy = this._textureOffsetY,
-                tow = this._textureOffsetW,
-                toh = this._textureOffsetH;
+                tow = this._textureOffsetWidth,
+                toh = this._textureOffsetHeight;
 
             t[0]+=tox;
             t[1]+=toy;
@@ -1704,9 +1675,9 @@ Context.prototype.triangle = function(x0,y0,x1,y1,x2,y2){
                 tblen = t.byteLength,
                 tlen  = vblen + cblen + tblen;
 
-            var offSetV = 0,
-                offSetC = offSetV + vblen,
-                offSetT = vblen + cblen;
+            var offset_vertex   = 0,
+                offset_color    = offset_vertex + vblen,
+                offset_texcoord = vblen + cblen;
 
 
             var program = this._stackProgram.peek();
@@ -1715,14 +1686,14 @@ Context.prototype.triangle = function(x0,y0,x1,y1,x2,y2){
             gl.bufferData(glArrayBuffer,tlen,gl.DYNAMIC_DRAW);
 
             gl.bufferSubData(glArrayBuffer,0,v);
-            gl.bufferSubData(glArrayBuffer,offSetC,c);
-            gl.bufferSubData(glArrayBuffer,offSetT,t);
+            gl.bufferSubData(glArrayBuffer,offset_color,c);
+            gl.bufferSubData(glArrayBuffer,offset_texcoord,t);
 
-            gl.vertexAttribPointer(0, 2, glFloat, false, 0, offSetV);
-            gl.vertexAttribPointer(1, 4, glFloat, false, 0, offSetC);
-            gl.vertexAttribPointer(2, 2, glFloat, false, 0, offSetT);
+            gl.vertexAttribPointer(0, 2, glFloat, false, 0, offset_vertex);
+            gl.vertexAttribPointer(1, 4, glFloat, false, 0, offset_color);
+            gl.vertexAttribPointer(2, 2, glFloat, false, 0, offset_texcoord);
 
-            gl.uniform1f(program[ShaderDict.uUseTexture],this._currTint);
+            gl.uniform1f(program[ShaderDict.uUseTexture],this._curr_tint);
             gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
             gl.uniform1f(program[ShaderDict.uImage],0);
             gl.drawArrays(gl.TRIANGLES,0,1);
@@ -1731,8 +1702,7 @@ Context.prototype.triangle = function(x0,y0,x1,y1,x2,y2){
         }
     }
 
-    if(this._stroke)
-    {
+    if(this._stroke){
         this._polyline(v, v.length,true);
     }
 
@@ -1774,147 +1744,147 @@ Context.prototype.pointSet = function(vertexArrOrFloat32Arr){
 //  Polyline
 /*------------------------------------------------------------------------------------------------------------*/
 
-Context.prototype._polyline = function(points,pointsLength,loop){
-    var stackWidthLine = this._stackWidthLine,
-        lineWidth      = stackWidthLine.peek();
+Context.prototype._polyline = function(points,length,loop){
+    var stack_width = this._stackWidthLine,
+        width = stack_width.peek();
 
-    if(!this._stroke || lineWidth <= 0.0){
+    if(!this._stroke || width <= 0.0){
         return;
     }
 
-    var lineWidth_2   = lineWidth * 0.5;
+    var width_2 = width * 0.5;
 
-    var stackColorStroke = this._stackColorStroke,
-        colorStroke      = stackColorStroke.peek(),
-        colorStrokeLen   = colorStroke.length;
+    var stack_color_stroke = this._stackColorStroke,
+        color_stroke       = stack_color_stroke.peek(),
+        color_stoke_length = color_stroke.length;
 
-    if(colorStrokeLen != 4 &&
-       colorStrokeLen != 8 &&
-       colorStrokeLen != pointsLength * 2){
-        throw Warning.POLYLINE_INVALID_COLOR_RANGE;
+    if(color_stoke_length != 4 &&
+       color_stoke_length != 8 &&
+       color_stoke_length != length * 2){
+        throw Warning.kPolylineInvalidColorRange;
     }
 
-    loop         = Util.isUndefined(loop) ? false : loop;
-    pointsLength = ((Util.isUndefined(pointsLength) || pointsLength == null) ? points.length : pointsLength) + (loop ? 2 : 0);
+    loop   = Util.isUndefined(loop) ? false : loop;
+    length = ((Util.isUndefined(length) || length == null) ? points.length : length) + (loop ? 2 : 0);
 
     /*------------------------------------------------------------------------------------------------------------*/
 
-    var stackPoints       = this._stackPointsLine,
-        stackPointsLength = this._stackPointsLineLength;
+    var stack_points             = this._stackPointsLine,
+        stack_points_length = this._stackPointsLineLength;
 
-    if(!stackWidthLine.isEqual()){
-        VertexUtil.scale(this._bVertexLineCap0,lineWidth_2,lineWidth_2,this._bVertexLineCap0S);
+    if(!stack_width.isEqual()){
+        VertexUtil.scale(this._bVertexLineCap0,width_2,width_2,this._bVertexLineCap0S);
     }
 
-    var pointsEqual =  Util.equalArrContent(points,stackPoints.peek());
+    var points_equal =  Util.equalArrContent(points,stack_points.peek());
 
-    var bMutVertex = this._bMutVertexLine, //float32 vertices
-        bMutColor  = this._bMutColorLine,  //float32 colors
-        bMutIndex  = this._bMutIndexLine;  //uint16  indices
+    var b_mut_vertex = this._bMutVertexLine, //float32 vertices
+        b_mut_color  = this._bMutColorLine,  //float32 colors
+        b_mut_index  = this._bMutIndexLine;  //uint16  indices
 
     /*------------------------------------------------------------------------------------------------------------*/
 
-    var bVertexCap  = this._bVertexLineCap0S, //float32 unicap vertices
-        bVertexCapT = this._bVertexLineCap0T,//float32 cap translateVertices
-        bIndexCap   = this._bIndexLineCap0;  //uint16 cap indices
+    var b_vertex_cap   = this._bVertexLineCap0S, //float32 unicap vertices
+        b_vertex_cap_t = this._bVertexLineCap0T,//float32 cap translateVertices
+        b_index_cap    = this._bIndexLineCap0;  //uint16 cap indices
 
-    var capVertexLen = bVertexCap.length,
-        capColorLen  = bVertexCap.length * 2,
-        capIndexLen  = bIndexCap.length ;
+    var cap_vertex_len = b_vertex_cap.length,
+        cap_color_len  = b_vertex_cap.length * 2,
+        cap_index_len  = b_index_cap.length ;
 
-    var bVertexEdge = this._bVertexLineEdge; //8 edge vertices
+    var b_vertex_edge = this._bVertexLineEdge; //8 edge vertices
 
-    var edgeVertexLen = 8,
-        edgeColorLen  = 16,
-        edgeIndexLen  = 18;
+    var edge_vertex_len = 8,
+        edge_color_len  = 16,
+        edge_index_len  = 18;
 
-    var pointSize  = 2,
-        pointNum   = pointsLength * 0.5,
-        pointNum_1 = pointNum - 1,
-        pointNum_2 = pointNum - 2;
+    var point_size  = 2,
+        point_num   = length * 0.5,
+        point_num_1 = point_num - 1,
+        point_num_2 = point_num - 2;
 
-    var edgeColorLenTotal = edgeColorLen * pointNum_1,
-        edgeIndexLenTotal = edgeIndexLen * pointNum_1;
+    var edge_color_len_total = edge_color_len * point_num_1,
+        edge_index_len_total = edge_index_len * point_num_1;
 
-    var capColorLenTotal = capColorLen * pointNum,
-        capIndexLenTotal = capIndexLen * pointNum;
+    var cap_color_len_total = cap_color_len * point_num,
+        cap_index_len_total = cap_index_len * point_num;
 
-    var edgeCapVertexLen = edgeVertexLen + capVertexLen,
-        edgeCapColorLen = edgeColorLen + capColorLen,
-        edgeCapIndexLen = edgeIndexLen + capIndexLen;
+    var edge_cap_vertex_len = edge_vertex_len + cap_vertex_len,
+        edge_cap_color_len  = edge_color_len + cap_color_len,
+        edge_cap_index_len  = edge_index_len + cap_index_len;
 
     var i, j, k, i2;
 
     /*------------------------------------------------------------------------------------------------------------*/
 
     // Recalc cap and edge vertices if points or linewidth differ
-    if(!pointsEqual || !stackWidthLine.isEqual()){
-        bMutVertex.reset(edgeVertexLen * pointNum_1 + capVertexLen * pointNum); //total vertex lengtg
+    if(!points_equal || !stack_width.isEqual()){
+        b_mut_vertex.reset(edge_vertex_len * point_num_1 + cap_vertex_len * point_num); //total vertex lengtg
 
-        var faceIndex,
-            offsetVertex,
-            offsetIndex;
+        var face_index,
+            offset_vertex,
+            offset_index;
 
         var x, y, nx, ny;
-        var slopex, slopey, slopelen, temp;
+        var slope_x, slope_y, slope_len, temp;
 
         i = -1;
-        while (++i < pointNum){
+        while (++i < point_num){
             i2 = i * 2;
 
             x = points[i2    ];
             y = points[i2 + 1];
 
-            if (loop && (i == pointNum_1)){
+            if (loop && (i == point_num_1)){
                 x = points[0];
                 y = points[1];
             }
 
             // Set cap vertices
-            VertexUtil.translate(bVertexCap, x, y, bVertexCapT); //translate uni cap to pos
+            VertexUtil.translate(b_vertex_cap, x, y, b_vertex_cap_t); //translate uni cap to pos
             //bMutVertex.set(bVertexCapT, bMutVertex.size(), capVertexLen); //send to float32
-            bMutVertex.unsafePush(bVertexCapT);
+            b_mut_vertex.unsafePush(b_vertex_cap_t);
 
             // Set edge vertices
-            if (i < pointNum_1){
+            if (i < point_num_1){
                 nx = points[i2 + 2];
                 ny = points[i2 + 3];
 
-                if (loop && (i == pointNum_2)){
+                if (loop && (i == point_num_2)){
                     nx = points[0];
                     ny = points[1];
                 }
 
-                slopex = nx - x;
-                slopey = ny - y;
+                slope_x = nx - x;
+                slope_y = ny - y;
 
-                slopelen = 1 / Math.sqrt(slopex * slopex + slopey * slopey);
+                slope_len = 1 / Math.sqrt(slope_x * slope_x + slope_y * slope_y);
 
-                slopex *= slopelen;
-                slopey *= slopelen;
+                slope_x *= slope_len;
+                slope_y *= slope_len;
 
-                temp   = slopex;
-                slopex = slopey;
-                slopey = -temp;
+                temp   = slope_x;
+                slope_x = slope_y;
+                slope_y = -temp;
 
-                temp = lineWidth_2 * slopex;
+                temp = width_2 * slope_x;
 
-                offsetVertex = j = edgeCapVertexLen * i + capVertexLen;
+                offset_vertex = j = edge_cap_vertex_len * i + cap_vertex_len;
 
-                bVertexEdge[0] = x  + temp;
-                bVertexEdge[2] = x  - temp;
-                bVertexEdge[4] = nx + temp;
-                bVertexEdge[6] = nx - temp;
+                b_vertex_edge[0] = x  + temp;
+                b_vertex_edge[2] = x  - temp;
+                b_vertex_edge[4] = nx + temp;
+                b_vertex_edge[6] = nx - temp;
 
-                temp = lineWidth_2 * slopey;
+                temp = width_2 * slope_y;
 
-                bVertexEdge[1] = y  + temp;
-                bVertexEdge[3] = y  - temp;
-                bVertexEdge[5] = ny + temp;
-                bVertexEdge[7] = ny - temp;
+                b_vertex_edge[1] = y  + temp;
+                b_vertex_edge[3] = y  - temp;
+                b_vertex_edge[5] = ny + temp;
+                b_vertex_edge[7] = ny - temp;
 
                 //bMutVertex.set(bVertexEdge, bMutVertex.size()); //send to float32
-                bMutVertex.unsafePush(bVertexEdge);
+                b_mut_vertex.unsafePush(b_vertex_edge);
             }
         }
     }
@@ -1922,105 +1892,103 @@ Context.prototype._polyline = function(points,pointsLength,loop){
     /*------------------------------------------------------------------------------------------------------------*/
 
     // Recalc face indices if pointsLength changed
-    if(!stackPointsLength.isEqual()){
-        var bIndex = Util.arrayResized(this._bIndexLine,edgeIndexLenTotal + capIndexLenTotal);
+    if(!stack_points_length.isEqual()){
+        var b_index = Util.arrayResized(this._bIndexLine,edge_index_len_total + cap_index_len_total);
 
         i = -1;
-        while (++i < pointNum){
+        while (++i < point_num){
             i2 = i * 2;
 
             // Set cap face indices
-            offsetIndex  = j = edgeCapIndexLen * i;
-            offsetVertex = edgeCapVertexLen * i;
-            faceIndex    = offsetVertex / pointSize;
+            offset_index  = j = edge_cap_index_len * i;
+            offset_vertex = edge_cap_vertex_len * i;
+            face_index    = offset_vertex / point_size;
 
             k = 0;
-            while (j < offsetIndex + capIndexLen){
-                bIndex[j++] = bIndexCap[k++] + faceIndex;
+            while (j < offset_index + cap_index_len){
+                b_index[j++] = b_index_cap[k++] + face_index;
             }
 
             // Set edge face indices
-            if (i < pointNum_1){
-                offsetVertex = edgeCapVertexLen * i + capVertexLen;
-                faceIndex    = offsetVertex / pointSize;
-                j            = offsetIndex + capIndexLen;
+            if (i < point_num_1){
+                offset_vertex = edge_cap_vertex_len * i + cap_vertex_len;
+                face_index    = offset_vertex / point_size;
+                j             = offset_index + cap_index_len;
 
-                bIndex[j    ] = faceIndex;
-                bIndex[j + 1] = bIndex[j + 3] = faceIndex + 1;
-                bIndex[j + 2] = bIndex[j + 4] = faceIndex + 2;
-                bIndex[j + 5] = faceIndex + 3;
+                b_index[j    ] = face_index;
+                b_index[j + 1] = b_index[j + 3] = face_index + 1;
+                b_index[j + 2] = b_index[j + 4] = face_index + 2;
+                b_index[j + 5] = face_index + 3;
             }
         }
         //send faces to uint16
-        bMutIndex.reset(bIndex.length);
-        bMutIndex.unsafePush(bIndex);
+        b_mut_index.reset(b_index.length);
+        b_mut_index.unsafePush(b_index);
     }
 
     /*------------------------------------------------------------------------------------------------------------*/
 
-    var bColorLength = edgeColorLenTotal + capColorLenTotal;
-    var bColor       = Util.arrayResized(this._bColorLine,bColorLength);
+    var b_color_length = edge_color_len_total + cap_color_len_total;
+    var b_color       = Util.arrayResized(this._bColorLine,b_color_length);
 
-    bMutColor.reset(bColorLength);
+    b_mut_color.reset(b_color_length);
 
 
-    if( colorStrokeLen != 4){
-        if(colorStrokeLen != pointsLength * 2){
-            var bColorIntrpl = Color.colorvLerped(colorStroke,Util.arrayResized(pointNum * 4, this._bColorStrokeIntrpl));
+    if( color_stoke_length != 4){
+        if(color_stoke_length != length * 2){
+            var b_color_intrpl = Color.colorvLerped(color_stroke,Util.arrayResized(point_num * 4, this._bColorStrokeIntrpl));
 
             i = 0;
 
-            while(i < bColorLength)
-            {
+            while(i < b_color_length){
                 j = i;
-                k = i/edgeCapColorLen * 4;
+                k = i/edge_cap_color_len * 4;
 
-                while(j < i + capColorLen)
-                {
-                    bColor[j  ] = bColorIntrpl[k  ];
-                    bColor[j+1] = bColorIntrpl[k+1];
-                    bColor[j+2] = bColorIntrpl[k+2];
-                    bColor[j+3] = bColorIntrpl[k+3];
+                while(j < i + cap_color_len){
+                    b_color[j  ] = b_color_intrpl[k  ];
+                    b_color[j+1] = b_color_intrpl[k+1];
+                    b_color[j+2] = b_color_intrpl[k+2];
+                    b_color[j+3] = b_color_intrpl[k+3];
                     j+=4;
                 }
 
-                bColor[j   ] = bColor[j+4 ] = bColorIntrpl[k  ];
-                bColor[j+1 ] = bColor[j+5 ] = bColorIntrpl[k+1];
-                bColor[j+2 ] = bColor[j+6 ] = bColorIntrpl[k+2];
-                bColor[j+3 ] = bColor[j+7 ] = bColorIntrpl[k+3];
+                b_color[j   ] = b_color[j+4 ] = b_color_intrpl[k  ];
+                b_color[j+1 ] = b_color[j+5 ] = b_color_intrpl[k+1];
+                b_color[j+2 ] = b_color[j+6 ] = b_color_intrpl[k+2];
+                b_color[j+3 ] = b_color[j+7 ] = b_color_intrpl[k+3];
 
-                bColor[j+8 ] = bColor[j+12] = bColorIntrpl[k+4];
-                bColor[j+9 ] = bColor[j+13] = bColorIntrpl[k+5];
-                bColor[j+10] = bColor[j+14] = bColorIntrpl[k+6];
-                bColor[j+11] = bColor[j+15] = bColorIntrpl[k+7];
+                b_color[j+8 ] = b_color[j+12] = b_color_intrpl[k+4];
+                b_color[j+9 ] = b_color[j+13] = b_color_intrpl[k+5];
+                b_color[j+10] = b_color[j+14] = b_color_intrpl[k+6];
+                b_color[j+11] = b_color[j+15] = b_color_intrpl[k+7];
 
-                i+=edgeCapColorLen;
+                i+=edge_cap_color_len;
             }
         } else{
 
         }
 
-        bMutColor.set(bColor,bMutColor.size());
+        b_mut_color.set(b_color,b_mut_color.size());
     }
     else{
-        this.bufferColors(colorStroke,bMutColor.array);
+        this.bufferColors(color_stroke,b_mut_color.array);
     }
 
 
     if(this._batchActive){}
     else{
         var gl = this._context3d;
-        this.bufferArrays(bMutVertex.array,bMutColor.array,null,gl.DYNAMIC_DRAW);
+        this.bufferArrays(b_mut_vertex.array,b_mut_color.array,null,gl.DYNAMIC_DRAW);
         this.setMatrixUniform();
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,bMutIndex.array,gl.DYNAMIC_DRAW);
-        gl.drawElements(gl.TRIANGLES,bMutIndex.size(),gl.UNSIGNED_SHORT,0);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,b_mut_index.array,gl.DYNAMIC_DRAW);
+        gl.drawElements(gl.TRIANGLES,b_mut_index.size(),gl.UNSIGNED_SHORT,0);
 
     }
 
-    stackColorStroke.push(Util.copyArray(colorStroke));
-    stackPoints.push(Util.copyArray(points));
-    stackPointsLength.push(pointsLength);
-    stackWidthLine.push(lineWidth);
+    stack_color_stroke.push(Util.copyArray(color_stroke));
+    stack_points.push(Util.copyArray(points));
+    stack_points_length.push(length);
+    stack_width.push(width);
 };
 
 Context.prototype._genPolylineSet = function(points){
@@ -2048,8 +2016,10 @@ Context.prototype._polylineSet = function(models){
  *
  */
 
-Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,texCoordsArr){
-    if(!fillColorArr   && !this._fill && !strokeColorArr && !this._stroke && !texCoordsArr   && !this._texture)return;
+Context.prototype.rectSet = function(posArr, dimArr, fillColorArr, strokeColorArr, texcoordArr){
+    if(!fillColorArr   && !this._fill &&
+       !strokeColorArr && !this._stroke &&
+       !texcoordArr    && !this._texture)return;
 
     if((posArr.length == 0) || (posArr.length != dimArr.length) ||
         (fillColorArr   && fillColorArr.length   * 0.5 != posArr.length) ||
@@ -2061,20 +2031,22 @@ Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,t
 
     var shift = modeOrigin == Context.CENTER ? 0 : 1;
 
-    var bVertex    = this._bVertexRectSet,
-        bColor     = this._bColorRectSet,
-        bTexCoord  = this._bTexCoordsRectSet;
+    var bVertex     = this._bVertexRectSet,
+        bColor      = this._bColorRectSet,
+        bTexcoord   = this._bTexcoordRectSet;
     var bMutVertex   = this._bMutVertexRectSet,
         bMutColor    = this._bMutColorRectSet,
-        bMutTexCoord = this._bMutTexCoordRectSet;
+        bMutTexcoord = this._bMutTexcoordRectSet;
 
     bMutVertex.reset();
     bMutColor.reset();
-    bMutTexCoord.reset();
+    bMutTexcoord.reset();
 
 
-    var bColor4f;
-    var posX,posY,width_2,height_2,shift_w,shift_h;
+    var bColor4;
+    var posX,posY;
+    var width_2,height_2;
+    var shift_w,shift_h;
     var rx,ry,rw,rh;
 
     var gl = this._context3d;
@@ -2130,12 +2102,12 @@ Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,t
             gl.drawArrays(gl.TRIANGLES,0,length * 6);
         }
         else if(!fillColorArr && this._fill){
-            bColor4f = this._bColorFill4;
+            bColor4 = this._bColorFill4;
 
-            bColor[0] = bColor4f[0];
-            bColor[1] = bColor4f[1];
-            bColor[2] = bColor4f[2];
-            bColor[3] = bColor4f[3];
+            bColor[0] = bColor4[0];
+            bColor[1] = bColor4[1];
+            bColor[2] = bColor4[2];
+            bColor[3] = bColor4[3];
 
             while(++i < length){
                 i2 = i * 2;
@@ -2171,17 +2143,17 @@ Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,t
             gl.drawArrays(gl.TRIANGLES,0,length * 6);
         }
     } else {
-        if(this._currTint = 1.0){
+        if(this._curr_tint = 1.0){
             while(++i < length){
                 i2 = i * 2;
                 i4 = i * 4;
 
                 posX     = posArr[i2  ];
                 posY     = posArr[i2+1];
-                width_2  = dimArr[i2  ] * 0.5;
-                height_2 = dimArr[i2+1] * 0.5;
-                shift_w  = width_2  * shift;
-                shift_h  = height_2 * shift;
+                width_2   = dimArr[i2  ] * 0.5;
+                height_2  = dimArr[i2+1] * 0.5;
+                shift_w   = width_2  * shift;
+                shift_h   = height_2 * shift;
 
                 rx = posX - width_2  + shift_w;
                 ry = posY - height_2 + shift_h;
@@ -2194,10 +2166,10 @@ Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,t
                 bVertex[ 3] = bVertex[ 5] = bVertex[ 7] = rh;
 
                 bMutVertex.set(bVertex,bMutVertex.size());
-                bMutTexCoord.set(bTexCoord,bMutTexCoord.size());
+                bMutTexcoord.set(bTexcoord,bMutTexcoord.size());
             }
 
-            this.bufferArrays(bMutVertex.array,null,bMutTexCoord.array,gl.DYNAMIC_DRAW);
+            this.bufferArrays(bMutVertex.array,null,bMutTexcoord.array,gl.DYNAMIC_DRAW);
             this.setMatrixUniform();
             gl.drawArrays(gl.TRIANGLES,0,length * 6);
         } else {
@@ -2235,21 +2207,21 @@ Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,t
                         bMutColor.set( bColor, bMutColor.size());
                     }
 
-                    bMutTexCoord.set(bTexCoord,bMutTexCoord.size());
+                    bMutTexcoord.set(bTexcoord,bMutTexcoord.size());
 
                 }
 
-                this.bufferArrays(bMutVertex.array,bMutColor.array,bMutTexCoord.array,gl.DYNAMIC_DRAW);
+                this.bufferArrays(bMutVertex.array,bMutColor.array,bMutTexcoord.array,gl.DYNAMIC_DRAW);
                 this.setMatrixUniform();
                 gl.drawArrays(gl.TRIANGLES,0,length * 6);
             }
             else if(!fillColorArr && this._fill){
-                bColor4f = this._bColorFill4;
+                bColor4 = this._bColorFill4;
 
-                bColor[0] = bColor4f[0];
-                bColor[1] = bColor4f[1];
-                bColor[2] = bColor4f[2];
-                bColor[3] = bColor4f[3];
+                bColor[0] = bColor4[0];
+                bColor[1] = bColor4[1];
+                bColor[2] = bColor4[2];
+                bColor[3] = bColor4[3];
 
                 while(++i < length){
                     i2 = i * 2;
@@ -2279,10 +2251,10 @@ Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,t
                         bMutColor.set( bColor, bMutColor.size());
                     }
 
-                    bMutTexCoord.set(bTexCoord,bMutTexCoord.size());
+                    bMutTexcoord.set(bTexcoord,bMutTexcoord.size());
                 }
 
-                this.bufferArrays(bMutVertex.array,bMutColor.array,bMutTexCoord.array,gl.DYNAMIC_DRAW);
+                this.bufferArrays(bMutVertex.array,bMutColor.array,bMutTexcoord.array,gl.DYNAMIC_DRAW);
                 this.setMatrixUniform();
                 gl.drawArrays(gl.TRIANGLES,0,length * 6);
             }
@@ -2306,8 +2278,10 @@ Context.prototype.rectSet = function(posArr,dimArr,fillColorArr,strokeColorArr,t
  *
  */
 
-Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColorArr,texCoordsArr){
-    if(!fillColorArr   && !this._fill && !strokeColorArr && !this._stroke && !texCoordsArr   && !this._texture)return;
+Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColorArr,texcoordArr){
+    if(!fillColorArr   && !this._fill &&
+       !strokeColorArr && !this._stroke &&
+       !texcoordArr    && !this._texture)return;
 
     var modeOrigin  = this._modeCircle;
     var stackDetail = this._stackDetailCircle;
@@ -2317,7 +2291,7 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
 
     if(!stackDetail.isEqual()){
         GeomUtil.genVerticesCircle(detail,this._bVertexCircle);
-        this._bTexCoordCircleSet = new Float32Array(ModelUtil.genTexCoordsLinearCW(detail * 2));
+        this._bTexcoordCircleSet = new Float32Array(ModelUtil.genTexCoordsLinearCW(detail * 2));
         this._bIndexCircle       = new Uint16Array(ModelUtil.genFaceIndicesFan(detail * 2));
         this._bIndexCircleSet    = new DataType.UintArray(this._bIndexCircle);
     }
@@ -2326,11 +2300,11 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
         bVertexSet   = this._bVertexCircleSet,
         bIndexSet    = this._bIndexCircleSet,
         bColorSet    = this._bColorCircleSet,
-        bTexCoordSet = this._bTexCoordCircleSet;
+        bTexCoordSet = this._bTexcoordCircleSet;
 
     var bMutVertex   = this._bMutVertexCircleSet,
         bMutColor    = this._bMutColorCircleSet,
-        bMutTexCoord = this._bMutTexCoordCircleSet,
+        bMutTexCoord = this._bMutTexcoordCircleSet,
         bMutIndex    = this._bMutIndexCircleSet;
 
     var bColorFill4 = this._bColorFill4;
@@ -2493,18 +2467,6 @@ Context.prototype.circleSet = function(posArr,radiusArr,fillColorArr,strokeColor
         gl.drawElements(gl.TRIANGLES,bMutIndex.size(),DataType.ElementIndex,0);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     stackDetail.push(detail);
     this._stackDrawFunc.push(this.circleSet);
 };
@@ -2603,7 +2565,7 @@ Context.prototype.beginBatch = function()
     this._batchBVertex     = [];
     this._batchBIndex      = [];
     this._batchBColor = [];
-    this._batchBTexCoord    = [];
+    this._batchBTexcoord    = [];
 
     this._batchOffsetVertices = 0;
 };
@@ -2633,7 +2595,7 @@ Context.prototype._batchPush = function(vertices,indices,colors,texCoords,limit)
     var bv = this._batchBVertex,
         bi = this._batchBIndex,
         bc = this._batchBColor,
-        bt = this._batchBTexCoord;
+        bt = this._batchBTexcoord;
 
     var i = -1;
     while(++i<vlen)
@@ -2680,7 +2642,7 @@ Context.prototype.drawBatch = function()
             v = new Float32Array(this._batchBVertex);
             c = new Float32Array(this._batchBColor);
             i = new Uint16Array(this._batchBIndex);
-            t = new Float32Array(this._batchBTexCoord);
+            t = new Float32Array(this._batchBTexcoord);
             break;
         case 1:
             var a = arguments[0];
@@ -2711,7 +2673,7 @@ Context.prototype.drawBatch = function()
         gl.vertexAttribPointer(0,2,glFloat,false,0,0);
         gl.vertexAttribPointer(1,4,glFloat,false,0,vblen);
         gl.vertexAttribPointer(2,2,glFloat,false,0,vblen + cblen);
-        gl.uniform1f(program[ShaderDict.uUseTexture],this._currTint);
+        gl.uniform1f(program[ShaderDict.uUseTexture],this._curr_tint);
         gl.bindTexture(gl.TEXTURE_2D,this._textureCurr);
         gl.uniform1f(program[ShaderDict.uImage],0);
 
@@ -2740,14 +2702,14 @@ Context.prototype.getBatch = function(out){
         out[0] = Util.copyFloat32Array(this._batchBVertex);
         out[1] = Util.copyFloat32Array(this._batchBColor);
         out[2] = Util.copyFloat32Array(this._batchBIndex);
-        out[3] = Util.copyFloat32Array(this._batchBTexCoord);
+        out[3] = Util.copyFloat32Array(this._batchBTexcoord);
         return out;
     }
 
     return [this._batchBVertex,
         this._batchBColor,
         this._batchBIndex,
-        this._batchBTexCoord];
+        this._batchBTexcoord];
 };
 
 Context.prototype.beginBatchToTexture = function(){
@@ -2766,24 +2728,24 @@ Context.prototype.endBatchToTexture = function(){
 // Image & Texture
 /*---------------------------------------------------------------------------------------------------------*/
 
-Context.prototype.image = function(image, x, y, width, height)
-{
-    var rm = this._modeRect;
-    var w = width || image.width,
-        h = height || image.height;
-    var xx = x || 0 + (rm == 1 ? 0.0 : - w*0.5),
-        yy = y || 0 + (rm == 1 ? 0.0 : - h*0.5);
-    var xw = xx+w,yh = yy+h;
+Context.prototype._drawImage = function(img){
+    this._bindTexture(img.getTexture());
 
-    this._enableTextureObj(image);
-    this.rect(xx,yy,xw,yh);
+    var originMode = this._modeRect;
+    var imgWidth  = img.width,
+        imgHeight = img.height;
+    var rx  = originMode == 1 ? 0.0 : - imgWidth  * 0.5,
+        ry  = originMode == 1 ? 0.0 : - imgHeight * 0.5;
+    var rbx = rx + imgWidth,
+        rby = ry + imgHeight;
+
+    this._enableTextureObj(img.getTexture());
+    this.rect(rx,ry,rbx,rby);
     this._disableTextureObj();
-
-    this._stackDrawFunc.push(this.image);
 };
 
 Context.prototype.getImagePixel = function(img){
-    var prevFrameBuffer = this._stackFbo.peek();
+    var prevFrameBuffer = this._fboStack.peek();
 
 };
 
@@ -2792,11 +2754,11 @@ Context.prototype.getImagePixel = function(img){
 /*---------------------------------------------------------------------------------------------------------*/
 
 Context.prototype.useProgram = function(program){
-    var stackProgram = this._stackProgram;
-    if(program == stackProgram.peek())return;
+    var stack = this._stackProgram;
+    if(program == stack.peek())return;
     this._context3d.useProgram(program.program);
     program.enableVertexAttribArrays();
-    stackProgram.push(program);
+    stack.push(program);
 };
 
 Context.prototype.restoreDefaultProgram = function(){
@@ -2844,7 +2806,7 @@ Context.prototype.pushMatrix = function(){
 Context.prototype.popMatrix = function(){
     var stack = this._matrixStack;
     if(stack.length == 0){
-        throw Warning.INVALID_STACK_POP;
+        throw Warning.kInvalidStackPop;
     }
 
     this._matrix = stack.pop();
@@ -2941,7 +2903,7 @@ Context.prototype.bufferColors = function(color,buffer){
     }
     else{
         if(cl != bl){
-            throw Warning.UNEQUAL_ARR_LENGTH_COLOR_BUFFER;
+            throw Warning.kUnequalArrLengthColorBuffer;
         }
 
         buffer.set(color);
@@ -2986,11 +2948,11 @@ Context.CLAMP  = 3;
 Context.REPEAT = 4;
 
 Context.FUNC_ADD = WebGLRenderingContext.FUNC_ADD;
-Context.FUNC_SUBSTRACT = WebGLRenderingContext.FUNC_SUBTRACT;
-Context.FUNC_REVERSER_SUBSTRACT = WebGLRenderingContext.FUNC_REVERSE_SUBTRACT;
+Context.FUNC_SUBTRACT = WebGLRenderingContext.FUNC_SUBTRACT;
+Context.FUNC_REVERSE_SUBTRACT = WebGLRenderingContext.FUNC_REVERSE_SUBTRACT;
 
 Context.ZERO = WebGLRenderingContext.ZERO;
-Context.ONE = WebGLRenderingContext.ONE;
+Context.ONE  = WebGLRenderingContext.ONE;
 
 Context.SRC_ALPHA = WebGLRenderingContext.SRC_ALPHA;
 Context.SRC_COLOR = WebGLRenderingContext.SRC_COLOR;
@@ -3010,11 +2972,11 @@ Context.TOP    = "top";
 Context.MIDDLE = "middle";
 Context.BOTTOM = "bottom";
 
-Context.THIN   = "thin";
-Context.REGULAR= "normal";
-Context.BOLD   = "bold";
+Context.THIN    = "thin";
+Context.REGULAR = "normal";
+Context.BOLD    = "bold";
 
-Context.CAP_NONE = 5;
+Context.CAP_NONE  = 5;
 Context.CAP_ROUND = 6;
 
 Context.ARRAY_BUFFER = WebGLRenderingContext.ARRAY_BUFFER;
