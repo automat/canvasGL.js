@@ -1,20 +1,20 @@
 var _Math         = require('../math/cglMath'),
     Warning       = require('../common/cglWarning'),
     Extension     = require('../common/cglExtension'),
+    Util          = require('../util/cglUtil'),
     TextureFormat = require('./cglTextureFormat');
 
 function Texture(ctx,width,height,format,unit){
     this._ctx = ctx;
     var gl = ctx.getContext3d();
 
-    this._format      = format || new TextureFormat();
+    this._format      = format.copy() || new TextureFormat();
     this._dataType    = null;
     this._width       = null;
     this._height      = null;
     this._initialized = false;
     this._texUnit     = unit;
     this._tex         = gl.createTexture();
-
 
     this.setSize(width,height);
 }
@@ -151,8 +151,8 @@ Texture.prototype.setData = function(data, width, height, format, type){
     gl.bindTexture(glTexture2d,null);
 };
 
-Texture.prototype.readPixels = function(out){
-    this._ctx._readPixelsFromTex(this,out);
+Texture.prototype.readPixels = function(x,y,width,height,out){
+    this._ctx._readPixelsFromTex(this,x,y,width,height,out);
 };
 
 Texture.prototype.writePixels = function(x,y,width,height,format,type,pixels){

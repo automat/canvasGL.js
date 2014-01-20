@@ -3,36 +3,22 @@ var TextureFormat = require('../gl/cglTextureFormat'),
     ImageState    = require('./cglImageState');
 
 function _Image(ctx,src){
-    this._ctx = ctx;
-    this._tex    = new Texture(ctx,0,0,new TextureFormat().set(false,
-                                                               TextureFormat.LINEAR,
-                                                               TextureFormat.LINEAR,
-                                                               TextureFormat.CLAMP_TO_EDGE,
-                                                               TextureFormat.CLAMP_TO_EDGE,
-                                                               true));
+    Texture.call(this,ctx,0,0,new TextureFormat().set(false,
+                                                       TextureFormat.LINEAR,
+                                                       TextureFormat.LINEAR,
+                                                       TextureFormat.CLAMP_TO_EDGE,
+                                                       TextureFormat.CLAMP_TO_EDGE,
+                                                       true));
+
+
     this._status = ImageState.IMAGE_NOT_LOADED;
     if(src){
-        this._tex.setData(src,src.width,src.height);
+        this.setData(src,src.width,src.height);
         this._status = ImageState.IMAGE_LOADED;
     }
 }
 
-_Image.prototype.setSize = function(width,height){
-    this._tex.setSize(width,height);
-};
-
-_Image.prototype.getTexture = function(){
-    return this._tex;
-};
-
-_Image.prototype.getWidth = function(){
-    return this._tex.getWidth();
-};
-
-_Image.prototype.getHeight = function(){
-    return this._tex.getHeight();
-};
-
+_Image.prototype = Object.create(Texture.prototype);
 
 _Image.prototype.getStatus = function(){
    return this._status;
@@ -42,10 +28,20 @@ _Image.prototype.draw = function(x,y,width,height){
     this._ctx._drawImage(this,x,y,width,height);
 };
 
-_Image.prototype.getPixel = function(format){
+//TODO: urgs, Fix me
+_Image.prototype.copy = function(){
+    var width  = this.getWidth(),
+        height = this.getHeight();
 
+    var pixels = new Uint8Array(width * height * 4);
+    this.readPixels(0,0,width,height,pixels);
+
+    var copy = new _Image(this._ctx,null);
+    copy.setData(pixels,width,height);
+    return copy;
 };
 
+/*
 _Image.loadImage = function(ctx,imgPath,targetImg,callback){
     var imgSrc = new Image();
 
@@ -69,5 +65,6 @@ _Image.fromImage = function(ctx,image){
 
     return _image;
 };
+*/
 
 module.exports = _Image;

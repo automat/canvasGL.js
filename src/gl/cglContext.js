@@ -288,7 +288,7 @@ function Context(element,canvas3d,canvas2d){
     this._bMutIndexLine   = new Uint16ArrayMutable((100 - 2) * 3,true);
 
 
-    this._bTexcoordQuadDefault     = new Float32Array([0.0,0.0,1.0,0.0,0.0,1.0,1.0,1.0]);
+    this._bTexcoordQuadDefault     = new Float32Array([0,1,1,1,0,0,1,0]);
     this._bTexcoordQuad            = new Float32Array(this._bTexcoordQuadDefault);
     this._bTexcoordTriangleDefault = new Float32Array([0.0,0.0,1.0,0.0,1.0,1.0]);
     this._bTexcoordTriangle        = new Float32Array(this._bTexcoordTriangleDefault.length);
@@ -888,8 +888,8 @@ Context.prototype._drawFbo = function(fbo,x,y,width,height){
     var gl      = this._context3d;
     var program = this._stackProgram.peek();
 
-    x      = x || 0;
-    y      = y || 0;
+    x = Util.isUndefined(x) ? 0 : x;
+    y = Util.isUndefined(y) ? 0 : y;
     width  = typeof width === 'undefined' ? fbo.getWidth() : width;
     height = typeof height=== 'undefined' ? fbo.getHeight(): height;
 
@@ -936,15 +936,14 @@ Context.prototype._unbindFramebuffer = function(){
     this._fboStack.push(Value1Stack.EMPTY);
 };
 
-Context.prototype._readPixelsFromTex = function(tex,out){
+Context.prototype._readPixelsFromTex = function(tex,x,y,width,height,out){
     var gl = this._context3d;
     gl.bindFramebuffer(gl.FRAMEBUFFER,this._fboPixelread);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex.getGLTexture(), 0);
     if(gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE){
         var format = tex.getFormat();
-        gl.readPixels(0,0,tex.getWidth(),tex.getHeight(),format.dataFormat,format.dataType,out);
+        gl.readPixels(x,y,width,height,format.dataFormat,format.dataType,out);
     }
-
     gl.bindFramebuffer(gl.FRAMEBUFFER,this._fboStack.peek());
 };
 
@@ -1027,12 +1026,10 @@ Context.prototype.clearColorBuffer = function(){
 // Drawing primitives
 /*---------------------------------------------------------------------------------------------------------*/
 
-Context.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3)
-{
+Context.prototype.quad = function(x0,y0,x1,y1,x2,y2,x3,y3){
     if(!this._fill && !this._stroke && !this._texture)return;
 
     this._quad_internal(x0,y0,x1,y1,x2,y2,x3,y3);
-
     this._stackDrawFunc.push(this.quad);
 };
 
@@ -1067,24 +1064,26 @@ Context.prototype._quad_internal = function(x0,y0,x1,y1,x2,y2,x3,y3){
         var bTexcoord        = this._bTexcoordQuad,
             bTexcoordDefault = this._bTexcoordQuadDefault;
 
+        /*
         if(this._textureOffset){
             var offsetX      = this._textureOffsetX,
                 offsetY      = this._textureOffsetY,
                 offsetWidth  = this._textureOffsetWidth,
                 offsetHeight = this._textureOffsetHeight;
 
-            bTexcoord[0] = bTexcoordDefault[0] + offsetX;
-            bTexcoord[1] = bTexcoordDefault[1] + offsetY;
+            bTexcoord[0] = bTexcoordDefault[0];// + offsetX;
+            bTexcoord[1] = bTexcoordDefault[1];// + offsetY;
 
-            bTexcoord[2] = bTexcoordDefault[2] + offsetX + offsetWidth;
-            bTexcoord[3] = bTexcoordDefault[3] + offsetY;
+            bTexcoord[2] = bTexcoordDefault[2];// + offsetX + offsetWidth;
+            bTexcoord[3] = bTexcoordDefault[3];// + offsetY;
 
-            bTexcoord[4] = bTexcoordDefault[4] + offsetX;
-            bTexcoord[5] = bTexcoordDefault[5] + offsetY + offsetHeight;
+            bTexcoord[4] = bTexcoordDefault[4];// + offsetX;
+            bTexcoord[5] = bTexcoordDefault[5];// + offsetY + offsetHeight;
 
-            bTexcoord[6] = bTexcoordDefault[6] + offsetX + offsetWidth;
-            bTexcoord[7] = bTexcoordDefault[7] + offsetY + offsetHeight;
+            bTexcoord[6] = bTexcoordDefault[6];// + offsetX + offsetWidth;
+            bTexcoord[7] = bTexcoordDefault[7];// + offsetY + offsetHeight;
         }
+        */
 
         if(this._batchActive){}
         else{
@@ -2794,14 +2793,14 @@ Context.prototype._drawImage = function(img,x,y,width,height){
 
     this.setMatrixUniform();
 
-    img.getTexture().bind();
+    img.bind();
     this.bufferArrays(bVertex,bColor,bTexcoord);
 
     gl.uniform1f(program[ShaderDict.uUseTexture],1.0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
     gl.uniform1f(program[ShaderDict.uUseTexture],0.0);
-    img.getTexture().unbind();
+    img.unbind();
 };
 
 Context.prototype.getImagePixel = function(img){

@@ -19,6 +19,14 @@ TextureFormat.prototype.set = function(mipmap, magFilter, minFilter, wrapMode, f
     return this;
 };
 
+TextureFormat.prototype.copy = function(){
+    return (new TextureFormat()).set(this.mipmap,
+                                     this.magFilter,
+                                     this.minFilter,
+                                     this.wrapMode,
+                                     this.flipY);
+};
+
 TextureFormat.isEqual = function(format0,format1){
     return format0.mipmap     == format1.mipmap &&
            format0.magFilter  == format1.magFilter &&
