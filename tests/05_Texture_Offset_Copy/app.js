@@ -95,7 +95,7 @@ App.prototype.draw = function(){
 
 
     var fboOff = this._fboOff;
-    c.drawFbo(fboOff,fboOff.getWidth() * 0.5, fboOff.getHeight() * 0.5);
+    c._drawFbo(fboOff,fboOff.getWidth() * 0.5, fboOff.getHeight() * 0.5);
 };
 
 

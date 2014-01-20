@@ -57,6 +57,10 @@ Framebuffer.prototype.unbind = function(){
     this._ctx._unbindFramebuffer();
 };
 
+Framebuffer.prototype.draw = function(x,y,width,height){
+    this._ctx._drawFbo(this,x,y,width,height);
+};
+
 Framebuffer.prototype.getGLFramebuffer = function(){
     return this._fbo;
 };

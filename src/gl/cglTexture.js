@@ -8,75 +8,54 @@ function Texture(ctx,width,height,format,unit){
     var gl = ctx.getContext3d();
 
     this._format      = format || new TextureFormat();
+    this._dataType    = null;
     this._width       = null;
     this._height      = null;
     this._initialized = false;
     this._texUnit     = unit;
     this._tex         = gl.createTexture();
 
+
     this.setSize(width,height);
 }
 
 Texture.prototype.setSize = function(width,height){
-    var gl = this._ctx.getContext3d(),
-        glTexture2d = gl.TEXTURE_2D;
-
-    var unit     = this._texUnit;
-    var prevUnit = gl.getParameter(gl.ACTIVE_TEXTURE);
-
-    this._width  = width;
-    this._height = height;
-
-    var format = this._format;
-    var pot    = _Math.isPOT(width) && _Math.isPOT(height);
-
     if(!this._initialized){
-        var wrapMode;
-
-        if(!pot && format.wrap_mode == gl.REPEAT){
-            console.log(Warning.kTextureNP2WrapModeInit);
-            wrapMode = gl.CLAMP_TO_EDGE;
-        } else {
-            wrapMode = format.wrap_mode;
-        }
-
-        if(unit && unit != prevUnit){
-            gl.activeTexture(gl.TEXTURE0 + unit);
-        }
-        gl.bindTexture(glTexture2d,this._tex);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, format.flip_y);
-
-        if(format.mipmap){
-            if(!pot){
-                console.log(Warning.kTextureNP2Mipmap);
-            } else {
-                gl.generateMipmap(glTexture2d);
-            }
-        }
-
-        gl.texParameteri(glTexture2d, gl.TEXTURE_MIN_FILTER, format.min_filter);
-        gl.texParameteri(glTexture2d, gl.TEXTURE_MAG_FILTER, format.mag_filter);
-        gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_S, wrapMode);
-        gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_T, wrapMode);
-        gl.texImage2D(glTexture2d,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-
-        if(unit){
-            gl.activeTexture(prevUnit);
-        }
-        gl.bindTexture(glTexture2d,null);
-
+        this.setData(null,width,height);
         this._initialized = true;
-    } else {
 
-        if(!pot && format.wrap_mode == gl.REPEAT){
-            throw Warning.kTextureNP2WrapModeResize;
+    } else {
+        this._width  = width;
+        this._height = height;
+
+        var gl = this._ctx.getContext3d(),
+            glTexture2d = gl.TEXTURE_2D;
+        var format   = this._format,
+            dataType = this._dataType;
+
+        var unit     = this._texUnit,
+            prevUnit = gl.getParameter(gl.ACTIVE_TEXTURE);
+        var pot      = _Math.isPOT(width) && _Math.isPOT(height);
+
+        if(!pot && format.wrapMode == gl.REPEAT){
+            throw new TypeError(Warning.TEX_NP2_WRAP_MODE_RESIZE);
+        }
+
+        if(!format.dataType == TextureFormat.FLOAT && !Extension.FloatTextureAvailable){
+            throw new TypeError(Warning.TEX_FLOAT_FORMAT_NOT_SUPPORTED);
         }
 
         if(unit && unit != prevUnit){
             gl.activeTexture(gl.TEXTURE0 + unit);
         }
+
         gl.bindTexture(glTexture2d,this._tex);
-        gl.texImage2D(glTexture2d,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+
+        if(dataType != 'HTMLImageElement' ||
+           dataType != 'HTMLCanvasElement' ||
+           dataType != 'HTMLVideoElement'){
+            gl.texImage2D(glTexture2d,0,gl.RGBA,width,height,0,format.dataFormat,format.dataType,null);
+        }
 
         if(unit){
             gl.activeTexture(prevUnit);
@@ -113,84 +92,63 @@ Texture.prototype.getFormat = function(){
     return this._format;
 };
 
-
-//TODO: Add format check
-Texture.prototype.setData = function(data, width, height, type){
+Texture.prototype.setData = function(data, width, height, format, type){
     var gl = this._ctx.getContext3d(),
         glTexture2d = gl.TEXTURE_2D;
-
-    var format = this._format;
 
     var unit = this._texUnit,
         prevUnit = gl.getParameter(gl.ACTIVE_TEXTURE);
 
     var pot = _Math.isPOT(width) && _Math.isPOT(height);
-
     var wrapMode;
 
-    if(!pot && format.wrap_mode == gl.REPEAT){
-        console.log(Warning.kTextureNP2WrapModeInit);
+    var _format = this._format;
+        _format.dataType   = type   || _format.dataType;
+        _format.dataFormat = format || _format.dataFormat;
+
+    if(!pot && _format.wrapMode == gl.REPEAT){
+        console.log(Warning.TEX_NP2_WRAP_MODE_INIT);
         wrapMode = gl.CLAMP_TO_EDGE;
     } else {
-        wrapMode = format.wrap_mode;
+        wrapMode = _format.wrapMode;
     }
+
+    this._width  = width;
+    this._height = height;
 
     if(unit && unit != prevUnit){
         gl.activeTexture(gl.TEXTURE0 + unit);
     }
     gl.bindTexture(glTexture2d,this._tex);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, format.flip_y);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, _format.flipY);
 
-    if(format.mipmap){
+    if(_format.mipmap){
         if(!pot){
-            console.log(Warning.kTextureNP2Mipmap);
+            console.log(Warning.TEX_NP2_MIPMAP);
         } else {
             gl.generateMipmap(glTexture2d);
         }
     }
 
-    gl.texParameteri(glTexture2d, gl.TEXTURE_MIN_FILTER, format.min_filter);
-    gl.texParameteri(glTexture2d, gl.TEXTURE_MAG_FILTER, format.mag_filter);
+    gl.texParameteri(glTexture2d, gl.TEXTURE_MIN_FILTER, _format.minFilter);
+    gl.texParameteri(glTexture2d, gl.TEXTURE_MAG_FILTER, _format.magFilter);
     gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_S, wrapMode);
     gl.texParameteri(glTexture2d, gl.TEXTURE_WRAP_T, wrapMode);
-    gl.texImage2D(glTexture2d,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,data);
+
+    var dataType = this._dataType = !data ? null : data.constructor.name;
+
+    if(dataType == 'HTMLImageElement' ||
+       dataType == 'HTMLCanvasElement' ||
+       dataType == 'HTMLVideoElement'){
+        gl.texImage2D(glTexture2d,0,gl.RGBA,_format.dataFormat,_format.dataType,data);
+    } else {
+        gl.texImage2D(glTexture2d,0,gl.RGBA,width,height,0,_format.dataFormat,_format.dataType,data);
+    }
 
     if(unit){
         gl.activeTexture(prevUnit);
     }
     gl.bindTexture(glTexture2d,null);
-
-    /*
-    var ctx = this._ctx;
-    var gl  = ctx.getContext3d();
-
-    format = format || gl.RGBA;
-    type   = type   || gl.UNSIGNED_BYTE;
-
-    if(type == gl.FLOAT && !Extension.FloatTextureAvailable){
-        throw Warning.kTextureFloatNotSupported;
-    }
-
-    var prev_tex = ctx.getCurrTexture();
-    var glTexture2d = gl.TEXTURE_2D;
-
-    var _format = this._format;
-        _format.data_format = format;
-        _format.data_type = type;
-
-    var pot = _Math.isPOT(width) && _Math.isPOT(height);
-
-    if(!pot && format.wrap_mode == gl.REPEAT){
-
-    }
-
-
-
-    gl.bindTexture(glTexture2d, this._tex);
-    //gl.texImage2D( gl.TEXTURE_2D, 0, _format.data_format, width, height, 0, _format.data_format, _format.data_type, data);
-    gl.texImage2D( glTexture2d, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, data);
-    gl.bindTexture(glTexture2d, prev_tex ? prev_tex.getGLTexture() : ctx.getNullTexture());
-    */
 };
 
 Texture.prototype.readPixels = function(out){

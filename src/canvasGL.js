@@ -106,7 +106,7 @@ function CanvasGL(element){
 
 // Override in sublclass
 CanvasGL.prototype.onNotAvailable = function(){
-    console.log(Warning.kWebGLNotAvailable);
+    console.log(Warning.WEBGL_NOT_AVAILABLE);
 };
 
 
@@ -119,12 +119,12 @@ CanvasGL.prototype.__onWebGLContextLost = function(e){
 
 // Override in sublcass
 CanvasGL.prototype.onWebGLContextLost = function(e){
-    console.log(Warning.kWebGLContextLost);
+    console.log(Warning.WEBGL_CONTEXT_LOST);
 };
 
 // TODO: finish
 CanvasGL.prototype.onWebGLContextRestored = function(){
-    console.log(Warning.kWebGLContextRestored);
+    console.log(Warning.WEBGL_CONTEXT_RESTORED);
 };
 */
 

@@ -1,33 +1,35 @@
 function TextureFormat(){
     this.mipmap    = false;
-    this.mag_filter = TextureFormat.LINEAR;
-    this.min_filter = TextureFormat.LINEAR_MIPMAP_NEAREST;
-    this.wrap_mode  = TextureFormat.CLAMP_TO_EDGE;
-    this.flip_y     = false;
+    this.magFilter = TextureFormat.LINEAR;
+    this.minFilter = TextureFormat.LINEAR_MIPMAP_NEAREST;
+    this.wrapMode  = TextureFormat.CLAMP_TO_EDGE;
+    this.flipY     = false;
 
-    this.data_format = TextureFormat.RGBA;
-    this.data_type   = TextureFormat.UNSIGNED_BYTE;
+    this.dataFormat = TextureFormat.RGBA;
+    this.dataType   = TextureFormat.UNSIGNED_BYTE;
 }
 
-TextureFormat.prototype.set = function(mipmap, mag_filter, min_filter, wrap_mode, flip_y){
-    this.mipmap     = mipmap;
-    this.mag_filter = mag_filter;
-    this.min_filter = min_filter;
-    this.wrap_mode  = wrap_mode;
-    this.flip_y     = flip_y;
+TextureFormat.prototype.set = function(mipmap, magFilter, minFilter, wrapMode, flipY){
+    this.mipmap    = mipmap;
+    this.magFilter = magFilter;
+    this.minFilter = minFilter;
+    this.wrapMode  = wrapMode;
+    this.flipY     = flipY;
 
     return this;
 };
 
 TextureFormat.isEqual = function(format0,format1){
-    return format0.mipmap      == format1.mipmap &&
-           format0.mag_filter  == format1.mag_filter &&
-           format0.min_filter  == format1.min_filter &&
-           format0.wrap_mode   == format1.wrap_mode &&
-           format0.flip_y      == format1.flip_y &&
-           format0.data_format == format1.data_format &&
-           format0.data_type   == format1.data_type;
+    return format0.mipmap     == format1.mipmap &&
+           format0.magFilter  == format1.magFilter &&
+           format0.minFilter  == format1.minFilter &&
+           format0.wrapMode   == format1.wrapMode &&
+           format0.flipY      == format1.flipY &&
+           format0.dataFormat == format1.dataFormat &&
+           format0.dataType   == format1.dataType;
 };
+
+
 
 TextureFormat.RGB  = WebGLRenderingContext.RGB;
 TextureFormat.RGBA = WebGLRenderingContext.RGBA;
