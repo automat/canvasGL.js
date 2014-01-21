@@ -19,8 +19,8 @@ App.prototype.setup = function(){
     // Init stuff goes here
     var ctx = this.getContext();
 
-    this._imagesW = 25;
-    this._imagesH = 25;
+    this._imagesW = 35;
+    this._imagesH = 35;
     this._images = new Array( this._imagesW * this._imagesH);
     var i = -1;while(++i < this._images.length){
         this._images[i] = new CanvasGL.Image(ctx,srcImg);

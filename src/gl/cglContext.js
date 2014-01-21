@@ -947,7 +947,7 @@ Context.prototype._readPixelsFromTex = function(tex,x,y,width,height,out){
     gl.bindFramebuffer(gl.FRAMEBUFFER,this._fboStack.peek());
 };
 
-Context.prototype._writePixelsToTex = function(tex,x,y,width,height,format,type,pixels){
+Context.prototype._writePixelsToTex = function(tex,x,y,width,height,format,type,pixels,flipY){
     var gl = this._context3d;
     var stack = this._stackTexture;
     gl.bindTexture(gl.TEXTURE_2D,tex.getGLTexture());
