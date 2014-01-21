@@ -1,78 +1,76 @@
-var console = require('../../src/util/worker/cglWorkerConsole').console;
+var console = require('../../src/util/worker/cglWorkerConsole').console,
+    Msg = require('./workerMsg');
 
 module.exports = function () {
     self.postMessage = self.webkitPostMessage || self.postMessage;
 
+    /*--------------------------------------------------------------------------------------------*/
+
     var Msg = {
         FUNCTION_A_PROCESSED : 0,
-        FUNCTION_B_PROCESSED : 1
+        FUNCTION_B_PROCESSED : 1,
+        RETURN_BUFFER_A_PROCESSED : 2,
+        RETURN_BUFFER_B_PROCESSED : 3
     };
 
-    var queue = [];
+    var bufferAInitSize = 10000,
+        bufferBInitSize = 10000;
 
-    var buffer_a_init_size = 10000,
-        buffer_b_init_size = 10000;
+    var bufferA,
+        bufferB;
 
-    var buffer_a,
-        buffer_b;
-
+    /*--------------------------------------------------------------------------------------------*/
 
     var funcs = {};
 
     funcs.init = function(){
-        buffer_a = new Float32Array(buffer_a_init_size);
-        buffer_b = new Float32Array(buffer_b_init_size);
-    };
-
-    funcs.pushMsg = function(msg,data){
-        queue.push({msg:msg,data:data});
-        if(queue.length == 1)funcs.processQueue();
-    };
-
-    funcs.processQueue = function(){
-        if(queue.length == 0)return;
-        var front = queue.shift();
-        funcs[front.msg](front.data);
+        bufferA = new Float32Array(bufferAInitSize);
+        bufferB = new Float32Array(bufferBInitSize);
     };
 
     funcs.returnBufferA = function(data){
-        console.log('returned ' + console.format(data,false),false);
-        buffer_a = data;
+        bufferA = data;
+        var obj = {msg:Msg.RETURN_BUFFER_A_PROCESSED,data:null};
+        self.postMessage(obj);
     };
 
     funcs.returnBufferB = function(data){
-        console.log(data,false);
-        buffer_b = data;
+        bufferB = data;
+        var obj = {msg:Msg.RETURN_BUFFER_B_PROCESSED,data:null};
+        self.postMessage(obj);
     };
 
     funcs.functionA = function(data){
-        console.log(buffer_a,false);
-        var l = buffer_a.length * 0.5;
+        //console.log(bufferA,false);
+        var l = bufferA.length * 0.5;
         var i,i2;
         i = 0;
         while(++i < l){
             i2 = i * 2;
-            buffer_a[i2  ] = Math.random();
-            buffer_a[i2+1] = Math.random();
+            bufferA[i2  ] = Math.random();
+            bufferA[i2+1] = Math.random();
             i++;
         }
-        var obj = {msg:Msg.FUNCTION_A_PROCESSED,data:buffer_a};
+        var obj = {msg:Msg.FUNCTION_A_PROCESSED,data:bufferA};
         self.postMessage(obj,[obj.data.buffer]);
     };
 
     funcs.functionB = function(){
-        var l = buffer_b.length * 0.5;
+        var l = bufferB.length * 0.5;
         var i,i2;
         i = 0;
         while(++i < l){
             i2 = i * 2;
-            buffer_b[i2  ] = Math.random();
-            buffer_b[i2+1] = Math.random();
+            bufferB[i2  ] = Math.random();
+            bufferB[i2+1] = Math.random();
             i++;
         }
-        var obj = {msg:Msg.FUNCTION_A_PROCESSED,data:buffer_b};
+        var obj = {msg:Msg.FUNCTION_B_PROCESSED,data:bufferB};
         self.postMessage(obj,[obj.data.buffer]);
     };
+
+    /*--------------------------------------------------------------------------------------------*/
+
 
     self.addEventListener('message',function(e){
         var dataObj = e.data;

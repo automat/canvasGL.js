@@ -1,13 +1,23 @@
-var ObjectUtil = require('../../src/util/cglObjectUtil');
-var WorkerConsole = require('../../src/util/worker/cglWorkerConsole');
 var work = require('webworkify');
+
+var WorkerConsole = require('../../src/util/worker/cglWorkerConsole'),
+    ObjectUtil    = require('../../src/util/cglObjectUtil'),
+    WorkerMsg     = require('./workerMsg'),
+    MsgQueue      = require('./msgQueue');
+
 
 function Pipe(){
     var worker = this._worker = work(require('./worker.js'));
-
-    this._queue = [];
-
+        worker.postMessage = worker.webkitPostMessage || worker.postMessage;
     WorkerConsole.addListener(worker);
+
+
+    this._msgQueue = new MsgQueue();
+    this._msgQueue.onFinish = this.onQueueFinished.bind(this);
+    this._msgQueue.onProcess = function(msgObj){
+        console.log('post: ' + ObjectUtil.toString(msgObj));
+        worker.postMessage({msg:msgObj.msg,data:msgObj.data},msgObj.transfer);
+    };
 
     var self = this;
     worker.addEventListener('message',function(e){
@@ -15,21 +25,25 @@ function Pipe(){
         var dataObj = e.data;
 
         switch (dataObj.msg){
-            case Pipe.Msg.FUNCTION_A_PROCESSED:
+            case WorkerMsg.FUNCTION_A_PROCESSED:
                 returnObj = {msg:'returnBufferA',data:dataObj.data,transfer:[dataObj.data.buffer]};
-
-                //this.postMessage(returnObj,[returnObj.data.buffer]);
-                //console.log(dataObj.msg);
-                self._unshiftMsg(returnObj);
-                self._processQueue();
+                self._msgQueue.shift();
+                self._msgQueue.prepend(returnObj);
+                self._msgQueue.process();
                 break;
-            case Pipe.Msg.FUNCTION_B_PROCESSED:
+            case WorkerMsg.FUNCTION_B_PROCESSED:
                 returnObj = {msg:'returnBufferB',data:dataObj.data,transfer:[dataObj.data.buffer]};
-
-                //this.postMessage(returnObj,[returnObj.data.buffer]);
-                //console.log(dataObj.msg);
-                self._unshiftMsg(returnObj);
-                self._processQueue();
+                self._msgQueue.shift();
+                self._msgQueue.prepend(returnObj);
+                self._msgQueue.process();
+               break;
+            case WorkerMsg.RETURN_BUFFER_A_PROCESSED:
+                self._msgQueue.shift();
+                self._msgQueue.process();
+                break;
+            case WorkerMsg.RETURN_BUFFER_B_PROCESSED:
+                self._msgQueue.shift();
+                self._msgQueue.process();
                 break;
         }
 
@@ -47,57 +61,33 @@ function Pipe(){
     }
 }
 
-Pipe.prototype._exec = function(msg,data){
-    this._worker.postMessage({msg:msg,data:data});
-};
-
 Pipe.prototype.methodA = function(data){
-    this._pushMsg({msg:Pipe.Msg.FUNCTION_A,data:data});
+    this._msgQueue.append({msg:WorkerMsg.FUNCTION_A,data:data});
 };
 
 Pipe.prototype.methodB = function(data){
-    this._pushMsg({msg:Pipe.Msg.FUNCTION_B,data:data});
+    this._msgQueue.append({msg:WorkerMsg.FUNCTION_B,data:data});
 };
 
-Pipe.prototype._processQueue = function(){
-    if(this._queue.length == 0)return;
-    console.log(ObjectUtil.toString(this._queue));
-    var front = this._queue.shift();
-
-    //this._exec(front.msg,front.data);
-    this._worker.postMessage({msg:front.msg,data:front.data},front.transfer);
-
+Pipe.prototype.onQueueFinished = function(){
+    console.log('done !');
 };
 
-Pipe.prototype._unshiftMsg = function(msgObj){
-    this._queue.unshift(msgObj);
-    if(this._queue.length == 1)this._processQueue();
-};
-
-Pipe.prototype._pushMsg = function(msgObj){
-    this._queue.push(msgObj);
-    if(this._queue.length == 1)this._processQueue();
-};
-
-Pipe.Msg = {
-    LOG : 0,
-    FUNCTION_A: 'functionA',
-    FUNCTION_B: 'functionB',
-    FUNCTION_A_PROCESSED : 0,
-    FUNCTION_B_PROCESSED : 1,
-    INIT: 'init'
-};
 
 function App(){
     var pipe = this._pipe = new Pipe();
-    pipe.methodA();
-    pipe.methodA();
-    //pipe.methodB();
-    //pipe.methodB();
-    //pipe.methodB();
-    //pipe.methodB();
-    //pipe.methodA();
-
+    //var i = -1;
+    //while(++i < 1000){
+        pipe.methodA();
+        pipe.methodA();
+        pipe.methodA();
+        pipe.methodA();
+        pipe.methodB();
+        pipe.methodB();
+        pipe.methodB();
+        pipe.methodB();
+        pipe.methodA();
+    //}
 }
 
 window.addEventListener('load',function(){
