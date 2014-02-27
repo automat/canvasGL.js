@@ -21,8 +21,7 @@ MsgQueue.prototype.process = function(){
         this.onFinish();
         return;
     }
-    var front = this._queue[0];
-    this.onProcess(front);
+    this.onProcess(this._queue[0]);
 };
 
 MsgQueue.prototype.shift = function(){
@@ -31,7 +30,11 @@ MsgQueue.prototype.shift = function(){
 
 MsgQueue.prototype.getLength = function(){
     return this._queue.length;
-}
+};
+
+MsgQueue.prototype.isFinished = function(){
+    return this._queue.length == 0;
+};
 
 MsgQueue.prototype.onProcess = function(msgObj){};
 MsgQueue.prototype.onFinish = function(){};

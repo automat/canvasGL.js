@@ -15,7 +15,7 @@ function Pipe(){
     this._msgQueue = new MsgQueue();
     this._msgQueue.onFinish = this.onQueueFinished.bind(this);
     this._msgQueue.onProcess = function(msgObj){
-        console.log('post: ' + ObjectUtil.toString(msgObj));
+        console.log('post: ' + WorkerConsole.format(msgObj,false));
         worker.postMessage({msg:msgObj.msg,data:msgObj.data},msgObj.transfer);
     };
 
@@ -73,22 +73,71 @@ Pipe.prototype.onQueueFinished = function(){
     console.log('done !');
 };
 
+Pipe.prototype.isFinished = function(){
+    return this._msgQueue.isFinished();
+};
+
 
 function App(){
-    var pipe = this._pipe = new Pipe();
-    //var i = -1;
-    //while(++i < 1000){
-        pipe.methodA();
-        pipe.methodA();
-        pipe.methodA();
-        pipe.methodA();
-        pipe.methodB();
-        pipe.methodB();
-        pipe.methodB();
-        pipe.methodB();
-        pipe.methodA();
-    //}
+    this._pipe = new Pipe();
+
+    this.__timeInterval = 30.0 / 1000.0;
+    this.__time = Date.now();
+    this.__timeNext = 0;
+    this.__timeDelta = 0;
+    this.__timeElapsed = 0;
+    this.__frameNum  = 0;
+
+    this.__mainLoop();
+
 }
+
+App.prototype.__mainLoop = function(){
+    var time, timeDelta;
+    var timeInterval = this.__timeInterval;
+    var timeNext;
+    var self = this;
+    function loop(){
+        if(self.__frameNum <= 15)requestAnimationFrame(loop,null);
+        time      = self.__time = Date.now();
+        timeDelta = time - self.__timeNext;
+        self.__timeDelta = Math.min(timeDelta / timeInterval, 1);
+
+        console.log('-- BEGIN --');
+
+        if(!self._pipe.isFinished())return;
+
+        if(timeDelta > timeInterval){
+            timeNext = self.__timeNext = time - (timeDelta % timeInterval);
+
+            self.draw();
+
+            self.__timeElapsed = (timeNext - self.__timeStart) / 1000.0;
+            self.__frameNum++;
+        }
+
+        console.log('-- END --');
+    }
+    loop();
+};
+
+
+
+App.prototype.draw = function(){
+    var pipe = this._pipe;
+
+    pipe.methodA();
+    pipe.methodA();
+    pipe.methodA();
+    pipe.methodA();
+    pipe.methodB();
+    pipe.methodB();
+    pipe.methodB();
+    pipe.methodB();
+    pipe.methodA();
+    console.log('draw');
+
+};
 
 window.addEventListener('load',function(){
     var app = new App();
