@@ -69,17 +69,17 @@ App.prototype.draw = function(){
             jN = j / (h-1);
             //posArr[ij*2  ] = Math.cos(i/(w-1)*Math.PI*2) * (j/(h-1)) * (width * 1.5 + Math.sin(j/(h-1)*Math.PI*16+time*4) * (-0.5+Math.sin(time*10)*0.5) * 512) * 0.5;
             //posArr[ij*2+1] = Math.sin(i/(w-1)*Math.PI*2) * (j/(h-1)) * (width * 1.5 + Math.sin(i/(w-1)*Math.PI*16+time*4) * (-0.5+Math.sin(time)*0.5) * 512) * 0.5;
-            posArr[ij*2  ] = Math.cos(iN*Math.PI*2) * jN * (width + Math.sin(iN*Math.PI*12 + time*4)  *100);
-            posArr[ij*2+1] = Math.sin(iN*Math.PI*2) * jN * (width + Math.sin(jN*Math.PI*12 + time*4)*100);
+            posArr[ij*2  ] = Math.cos(iN*Math.PI*4) * jN * (width + Math.sin(iN*Math.PI*12 + time*4)  *100);
+            posArr[ij*2+1] = Math.sin(iN*Math.PI*4) * jN * (width + Math.sin(jN*Math.PI*12 + time*4)*100);
             //posArr[ij*2  ] = (-0.5 + i/(w-1)) * 2 * width_2  ;
             //posArr[ij*2+1] = (-0.5 + j/(h-1)) * 2 * (height_2 * 0.75 + Math.sin(i/(w-1)*Math.PI*16+time*4) * Math.sin(j/(h-1) * Math.PI * (0.5 +Math.sin(time) *0.5)*8 + time)* 20);
-            radiusArr[ij]  = 5 + (0.5 + Math.sin(jN * Math.PI *10- time*8) * 0.5) * 10 ;
+            radiusArr[ij]  = 2 + (0.5 + Math.sin(jN * Math.PI *10- time*8) * 0.5) * 4 ;
 
 
-            colorArr[ij*4+0] = 0.5 + (0.5+Math.sin(jN * Math.PI *10- time*16) * 0.5)*0.75;
+            colorArr[ij*4+0] = 0.25 + (0.5+Math.sin(jN * Math.PI *10- time*16) * 0.5)*0.75;
             colorArr[ij*4+1] = 0;
-            colorArr[ij*4+2] = 0.25;
-            colorArr[ij*4+3] =1;
+            colorArr[ij*4+2] = 0.5;
+            colorArr[ij*4+3] = (0.5+Math.sin(jN * Math.PI + time) * 0.5);
 
 
 

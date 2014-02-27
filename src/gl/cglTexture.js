@@ -8,7 +8,7 @@ function Texture(ctx,width,height,format,unit){
     this._ctx = ctx;
     var gl = ctx.getContext3d();
 
-    this._format      = format.copy() || new TextureFormat();
+    this._format      = format ? format.copy() : new TextureFormat();
     this._dataType    = null;
     this._width       = null;
     this._height      = null;
