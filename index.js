@@ -30,9 +30,9 @@
  *
  */
 
-var Warning = require('./common/cglWarning'),
-    Default = require('./common/cglDefault'),
-    Context = require('./gl/cglContext');
+var Warning = require('./lib/common/Warning'),
+    Default = require('./lib/common/Default'),
+    Context = require('./lib/gl/Context');
 
 /*------------------------------------------------------------------------------------------------------------*/
 
@@ -375,13 +375,13 @@ CanvasGL.ELEMENT_ARRAY_BUFFER = Context.ELEMENT_ARRAY_BUFFER;
 
 /*---------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.Math          = require('./math/cglMath');
-CanvasGL.Program       = require('./gl/cglProgram');
-CanvasGL.Framebuffer   = require('./gl/cglFramebuffer');
-CanvasGL.TextureFormat = require('./gl/cglTextureFormat');
-CanvasGL.Texture       = require('./gl/cglTexture');
-CanvasGL.ImageState    = require('./image/cglImageState');
-CanvasGL.Image         = require('./image/cglImage');
+CanvasGL.Math          = require('./lib/math/Math');
+CanvasGL.Program       = require('./lib/gl/Program');
+CanvasGL.Framebuffer   = require('./lib/gl/Framebuffer');
+CanvasGL.TextureFormat = require('./lib/gl/TextureFormat');
+CanvasGL.Texture       = require('./lib/gl/Texture');
+CanvasGL.ImageState    = require('./lib/image/ImageState');
+CanvasGL.Image         = require('./lib/image/Image');
 
 /*---------------------------------------------------------------------------------------------------------*/
 
