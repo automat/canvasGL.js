@@ -173,6 +173,7 @@ Last state of development
 - ANGLE_INSTANCING_ARRAYS
 
 
+
 ###Latest stable versions
 
 [Branch](https://github.com/automat/canvasGL.js/tree/stable-r00) & [Zip](https://github.com/automat/canvasGL.js/archive/0.0.1.zip) 
@@ -189,9 +190,24 @@ Just include CanvasGL.js
 
 ###Last development state
 
+Current master branch
+This one uses the common.js pattern via browserify. First link the development version.
 
-This one uses the common.js pattern via browserify.
+    npm link canvasgl
 
+And then within:
+
+    var CanvasGL = require('canvasgl');
+    
+    
+Notes
+
+    - circle stroke broken
+    - polygon() imply missing
+    - ...
+    
+    
+    
 
 ##Prototype Documentation
 
@@ -631,7 +647,7 @@ Draws a line.
 | array     | Array    | [startX,startY,endX,endY]                         |
 | x0,y0,x1,y1 | Array  | startX=x0,startY=y0,endX=x1,endY=y1               |
 
-####canvas.lines(lines,strokeColors,lineWidth) -> {void}
+####canvas.lines(lines,strokeColors,strokeWeight) -> {void}
 
 Draws a continuous line.
 

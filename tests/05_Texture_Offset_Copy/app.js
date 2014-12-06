@@ -3,11 +3,11 @@ var CanvasGL = require('../../src/CanvasGL');
 function App(element){
     CanvasGL.call(this,element);
 
-    this.setSize(window.innerWidth,window.innerHeight);
+    this.size(window.innerWidth,window.innerHeight);
 
     var self = this;
     window.addEventListener('resize',function(){
-        self.setSize(window.innerWidth,window.innerHeight);
+        self.size(window.innerWidth,window.innerHeight);
     });
 }
 
@@ -19,26 +19,26 @@ App.prototype.setup = function(){
     var ssaaf = this.getSSAAFactor();
 
     this._fboOff       = new CanvasGL.Framebuffer(ctx,20 * ssaaf,20 * ssaaf);
-    this._fboOffPixels = new Uint8Array(this._fboOff.getWidth() * this._fboOff.getHeight() * 4);
+    this._fboOffPixels = new Uint8Array(this._fboOff.width() * this._fboOff.height() * 4);
     this._updateFboOff();
 };
 
 App.prototype._updateFboOff = function(){
     var c = this.getContext();
     var fbo = this._fboOff,
-        fboWidth  = fbo.getWidth(),
-        fboHeight = fbo.getHeight();
-    var time = this.getSecondsElapsed();
+        fboWidth  = fbo.width(),
+        fboHeight = fbo.height();
+    var time = this.secondsElapsed();
     var ssaaf = this.getSSAAFactor();
 
     fbo.bind();
     c.pushMatrix();
     c.loadIdentity();
-    c.backgroundfv(1,1,1,0);
+    c.background(1,1,1,0);
 
-    c.setModeCircle(CanvasGL.CORNER);
+    c.circleMode(CanvasGL.CORNER);
 
-    c.setDetailCircle(20);
+    c.circleDetail(20);
     c.noStroke();
     c.fill3f(Math.sin(time*10) * 0.5 + 0.5,0,0);
     c.circle(0,0,fboWidth * 0.25,fboHeight * 0.25);
@@ -52,19 +52,19 @@ App.prototype.draw = function(){
     // Draw stuff goes here
     this._updateFboOff();
 
-    var time   = this.getSecondsElapsed();
-    var width  = this.getWidth(),
-        height = this.getHeight();
+    var time   = this.secondsElapsed();
+    var width  = this.width(),
+        height = this.height();
 
     var c =  this.getContext();
     c.bindDefaultFramebuffer();
 
-    c.backgroundfv(0.15,0,0.15);
+    c.background(0.15,0,0.15);
 
     c.translate(width * 0.5, height * 0.5);
 
     c.setModeEllipse(c.kCenter);
-    c.setDetailCircle(20);
+    c.circleDetail(20);
 
     c.fill3f(0.65,0,0.75);
     c.circle(0,0,50 + (Math.sin(time) * 0.5 + 0.5) * 50);
@@ -72,8 +72,8 @@ App.prototype.draw = function(){
 
     var fboOffPixels = this._fboOffPixels;
     var fboOff       = this._fboOff,
-        fboOffWidth  = fboOff.getWidth(),
-        fboOffHeight = fboOff.getHeight();
+        fboOffWidth  = fboOff.width(),
+        fboOffHeight = fboOff.height();
 
     var fbo = c.getCurrFramebuffer();
 
@@ -95,7 +95,7 @@ App.prototype.draw = function(){
 
 
     var fboOff = this._fboOff;
-    c._drawFbo(fboOff,fboOff.getWidth() * 0.5, fboOff.getHeight() * 0.5);
+    c._drawFbo(fboOff,fboOff.width() * 0.5, fboOff.height() * 0.5);
 };
 
 

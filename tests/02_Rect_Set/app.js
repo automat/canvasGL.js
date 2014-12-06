@@ -2,11 +2,11 @@ var CanvasGL = require('../../src/CanvasGL');
 
 function App(element){
     CanvasGL.call(this,element);
-    this.setSize(window.innerWidth,window.innerHeight);
+    this.size(window.innerWidth,window.innerHeight);
 
     var self = this;
     window.addEventListener('resize',function(){
-        self.setSize(window.innerWidth,window.innerHeight);
+        self.size(window.innerWidth,window.innerHeight);
     });
 }
 
@@ -22,15 +22,15 @@ App.prototype.setup = function(){
 
 
 App.prototype.draw = function(){
-    var time     = this.getSecondsElapsed();
-    var width    = this.getWidth(),
-        height   = this.getHeight();
+    var time     = this.secondsElapsed();
+    var width    = this.width(),
+        height   = this.height();
     var width_2  = width * 0.5,
         height_2 = height * 0.5;
 
     var c =  this.getContext();
 
-    c.backgroundfv(0.15,0,0.15);
+    c.background(0.15,0,0.15);
     c.translate(width_2,height_2);
 
     c.stroke3f(0.25,0,0.25);
@@ -74,12 +74,12 @@ App.prototype.drawShapeOrigin = function(x,y){
     var prevFill   = c.getFill();
     var prevMode   = c.getModeCircle();
 
-    c.setModeCircle(CanvasGL.kCenter);
+    c.circleMode(CanvasGL.kCenter);
     c.noStroke();
     c.fill3f(0.15,0,0.65);
     c.circle(x,y,3,3);
 
-    c.setModeCircle(prevMode);
+    c.circleMode(prevMode);
     if(prevStroke)c.stroke(prevStroke);
     if(prevFill)c.fill(prevFill);
 };

@@ -5,11 +5,11 @@ var srcImg = new Image();
 function App(element){
     CanvasGL.call(this,element);
 
-    this.setSize(window.innerWidth,window.innerHeight);
+    this.size(window.innerWidth,window.innerHeight);
 
     var self = this;
     window.addEventListener('resize',function(){
-        self.setSize(window.innerWidth,window.innerHeight);
+        self.size(window.innerWidth,window.innerHeight);
     });
 }
 
@@ -19,8 +19,8 @@ App.prototype.setup = function(){
     // Init stuff goes here
     var ctx = this.getContext();
     var img = this._img = new CanvasGL.Image(ctx,srcImg),
-        imgWidth  = img.getWidth(),
-        imgHeight = img.getHeight();
+        imgWidth  = img.width(),
+        imgHeight = img.height();
 
     this._imgPixels0 = new Uint8Array(imgWidth * imgHeight * 4);
     this._imgPixels1 = new Uint8Array(imgWidth * imgHeight * 4);
@@ -32,19 +32,19 @@ App.prototype.setup = function(){
 };
 
 App.prototype.draw = function(){
-    var time   = this.getSecondsElapsed();
-    var width  = this.getWidth(),
-        height = this.getHeight();
+    var time   = this.secondsElapsed();
+    var width  = this.width(),
+        height = this.height();
 
     var c =  this.getContext();
 
     // Draw stuff goes here
-    c.backgroundfv(0.15,0,0.15);
+    c.background(0.15,0,0.15);
     c.translate(width * 0.5, height * 0.5);
 
     var img = this._img,
-        imgWidth  = img.getWidth(),
-        imgHeight = img.getHeight();
+        imgWidth  = img.width(),
+        imgHeight = img.height();
     var imgPixels0 = this._imgPixels0,
         imgPixels1 = this._imgPixels1;
 
@@ -68,8 +68,8 @@ App.prototype.draw = function(){
 
 
     c.setModeRect(CanvasGL.CENTER);
-    this._img.draw(-this._img.getWidth() * 0.5,0);
-    this._imgMixed.draw(this._imgMixed.getWidth() * 0.5,0);
+    this._img.draw(-this._img.width() * 0.5,0);
+    this._imgMixed.draw(this._imgMixed.width() * 0.5,0);
 
 };
 

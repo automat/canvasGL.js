@@ -3,11 +3,11 @@ var CanvasGL = require('../../src/CanvasGL');
 function App(element){
     CanvasGL.call(this,element);
 
-    this.setSize(window.innerWidth,window.innerHeight);
+    this.size(window.innerWidth,window.innerHeight);
 
     var self = this;
     window.addEventListener('resize',function(){
-        self.setSize(window.innerWidth,window.innerHeight);
+        self.size(window.innerWidth,window.innerHeight);
     });
 }
 
@@ -20,14 +20,14 @@ App.prototype.setup = function(){
 
 App.prototype.draw = function(){
 
-    var time   = this.getSecondsElapsed();
-    var width  = this.getWidth(),
-        height = this.getHeight();
+    var time   = this.secondsElapsed();
+    var width  = this.width(),
+        height = this.height();
     var c =  this.getContext();
 
     // Draw stuff goes here
 
-    c.backgroundfv(0.15,0,0.15);
+    c.background(0.15,0,0.15);
 
     c.translate(width * 0.5, height * 0.5);
 

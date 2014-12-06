@@ -2,11 +2,11 @@ var CanvasGL = require('../../src/CanvasGL');
 
 function App(element){
     CanvasGL.call(this,element);
-    this.setSize(window.innerWidth,window.innerHeight);
+    this.size(window.innerWidth,window.innerHeight);
 
     var self = this;
     window.addEventListener('resize',function(){
-        self.setSize(window.innerWidth,window.innerHeight);
+        self.size(window.innerWidth,window.innerHeight);
     });
 }
 
@@ -20,15 +20,15 @@ App.prototype.setup = function(){
 
 
 App.prototype.draw = function(){
-    var time   = this.getSecondsElapsed();
-    var width  = this.getWidth(),
-        height = this.getHeight();
+    var time   = this.secondsElapsed();
+    var width  = this.width(),
+        height = this.height();
     var c =  this.getContext();
 
-    c.backgroundfv(0.15,0,0.15);
+    c.background(0.15,0,0.15);
     c.translate(width * 0.5, height * 0.5);
 
-    c.stroke3f(0.25,0,0.25);
+    //c.stroke3f(0.25,0,0.25);
     c.rect(-400,-200,800,400);
 
     c.line(-400,0,400,0);
@@ -38,11 +38,11 @@ App.prototype.draw = function(){
 
     c.noStroke();
 
-    c.setDetailCircle(30);
+    c.circleDetail(30);
     c.fill3f(1,0,0.25);
     c.circle(-325,-125,50);
 
-    c.setDetailCircle(10);
+    c.circleDetail(10);
     c.fill3f(1,1,1);
     c.circle(-300,-100,50);
 
@@ -59,17 +59,17 @@ App.prototype.draw = function(){
     c.fill3f(1,0,0.25);
     c.rect(25,-175,100,100);
 
-    c.setModeRect(CanvasGL.kCenter);
+    c.setModeRect(CanvasGL.CENTER);
     c.fill3f(1,1,1);
     c.rect(100,-100,100,100);
 
-    c.setModeRect(CanvasGL.kCenter);
+    c.setModeRect(CanvasGL.CENTER);
     c.fill3f(1,0,0.25);
     c.roundRect(275,-125,100,100,10);
     c.fill3f(1,1,1);
     c.roundRect(300,-100,100,100,(Math.sin(time) * 0.5 + 0.5) * 30);
 
-    c.setModeRect(CanvasGL.kCenter);
+    c.setModeRect(CanvasGL.CENTER);
     c.fill3f(1,0,0);
     //c._enableTextureObj(this._texture);
     this._texture.bind();
@@ -79,7 +79,7 @@ App.prototype.draw = function(){
 
 
 
-    c.setModeRect(CanvasGL.kCenter);
+    c.setModeRect(CanvasGL.CENTER);
     var i = -1;
     var l = 2000;
     var n;
@@ -121,12 +121,12 @@ App.prototype.drawShapeOrigin = function(x,y){
     var prevFill   = c.getFill();
     var prevMode   = c.getModeCircle();
 
-    c.setModeCircle(CanvasGL.kCenter);
+    c.circleMode(CanvasGL.kCenter);
     c.noStroke();
     c.fill3f(0.15,0,0.65);
     c.circle(x,y,3,3);
 
-    c.setModeCircle(prevMode);
+    c.circleMode(prevMode);
     if(prevStroke)c.stroke(prevStroke);
     if(prevFill)c.fill(prevFill);
 };

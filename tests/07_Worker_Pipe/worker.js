@@ -1,4 +1,4 @@
-var console = require('../../src/util/worker/cglWorkerConsole').console,
+var console = require('../../src/util/worker/WorkerConsole').console,
     Msg = require('./workerMsg');
 
 module.exports = function () {

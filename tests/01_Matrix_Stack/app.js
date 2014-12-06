@@ -2,11 +2,11 @@ var CanvasGL = require('../../src/CanvasGL');
 
 function App(element){
     CanvasGL.call(this,element);
-    this.setSize(window.innerWidth,window.innerHeight);
+    this.size(window.innerWidth,window.innerHeight);
 
     var self = this;
     window.addEventListener('resize',function(){
-        self.setSize(window.innerWidth,window.innerHeight);
+        self.size(window.innerWidth,window.innerHeight);
     });
 
 }
@@ -15,15 +15,15 @@ App.prototype = Object.create(CanvasGL.prototype);
 
 App.prototype.draw = function(){
     var c = this.getContext();
-    var time   = this.getSecondsElapsed();
+    var time   = this.secondsElapsed();
     var PI_4 = Math.PI * 0.25;
-    var width  = this.getWidth(),
-        height = this.getHeight();
+    var width  = this.width(),
+        height = this.height();
 
 
 
-    c.backgroundfv(0.15,0,0.15);
-    c.setDetailCircle(20);
+    c.background(0.15,0,0.15);
+    c.circleDetail(20);
 
     c.translate(width * 0.5, height * 0.5);
     c.scale(0.5,0.5);
@@ -55,7 +55,8 @@ App.prototype.draw = function(){
         //c.rect(0,0,10,10);
         c.rotate(time + si );
         c.setLineWidth((Math.sin(si * 128) * 0.5 + 0.5) * 50);
-        //c.circle(0,0,(Math.sin(si * 128) * 0.5 + 0.5) * 25);
+        //
+        c.circle(0,0,(Math.sin(si * 128) * 0.5 + 0.5) * 25);
         c.strokefv(strokeColor);
         c.line(0,0,100,0);
         c.noStroke();

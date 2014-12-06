@@ -1,7 +1,7 @@
 var work = require('webworkify');
 
-var WorkerConsole = require('../../src/util/worker/cglWorkerConsole'),
-    ObjectUtil    = require('../../src/util/cglObjectUtil'),
+var WorkerConsole = require('../../src/util/worker/WorkerConsole'),
+    ObjectUtil    = require('../../src/util/ObjectUtil'),
     WorkerMsg     = require('./workerMsg'),
     MsgQueue      = require('./msgQueue');
 

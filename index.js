@@ -210,7 +210,7 @@ CanvasGL.prototype.__onKeyUp = function(e){
 // Canvas dimensions
 /*------------------------------------------------------------------------------------------------------------*/
 
-CanvasGL.prototype.setSize = function(width,height){
+CanvasGL.prototype.size = function(width,height){
     var ctx = this.__context;
     if(ctx){
         ctx._setSize(width,height);
@@ -221,8 +221,20 @@ CanvasGL.prototype.setSize = function(width,height){
     }
 };
 
-CanvasGL.prototype.getWidth  = function(){ return this.__context ? this.__context._getWidth_internal()  : null; };
-CanvasGL.prototype.getHeight = function(){ return this.__context ? this.__context._getHeight_internal() : null; };
+CanvasGL.prototype.width = function () {
+    var context = this.__context;
+    if(!context){
+        return null;
+    }
+    return context._getWidth_internal();
+};
+CanvasGL.prototype.height = function () {
+    var context = this.__context;
+    if(!context){
+        return null;
+    }
+    return context._getHeight_internal();
+};
 
 
 /*------------------------------------------------------------------------------------------------------------*/
@@ -268,10 +280,8 @@ CanvasGL.prototype.__setup = function(){
 };
 
 CanvasGL.prototype.__draw = function(){
-    var ctx = this.__context;
-    ctx._beginDraw();
+    this.__context._preDraw();
     this.draw();
-    ctx._endDraw();
 };
 
 // Override in subclass
@@ -281,13 +291,34 @@ CanvasGL.prototype.setup = function(){};
 CanvasGL.prototype.draw = function(){};
 
 // Get time props
-CanvasGL.prototype.setTargetFPS      = function(fps){this.__targetFps = fps;this.__timeInterval  = this.__targetFps / 1000.0;};
-CanvasGL.prototype.getTargetFPS      = function()   {return this.__targetFps;};
-CanvasGL.prototype.getFramesElapsed  = function(){return this.__frameNum;};
-CanvasGL.prototype.getSecondsElapsed = function(){return this.__timeElapsed;};
-CanvasGL.prototype.getTime           = function(){return this.__time};
-CanvasGL.prototype.getTimeStart      = function(){return this.__timeStart;};
-CanvasGL.prototype.getTimeDelta      = function(){return this.__timeDelta;};
+CanvasGL.prototype.setTargetFPS = function (fps) {
+    this.__targetFps = fps;
+    this.__timeInterval = this.__targetFps / 1000.0;
+};
+
+CanvasGL.prototype.getTargetFPS = function () {
+    return this.__targetFps;
+};
+
+CanvasGL.prototype.frames = function () {
+    return this.__frameNum;
+};
+
+CanvasGL.prototype.secondsElapsed = function () {
+    return this.__timeElapsed;
+};
+
+CanvasGL.prototype.time = function () {
+    return this.__time
+};
+
+CanvasGL.prototype.timeStart = function () {
+    return this.__timeStart;
+};
+
+CanvasGL.prototype.timeDelta = function () {
+    return this.__timeDelta;
+};
 
 /*---------------------------------------------------------------------------------------------------------*/
 // Input
@@ -367,8 +398,8 @@ CanvasGL.RGB           = Context.RGB;
 CanvasGL.FLOAT         = Context.FLOAT;
 CanvasGL.UNSIGNED_BYTE = Context.UNSIGNED_BYTE;
 
-CanvasGL.CAP_NONE  = Context.CAP_NONE;
-CanvasGL.CAP_ROUND = Context.CAP_ROUND;
+CanvasGL.SQUARE = Context.SQUARE;
+CanvasGL.ROUND  = Context.ROUND;
 
 CanvasGL.ARRAY_BUFFER = Context.ARRAY_BUFFER;
 CanvasGL.ELEMENT_ARRAY_BUFFER = Context.ELEMENT_ARRAY_BUFFER;

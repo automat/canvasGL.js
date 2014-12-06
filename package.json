@@ -1,0 +1,15 @@
+{
+    "name": "canvas-gl",
+    "version": "0.0.2",
+    "description": "Accelerated 2d graphics on top of WebGL",
+    "homepage"  : "https://github.com/automat/canvasGL.js",
+    "author": "Henryk Wollik",
+    "private" : true,
+    "main" : "index.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/automat/canvasGL.js.git"
+    },
+    "bugs" : "https://github.com/automat/canvasGL.js/issues",
+    "license": "MIT"
+}
