@@ -62,9 +62,13 @@ App.prototype.draw = function(){
     ctx.translate(100,100);
     ctx.strokeCap(CanvasGL.ROUND);
    // ctx._polyline([0,0,100,0,100 + Math.sin(s) * 50,100,0,100],null,true);
-    ctx.lines([[0,0,100,0,100,100],[100,150,200,150]],null,false);
+    //ctx.lines([[0,0,100,0,100,100],[100,150,200,150]],null,false);
     ctx.strokeWeight(20);
     ctx.line(100,100,0,100);
+    //ctx.line(0,200,50,180);
+    //
+    ctx.strokeWeight(2);
+    //ctx.lines([150,0,150,20,130,50,180,80]);
     //ctx.line(0,0,100,0);
     //ctx._polyline([0,0,100,0,100,100,0,100],null,false);
     ctx.popMatrix();
