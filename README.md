@@ -1,5 +1,5 @@
 
-Draft & Still very deutsch
+Draft
 
 #CanvasGL.js 
 
