@@ -120,6 +120,7 @@ To increase the blab, Hello WebGL.
 
 The goal of CanvasGL.js was to develop an optimized 
 
+<!--
 but still keeping a more direct translation of drawing commands like the example above. 
 
 
@@ -130,19 +131,14 @@ Processing e.g does this really well by wrapping its primitve models into more d
         internalObjEllipse.set(x,y,width,height);
         internalObjEllipse.draw();
     }
- 
+ -->
 
 - declerative retained mode primitive representation
-
-
-
-
 - drawing by command not by objects
+<!--
 - staying in context of the current idea, not jumping between object initialisation and drawing commands
-
+-->
 - retained mode element that represents an immediate mode procedure
-
-
 - primitive objects with extendend properties reflect direct mode
 
 ##WebGL Implementation
@@ -150,7 +146,7 @@ Processing e.g does this really well by wrapping its primitve models into more d
 ###Prototype v.1 
 
 [Stable version see here](#latest-stable-version)
-
+<!---
 - every primitive has is one vertex buffer, buffer length only gets changed if the primitive properties change and need more vertices, otherwise the buffer just gets 
 - in case of ellipses and circles there is an predefined maximum number of segments which defines the buffer size, e.g. max 60 segments, therefore the length of the buffer does not have to be changed, 
 - every primitive has a color buffer, which gets updated every time the amount of  vertices change, or when the color changes
@@ -163,7 +159,7 @@ Processing e.g does this really well by wrapping its primitve models into more d
 
 - Polyline implementation
 
-
+--->
 ###Prototype v.2
 
 Last state of development
