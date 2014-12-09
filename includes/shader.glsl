@@ -34,7 +34,10 @@ varying vec2 vTexcoord;
 uniform float     uUseTexture;
 uniform sampler2D uTexture;
 
+uniform vec4  uColor;
+uniform float uUseColor;
+
 void main(){
-    gl_FragColor = vVertexColor * (1.0 - uUseTexture) + texture2D(uTexture,vTexcoord) * uUseTexture;
+    gl_FragColor = (vVertexColor * (1.0 - uUseColor) + uColor * uUseColor) * (1.0 - uUseTexture) + texture2D(uTexture,vTexcoord) * uUseTexture;
 }
 #endif
