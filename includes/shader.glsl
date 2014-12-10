@@ -18,7 +18,7 @@ vec2 invert = vec2(1,-1);
 void main(){
     vVertexColor = aVertexColor;
     vTexcoord    = aTexcoord;
-    
+
     gl_Position  = vec4(((uMatrix * vec3(aVertexPosition,1.0)).xy / uViewport * 2.0 - 1.0) * invert,0.0,1.0);
     gl_PointSize = uPointSize;
 }
